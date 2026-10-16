@@ -1,288 +1,147 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AI Office Agent - Kantor Isometrik</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kantor AI</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: #0b0c10; color: #e2e8f0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  overflow: hidden; height: 100vh;
-}
-
-/* UI Overlay */
-#ui-layer {
-  position: absolute; inset: 0; z-index: 100; pointer-events: none;
-  display: flex; flex-direction: column;
-}
-#ui-layer * { pointer-events: auto; }
-
-header {
-  padding: 12px 20px; background: rgba(10,12,16,0.8); border-bottom: 1px solid rgba(255,255,255,0.08);
-  display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(8px);
-}
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
-.dot { width: 8px; height: 8px; background: #00f2ff; border-radius: 50%; box-shadow: 0 0 10px #00f2ff; animation: blink 1s infinite; }
-.status { font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 10px; }
-#auto-toggle {
-  background: #1f2833; border: 1px solid #64748b; color: #e2e8f0;
-  padding: 4px 10px; border-radius: 16px; font-size: 11px; cursor: pointer;
-}
-#auto-toggle.active { background: #00f2ff; color: #000; border-color: #00f2ff; }
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#14213d;--ink:#e8eefc}
+html,body{height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);overflow:hidden;
+ background:radial-gradient(circle at 12% 18%,#3f8f4f 0 7%,transparent 7.5%),radial-gradient(circle at 90% 85%,#2f7a43 0 9%,transparent 9.5%),
+ radial-gradient(circle at 6% 80%,#4da05c 0 6%,transparent 6.5%),linear-gradient(160deg,#8fc7e8,#cfe6d6 55%,#9ccf9f)}
+.hidden{display:none!important}
 
 /* Login */
-#login-screen {
-  position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; background: #0b0c10;
-  padding: 24px; text-align: center;
-}
-#login-screen h2 { margin-bottom: 8px; font-size: 24px; letter-spacing: 1px; }
-#login-screen p { color: #94a3b8; margin-bottom: 20px; font-size: 14px; }
-#office-code {
-  padding: 12px 16px; font-size: 16px; border-radius: 10px; border: 1px solid #1f2833;
-  background: rgba(10,12,16,0.9); color: #e2e8f0; width: 260px; margin-bottom: 16px; text-align: center;
-}
-#btn-login {
-  padding: 12px 28px; font-size: 16px; font-weight: 700; border: none; border-radius: 10px;
-  background: linear-gradient(135deg, #00f2ff, #bc13fe); color: #000; cursor: pointer;
-}
-.note { margin-top: 16px; font-size: 12px; color: #94a3b8; max-width: 300px; line-height: 1.4; }
+#login{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#14213d,#1f3b6e);padding:24px;text-align:center}
+#login h2{font-size:28px;margin-bottom:6px}
+#login p{color:#b8c6e6;font-size:14px;margin-bottom:18px}
+#login input{padding:12px 16px;font-size:16px;border-radius:12px;border:2px solid #3a5a9a;background:#0f1a33;color:#fff;width:260px;text-align:center;margin-bottom:14px}
+#login button{padding:12px 32px;font-size:16px;font-weight:700;border:0;border-radius:12px;background:#ffc93c;color:#2a1d00;cursor:pointer}
+#login .note{font-size:12px;max-width:300px;margin:16px 0 0}
 
-/* Office Map - Simple Isometric Grid */
-#map-view {
-  flex: 1; position: relative; overflow: auto;
-  display: flex; justify-content: center; align-items: center;
-  background: linear-gradient(180deg, #0a0b10 0%, #050608 100%);
-  padding: 40px;
-}
-#office-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 16px;
-  width: max-content;
-  transform: rotateX(55deg) rotateZ(-40deg) scale(0.85);
-  transform-origin: center bottom;
-  transform-style: preserve-3d;
-}
+/* Header */
+header{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;background:rgba(20,33,61,.92);backdrop-filter:blur(6px)}
+.brand{font-weight:800;font-size:17px;display:flex;align-items:center;gap:10px}
+.dot{width:9px;height:9px;border-radius:50%;background:#4ade80;box-shadow:0 0 10px #4ade80}
+.right{display:flex;align-items:center;gap:12px;font-size:12px;color:#b8c6e6}
+#auto-toggle{background:#26396b;border:1px solid #4a64a8;color:#fff;padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer}
+#auto-toggle.active{background:#4ade80;color:#06280f;border-color:#4ade80}
 
-/* Room Cell */
-.room-cell {
-  width: 140px; height: 140px;
-  border: 3px solid rgba(0,0,0,0.3);
-  background: #f3f4f6;
-  border-radius: 8px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s;
-  position: relative;
-}
-.room-cell:hover {
-  border-color: #00f2ff;
-  transform: translateY(-8px) scale(1.05);
-  box-shadow: 0 0 30px rgba(0,242,255,0.2);
-  z-index: 10;
-}
-.room-cell.lobby { background: #e5e7eb; border-style: dashed; border-color: #6b7280; font-size: 11px; font-weight: 700; color: #374151; }
-.room-cell.meeting { background: #fef3c7; border-color: #d4af37; font-size: 11px; font-weight: 700; color: #92400e; }
+/* Stage */
+#map{position:fixed;inset:52px 0 0 0;perspective:1800px;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;transform-origin:center}
+#building{position:relative;display:grid;grid-template-columns:repeat(6,150px);grid-template-rows:repeat(5,140px);gap:10px;padding:16px;
+ background:#e9eef7;border:6px solid #b7c3da;border-radius:18px;transform:rotateX(34deg) rotateZ(-5deg);transform-style:preserve-3d;
+ box-shadow:0 10px 0 #8d9bb8,0 18px 0 #6f7e9f,0 40px 60px rgba(10,30,60,.45)}
 
-.room-inner { text-align: center; pointer-events: none; }
-.room-icon { font-size: 26px; margin-bottom: 6px; display: block; }
-.room-name { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
-  background: rgba(0,0,0,0.7); color: #fff; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
-.room-screen {
-  width: 90px; height: 50px; background: #000; border: 2px solid #333;
-  border-radius: 4px; margin-top: 8px; display: flex; align-items: center; justify-content: center;
-  font-size: 9px; color: #444; position: relative;
-}
-.screen-dot {
-  position: absolute; top: 4px; left: 4px; width: 5px; height: 5px; background: #0f0; border-radius: 50%;
-  box-shadow: 0 0 6px #0f0; animation: blink 1s infinite;
-}
-.room-avatar {
-  width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 14px;
-  margin-top: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.3); animation: float 3s ease-in-out infinite;
-}
-.room-badge {
-  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-  width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 900; color: #fff; box-shadow: 0 0 8px rgba(0,0,0,0.4);
-}
+.room{--c:#888;position:relative;border-radius:10px;cursor:pointer;overflow:hidden;
+ background:linear-gradient(180deg,color-mix(in srgb,var(--c) 14%,#fff),color-mix(in srgb,var(--c) 30%,#fff));
+ border:4px solid color-mix(in srgb,var(--c) 70%,#222);box-shadow:0 5px 0 color-mix(in srgb,var(--c) 55%,#111);transition:transform .15s,filter .15s}
+.room:hover{transform:translateZ(14px) translateY(-4px);filter:brightness(1.06);z-index:5}
+.tag{position:absolute;top:6px;left:6px;right:6px;z-index:3;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;background:var(--c);
+ color:#fff;font-weight:800;font-size:12px;line-height:1.1;text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.tag b{display:grid;place-items:center;min-width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.28);font-size:11px}
+.floor{position:absolute;inset:36px 8px 22px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-content:center}
+.floor i{height:26px;border-radius:5px;background:#fff;border:2px solid color-mix(in srgb,var(--c) 40%,#999);position:relative}
+.floor i::before{content:"";position:absolute;left:50%;top:-9px;width:16px;height:11px;transform:translateX(-50%);border-radius:2px;background:#10192e;border:2px solid #3b4a6b}
+.floor i::after{content:"";position:absolute;left:50%;top:5px;width:8px;height:8px;transform:translateX(-50%);border-radius:2px;background:color-mix(in srgb,var(--c) 45%,#fff)}
+.ico{position:absolute;right:8px;bottom:18px;font-size:26px;opacity:.9}
+.rs{position:absolute;left:6px;right:6px;bottom:4px;z-index:3;font-size:10px;font-weight:600;padding:2px 6px;border-radius:5px;background:rgba(10,18,40,.85);color:#9ff5c1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Character Layer */
-#char-layer { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
-.character {
-  position: absolute; width: 24px; height: 24px; border-radius: 50%;
-  border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
-  font-size: 14px; transition: left 0.6s ease-out, top 0.6s ease-out;
-  box-shadow: 0 0 12px rgba(0,0,0,0.6); cursor: pointer; z-index: 35;
-}
-.character.walking { animation: walkBounce 0.4s ease-in-out infinite; }
+.lobby{grid-area:2/2/5/5;border-radius:12px;background:repeating-conic-gradient(#f7f9fd 0 25%,#e6ecf6 0 50%) 0 0/48px 48px;border:3px dashed #aab7d0;display:grid;place-items:center;text-align:center;color:#24407a}
+.rug{padding:18px 26px;border-radius:14px;background:rgba(255,255,255,.85);border:2px solid #b9c8e6}
+.rug .logo{font-size:38px}.rug h3{font-size:22px}.rug p{font-size:12px;max-width:190px;margin:4px auto 0}
+.plant{position:absolute;font-size:26px}
+.entrance{grid-area:5/1/6/5;border-radius:12px;background:#dfe6f2;border:3px solid #aab7d0;display:flex;align-items:center;justify-content:center;gap:18px;color:#24407a;font-weight:800}
+.entrance .desk{padding:10px 24px;border-radius:30px;background:#fff;border:3px solid #7e93c2;box-shadow:0 4px 0 #7e93c2}
+.meeting{grid-area:4/1/5/2;background:linear-gradient(#f0f1f5,#d9dde8);border:4px solid #66708c;color:#2b3350;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:800;font-size:12px}
+.meeting span{font-size:28px}
 
-/* Chat Panel */
-#chat-panel {
-  position: fixed; inset: 0; z-index: 150; display: none; flex-direction: column;
-  background: rgba(10,12,16,0.95); backdrop-filter: blur(12px);
-}
-#chat-panel.open { display: flex; }
-@media (min-width: 900px){
-  #chat-panel { width: 440px; right: 0; top: 0; bottom: 0; transform: translateX(100%); transition: transform .3s ease; }
-  #chat-panel.open { transform: translateX(0); }
-}
-.chat-header {
-  padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
-  display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2);
-}
-.chat-title { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
-.chat-close { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; }
-.chat-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-.msg { max-width: 80%; display: flex; flex-direction: column; gap: 4px; }
-.msg.ai { align-self: flex-start; }
-.msg.user { align-self: flex-end; }
-.bubble { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
-.msg.ai .bubble { background: #1f1f2e; border: 1px solid rgba(255,255,255,0.08); color: #e2e8f0; border-bottom-left-radius: 4px; }
-.msg.user .bubble { background: #00f2ff; color: #000; border-bottom-right-radius: 4px; }
-.meta { font-size: 11px; color: #94a3b8; }
+/* Characters */
+.char{position:absolute;z-index:20;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:16px;background:#fff;border:3px solid var(--c);
+ box-shadow:0 3px 0 rgba(0,0,0,.25);transition:left 1.4s ease-in-out,top 1.4s ease-in-out;pointer-events:none}
+.char.walk{animation:hop .35s ease-in-out infinite}
+@keyframes hop{50%{margin-top:-5px}}
 
-.chat-input-area {
-  padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3);
-}
-.input-wrap {
-  display: flex; gap: 10px; max-width: 600px; margin: 0 auto;
-  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 6px 14px;
-}
-textarea { flex: 1; border: none; outline: none; background: transparent; color: #e2e8f0; font-size: 14px; resize: none; min-height: 20px; font-family: inherit; }
-.btn-send { background: linear-gradient(135deg, #00f2ff, #bc13fe); border: none; border-radius: 12px; width: 44px; height: 44px; color: #fff; font-weight: 700; cursor: pointer; }
-.hint { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 6px; }
+/* Legend & slogan */
+#legend{position:fixed;right:14px;top:70px;z-index:60;width:200px;padding:10px 12px;border-radius:14px;background:rgba(20,33,61,.94);border:1px solid #3a5a9a;max-height:calc(100vh - 140px);overflow:auto}
+#legend div{display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:12px;cursor:pointer}
+#legend div:hover{color:#ffc93c}
+#legend b{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:11px;flex:none;color:#fff}
+#slogan{position:fixed;left:16px;bottom:14px;z-index:60;padding:8px 14px;border-radius:12px;background:rgba(20,33,61,.9);font-size:13px;font-weight:700}
+#ticker{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:60;font-size:12px;padding:5px 12px;border-radius:20px;background:rgba(20,33,61,.9);color:#b8c6e6;max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Meeting Overlay */
-#meeting-overlay {
-  position: fixed; inset: 0; z-index: 250; display: none; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-}
-#meeting-overlay.open { display: flex; }
-.meeting-room {
-  position: relative; width: 340px; height: 260px; border: 4px solid #00f2ff; border-radius: 16px;
-  background: #e5e7eb; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 20px; box-shadow: 0 0 60px #00f2ff;
-  animation: meetingPop 0.4s cubic-bezier(.175,.885,.32,1.275) both;
-}
-.meeting-title { font-size: 13px; font-weight: 700; color: #00f2ff; margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
-.meeting-table {
-  width: 100%; height: 120px; border: 2px dashed rgba(0,242,255,0.3); border-radius: 12px;
-  display: flex; align-items: center; justify-content: center; position: relative; background: rgba(0,0,0,0.1);
-}
-.meeting-avatar {
-  width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff;
-  position: absolute; display: flex; align-items: center; justify-content: center; font-size: 14px;
-  animation: meetingFloat 2s ease-in-out infinite;
-}
-.meeting-bubble {
-  position: absolute; top: -36px; background: #00f2ff; color: #000;
-  padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; white-space: nowrap;
-  animation: bubbleIn 0.3s both;
-}
-.btn-skip-meeting {
-  margin-top: 16px; background: transparent; border: 1px solid #00f2ff; color: #00f2ff;
-  padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;
-}
-.btn-skip-meeting:hover { background: #00f2ff; color: #000; }
+/* Chat */
+#chat{position:fixed;z-index:150;top:52px;right:0;bottom:0;width:420px;display:none;flex-direction:column;background:#0f1a33;border-left:1px solid #3a5a9a}
+#chat.open{display:flex}
+.ch{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #26396b;font-weight:800}
+.ch button{background:none;border:0;color:#b8c6e6;font-size:20px;cursor:pointer}
+#screen{margin:10px 14px 0;padding:8px 10px;border-radius:8px;background:#000;border:2px solid var(--c,#4ade80);color:#9ff5c1;font:12px/1.4 "Courier New",monospace;min-height:44px;max-height:90px;overflow:auto}
+#chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:85%;display:flex;flex-direction:column;gap:3px}
+.msg.ai{align-self:flex-start}.msg.user{align-self:flex-end}
+.bubble{padding:9px 13px;border-radius:12px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.msg.ai .bubble{background:#1c2b52;border-bottom-left-radius:3px}
+.msg.user .bubble{background:#ffc93c;color:#2a1d00;border-bottom-right-radius:3px}
+.meta{font-size:10px;color:#8fa2cc}
+.msg.user .meta{text-align:right}
+.inp{padding:12px 14px;border-top:1px solid #26396b;display:flex;gap:8px}
+.inp textarea{flex:1;resize:none;border:1px solid #3a5a9a;border-radius:10px;background:#0a1226;color:#fff;padding:9px 11px;font:14px inherit;min-height:42px}
+.inp button{width:46px;border:0;border-radius:10px;background:#ffc93c;color:#2a1d00;font-weight:800;cursor:pointer}
 
-/* Big Screen HUD */
-#big-screen {
-  position: fixed; top: 80px; right: 20px; width: 300px; height: 190px;
-  border: 3px solid #00f2ff; border-radius: 10px; background: #000;
-  display: flex; flex-direction: column; padding: 10px; z-index: 120;
-  box-shadow: 0 0 40px #00f2ff;
-}
-#big-screen.hidden { display: none; }
-.screen-header { font-size: 11px; color: #00f2ff; font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid #00f2ff; padding-bottom: 4px; }
-.screen-content { flex: 1; overflow-y: auto; font-size: 13px; color: #ccc; font-family: 'Courier New', monospace; }
+/* Meeting overlay */
+#meet{position:fixed;inset:0;z-index:250;display:none;place-items:center;background:rgba(10,20,45,.8);backdrop-filter:blur(6px)}
+#meet.open{display:grid}
+.mbox{width:340px;padding:20px;border-radius:16px;background:#e9eef7;border:4px solid #ffc93c;color:#24407a;text-align:center}
+.mtable{position:relative;height:120px;margin:14px 0;border-radius:60px;background:#c79b64;border:4px solid #8a6538}
+.mav{position:absolute;width:30px;height:30px;border-radius:50%;background:#fff;border:3px solid;display:grid;place-items:center;animation:hop .8s infinite}
+#mline{font-weight:700;font-size:14px}
 
-.auto-ticker {
-  position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
-  font-size: 11px; color: #94a3b8; background: rgba(0,0,0,0.5);
-  padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); z-index: 110;
+@media(max-width:820px){
+ #legend{display:none}
+ #chat{top:auto;width:100%;height:62vh;border-left:0;border-top:1px solid #3a5a9a}
+ .right span{display:none}
 }
-
-@keyframes blink { 0%,96%,100%{ opacity:1 } 98%{ opacity:0.2 } }
-@keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-5px) } }
-@keyframes walkBounce { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-4px) } }
-@keyframes meetingPop { from{ opacity:0; transform: scale(0.85) } to{ opacity:1; transform: scale(1) } }
-@keyframes meetingFloat { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-8px) } }
-@keyframes bubbleIn { from{ opacity:0; transform: translateY(10px) } to{ opacity:1; transform: translateY(0) } }
-.hidden { display: none !important; }
-
-@media (max-width: 768px){
-  #office-grid { transform: rotateX(55deg) rotateZ(-40deg) scale(0.6); gap: 10px; }
-  .room-cell { width: 110px; height: 110px; }
-  #big-screen { width: 90vw; right: auto; left: 10px; top: auto; bottom: 90px; height: 140px; }
-  #chat-panel { width: 100%; transform: translateY(100%); transition: transform .3s ease; top: auto; bottom: 0; height: 60vh; }
-  #chat-panel.open { transform: translateY(0); }
-}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 
-<!-- Login -->
-<div id="login-screen">
-  <h2>AI Office Agent</h2>
-  <p>Masukkan kode kantor untuk sinkronisasi multi-device</p>
-  <input type="text" id="office-code" value="AI2026" placeholder="Kode Kantor">
+<div id="login">
+  <h2>🏢 Kantor AI</h2>
+  <p>Masukkan kode kantor untuk sinkron di semua perangkat</p>
+  <input id="office-code" value="AI2026" placeholder="Kode kantor">
   <button id="btn-login">Masuk</button>
-  <p class="note">Gunakan kode yang sama di semua perangkat. Chat tersimpan di Firebase.</p>
+  <p class="note">Pakai kode yang sama di semua perangkat. Chat tersimpan di Firebase.</p>
 </div>
 
-<!-- UI -->
-<div id="ui-layer">
+<div id="ui" class="hidden">
   <header>
-    <div class="brand"><div class="dot"></div>AI Office Agent</div>
-    <div class="status" id="statusText">Menghubungkan...</div>
-    <button id="auto-toggle" class="active">Auto 24 Jam: ON</button>
+    <div class="brand"><span class="dot"></span>Kantor AI</div>
+    <div class="right"><span id="status">Menghubungkan...</span><button id="auto-toggle" class="active">Auto 24 Jam: ON</button></div>
   </header>
+  <div id="map"><div id="stage"><div id="building"></div></div></div>
+  <div id="legend"></div>
+  <div id="slogan">Satu Kantor, Banyak Peluang Bersama AI</div>
+  <div id="ticker">Sistem siap</div>
 
-  <div id="map-view">
-    <div id="office-grid"></div>
-    <div id="char-layer"></div>
-    <div class="auto-ticker" id="auto-ticker">Sistem siap...</div>
+  <div id="chat">
+    <div class="ch"><span id="chat-title">Divisi</span><button id="chat-close" aria-label="Tutup">✕</button></div>
+    <div id="screen">Pilih ruangan untuk mulai.</div>
+    <div id="chat-body"></div>
+    <div class="inp"><textarea id="chat-input" placeholder="Tanya divisi ini... (Enter = kirim)"></textarea><button id="btn-send" aria-label="Kirim">➤</button></div>
   </div>
 
-  <div id="big-screen" class="hidden">
-    <div class="screen-header">LAYAR INFO DIVISI</div>
-    <div class="screen-content" id="screen-content">Klik ruangan divisi di gedung isometrik.</div>
-  </div>
-
-  <div id="meeting-overlay">
-    <div class="meeting-room">
-      <div class="meeting-title">RAPAT DIVISI</div>
-      <div class="meeting-table" id="meeting-table"></div>
-      <div class="meeting-bubble" id="meeting-bubble" style="display:none;">Sedang membahas...</div>
-    </div>
-    <button class="btn-skip-meeting" id="skip-meeting" style="display:none;">Langsung Jawab</button>
-  </div>
-
-  <div id="chat-panel">
-    <div class="chat-header">
-      <div class="chat-title"><span id="chat-div-icon">🏢</span> <span id="chat-div-name">Divisi</span></div>
-      <button class="chat-close" id="chat-close">✕</button>
-    </div>
-    <div class="chat-body" id="chat-body"></div>
-    <div class="chat-input-area">
-      <div class="input-wrap">
-        <textarea id="chat-input" placeholder="Ketik pertanyaan untuk divisi ini..."></textarea>
-        <button class="btn-send" id="btn-send">➤</button>
-      </div>
-      <div class="hint">Enter = Kirim • Shift+Enter = Baris baru</div>
-    </div>
-  </div>
-
-  <div class="auto-ticker" id="auto-ticker">Sistem siap...</div>
+  <div id="meet"><div class="mbox"><b>RAPAT DIVISI</b><div class="mtable" id="mtable"></div><div id="mline"></div></div></div>
 </div>
 
 <script type="module">
-/* ========== KONFIGURASI FIREBASE ========== */
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, onValue, push } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
  const firebaseConfig = {
     apiKey: "AIzaSyBeb1L6dCevfzX2tw__6MGWfpB6jfKTO6M",
     authDomain: "ai-kantor-project.firebaseapp.com",
@@ -295,347 +154,213 @@ textarea { flex: 1; border: none; outline: none; background: transparent; color:
   };
 
 
-/* ========== DATA DIVISI 15 ========== */
+/* id, nama, warna, ikon, avatar, auto-teks. Posisi ruang: [row, col, rowSpan, colSpan] di grid 6x5 */
 const DIVISIONS = [
-  {id:1, name:'Trading Saham', color:'#10b981', icon:'📈', emoji:'🟢', auto:true, autoText:'Saham ABC naik 2,4% hari ini.'},
-  {id:2, name:'Invest Saham', color:'#3b82f6', icon:'📊', emoji:'🔵', auto:false},
-  {id:3, name:'Invest Dividen Saham', color:'#8b5cf6', icon:'💰', emoji:'🟣', auto:false},
-  {id:4, name:'Bibit Reksadana', color:'#14b8a6', icon:'🌱', emoji:'🟡', auto:false},
-  {id:5, name:'Bitcoin Indodax', color:'#f97316', icon:'₿', emoji:'🟠', auto:true, autoText:'BTC di Indodax: Rp 714.250.000'},
-  {id:6, name:'Bitcoin Toko Crypto', color:'#ec4899', icon:'🏪', emoji:'🔴', auto:true, autoText:'Crypto Update: ETH menguat 1,8%'},
-  {id:7, name:'Emas Logam Mulia', color:'#d4af37', icon:'🥇', emoji:'🟡', auto:false},
-  {id:8, name:'Pencatat Keuangan', color:'#1e293b', icon:'📒', emoji:'⚪', auto:false},
-  {id:9, name:'Multimedia Video', color:'#a855f7', icon:'🎬', emoji:'🟥', auto:false},
-  {id:10, name:'Multimedia Grafis', color:'#0ea5e9', icon:'🎨', emoji:'🔷', auto:false},
-  {id:11, name:'Coding', color:'#84cc16', icon:'💻', emoji:'🟩', auto:false},
-  {id:12, name:'Online Shop', color:'#be185d', icon:'🛒', emoji:'🟪', auto:false},
-  {id:13, name:'Viral/Trend News', color:'#f59e0b', icon:'📰', emoji:'🟨', auto:true, autoText:'News: AI kantor isometrik trending.'},
-  {id:14, name:'Resep Masakan & Minuman', color:'#fb923c', icon:'🍜', emoji:'🟧', auto:false},
-  {id:15, name:'AI Chatbot', color:'#6366f1', icon:'🤖', emoji:'🔵', auto:false},
+ {id:1,name:'Trading Saham',color:'#2e9e44',icon:'📈',emoji:'👩‍💼',pos:[1,1],auto:'Saham ABC naik 2,4% hari ini.'},
+ {id:2,name:'Invest Saham',color:'#2f7fe0',icon:'📊',emoji:'👨‍💼',pos:[1,2]},
+ {id:3,name:'Invest Dividen Saham',color:'#8a4fd8',icon:'💰',emoji:'👩‍💻',pos:[1,3]},
+ {id:4,name:'Bibit Reksadana',color:'#1aa37a',icon:'🌱',emoji:'🧑‍💼',pos:[1,4]},
+ {id:5,name:'Bitcoin Indodax',color:'#f08a1c',icon:'₿',emoji:'👨‍💻',pos:[1,5],auto:'BTC di Indodax: Rp 714.250.000'},
+ {id:6,name:'Bitcoin Toko Crypto',color:'#e0409a',icon:'🏪',emoji:'👩‍🔧',pos:[1,6],auto:'Crypto Update: ETH menguat 1,8%'},
+ {id:7,name:'Emas Logam Mulia',color:'#c99a1c',icon:'🥇',emoji:'🧑‍🏫',pos:[2,1]},
+ {id:8,name:'Pencatat Keuangan',color:'#2a4a8a',icon:'📒',emoji:'🧑‍💼',pos:[3,1]},
+ {id:9,name:'Multimedia Video',color:'#8f52e8',icon:'🎬',emoji:'🎥',pos:[2,5]},
+ {id:10,name:'Multimedia Grafis',color:'#18a0d8',icon:'🎨',emoji:'👩‍🎨',pos:[2,6]},
+ {id:12,name:'Online Shop',color:'#d6336c',icon:'🛒',emoji:'🧑‍💼',pos:[3,5]},
+ {id:13,name:'Viral / Trend News',color:'#16a6a6',icon:'📰',emoji:'🧑‍💻',pos:[3,6],auto:'News: AI kantor isometrik trending.'},
+ {id:14,name:'Resep Masakan & Minuman',color:'#ee5a7a',icon:'🍜',emoji:'👩‍🍳',pos:[4,5]},
+ {id:11,name:'Coding',color:'#6aa71a',icon:'💻',emoji:'👨‍💻',pos:[4,6]},
+ {id:15,name:'AI Chatbot',color:'#6f4fe0',icon:'🤖',emoji:'🧑‍💼',pos:[5,5],span:2}
 ];
 
-/* Grid: 5x4 = 20 sel */
-const GRID = [
-  {div:1},{div:2},{div:3},{div:4},{div:5},
-  {div:7},{type:'lobby'},{type:'lobby'},{div:6},{div:10},
-  {div:8},{type:'lobby'},{type:'lobby'},{div:9},{div:12},
-  {type:'meeting'},{div:11},{div:13},{div:14},{div:15}
-];
+let app, auth, db, officeId, currentDiv = null, autoEnabled = true, unsub = null;
+const chars = [], cells = new Map();
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/* ========== STATE ========== */
-let app, auth, db, officeId, currentDiv = null;
-let autoEnabled = true;
-let messageUnsubs = {};
-let avatars = [];
-let roomMap = new Map();
-
-const loginScreen = document.getElementById('login-screen');
-const uiLayer = document.getElementById('ui-layer');
-const officeCodeInput = document.getElementById('office-code');
-const btnLogin = document.getElementById('btn-login');
-const statusText = document.getElementById('statusText');
-
-btnLogin.onclick = async () => {
-  const code = officeCodeInput.value.trim();
+/* ===== Login ===== */
+$('btn-login').onclick = async () => {
+  const code = $('office-code').value.trim();
   if (!code) return;
-  officeId = code;
-  statusText.textContent = 'Menghubungkan ke Firebase...';
+  officeId = code.replace(/[.#$\[\]\/]/g, '_');
   try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getDatabase(app);
-    await signInAnonymously(auth);
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        statusText.textContent = `Online sebagai ${user.uid.slice(0,6)}...`;
-        loginScreen.classList.add('hidden');
-        uiLayer.classList.remove('hidden');
-        initOffice();
-        initApp();
-      }
-    });
+    const cred = await signInAnonymously(auth);
+    $('status').textContent = 'Online • ' + cred.user.uid.slice(0, 6);
+    $('login').classList.add('hidden');
+    $('ui').classList.remove('hidden');
+    buildOffice();
+    fitStage();
   } catch (e) {
     alert('Gagal koneksi Firebase: ' + e.message);
-    statusText.textContent = 'Gagal terkoneksi';
   }
 };
-
-const autoToggle = document.getElementById('auto-toggle');
-autoToggle.onclick = () => {
-  autoEnabled = !autoToggle.classList.contains('active');
-  autoToggle.classList.toggle('active');
-  autoToggle.textContent = autoEnabled ? 'Auto 24 Jam: ON' : 'Auto 24 Jam: OFF';
+$('auto-toggle').onclick = e => {
+  autoEnabled = !autoEnabled;
+  e.target.classList.toggle('active', autoEnabled);
+  e.target.textContent = 'Auto 24 Jam: ' + (autoEnabled ? 'ON' : 'OFF');
 };
 
-/* ========== RENDER OFFICE GRID ========== */
-function initOffice() {
-  const grid = document.getElementById('office-grid');
-  const charLayer = document.getElementById('char-layer');
+/* ===== Gedung ===== */
+function buildOffice() {
+  const b = $('building');
+  b.innerHTML = `
+    <div class="lobby" id="lobby"><span class="plant" style="left:12px;top:10px">🪴</span><span class="plant" style="right:12px;top:10px">🪴</span>
+      <span class="plant" style="left:12px;bottom:10px">🌿</span><span class="plant" style="right:12px;bottom:10px">🌿</span>
+      <div class="rug"><div class="logo">🧠</div><h3>Kantor AI</h3><p>Bersama Membangun Masa Depan Finansial</p></div></div>
+    <div class="room meeting"><span>🖥️</span>Ruang Meeting</div>
+    <div class="entrance"><div class="desk">🛎️ Resepsionis</div><div>🚪 Pintu Masuk</div></div>`;
 
-  GRID.forEach((slot, i) => {
-    const cell = document.createElement('div');
-    cell.className = 'room-cell';
-
-    if (slot.type === 'lobby') {
-      cell.classList.add('lobby');
-      cell.innerHTML = `<div class="room-inner"><div class="room-icon">🏢</div><div class="room-name">LOBBY</div></div>`;
-      grid.appendChild(cell);
-      return;
-    }
-
-    if (slot.type === 'meeting') {
-      cell.classList.add('meeting');
-      cell.innerHTML = `<div class="room-inner"><div class="room-icon">🤝</div><div class="room-name">RUANG MEETING</div></div>`;
-      grid.appendChild(cell);
-      return;
-    }
-
-    const d = DIVISIONS.find(x => x.id === slot.div);
-    cell.style.setProperty('--div-color', d.color);
-    cell.dataset.div = d.id;
-
-    cell.innerHTML = `
-      <div class="room-inner">
-        <div class="room-icon">${d.icon}</div>
-        <div class="room-name">${d.name}</div>
-        <div class="room-screen"><span class="screen-dot"></span><div id="rscreen-${d.id}">Siap</div></div>
-        <div class="room-avatar" style="color:${d.color}">${d.emoji}</div>
-      </div>
-      <div class="room-badge" style="background:${d.color}">${d.id}</div>
-    `;
-    cell.onclick = () => openDivision(d.id);
-    grid.appendChild(cell);
-    roomMap.set(d.id, cell);
-
-    /* Avatar di ruang */
-    const char = document.createElement('div');
-    char.className = 'character';
-    char.textContent = d.emoji;
-    char.title = d.name;
-    char.style.left = '50%';
-    char.style.top = '50%';
-    charLayer.appendChild(char);
-
-    avatars.push({ id: d.id, divId: d.id, name: d.name, el: char, color: d.color, emoji: d.emoji });
+  DIVISIONS.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'room';
+    el.style.setProperty('--c', d.color);
+    el.style.gridArea = `${d.pos[0]}/${d.pos[1]}/span 1/span ${d.span || 1}`;
+    el.innerHTML = `<div class="tag"><b>${d.id}</b>${d.name}</div>
+      <div class="floor"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="ico">${d.icon}</div><div class="rs" id="rs-${d.id}">Siap</div>`;
+    el.onclick = () => openDivision(d.id);
+    b.appendChild(el);
+    cells.set(d.id, el);
   });
 
-  /* Karakter berjalan otomatis */
-  function randomWalk(c) {
-    const targets = DIVISIONS.filter(x => x.id !== c.divId);
-    const t = targets[Math.floor(Math.random() * targets.length)];
-    const cell = roomMap.get(t.id);
-    if (!cell) return;
-    const rect = cell.getBoundingClientRect();
-    const layerRect = charLayer.getBoundingClientRect();
-    const nx = rect.left - layerRect.left + rect.width/2 - 12;
-    const ny = rect.top - layerRect.top + rect.height/2 - 12;
-    c.divId = t.id;
-    c.el.style.left = nx + 'px';
-    c.el.style.top = ny + 'px';
-    c.el.classList.add('walking');
-    setTimeout(() => c.el.classList.remove('walking'), 600);
-  }
-  setInterval(() => {
-    avatars.forEach(c => { if (Math.random() < 0.3) randomWalk(c); });
-  }, 3500);
+  /* Karakter */
+  DIVISIONS.forEach(d => {
+    const c = document.createElement('div');
+    c.className = 'char';
+    c.style.setProperty('--c', d.color);
+    c.textContent = d.emoji;
+    b.appendChild(c);
+    chars.push({ el: c, divId: d.id, home: d.id, color: d.color, emoji: d.emoji });
+  });
+  requestAnimationFrame(() => chars.forEach(c => placeIn(c, cells.get(c.home), true)));
 
-  /* Auto 24 Jam */
-  setInterval(() => {
-    if (!autoEnabled) return;
-    DIVISIONS.filter(d => d.auto).forEach(d => {
-      if (Math.random() < 0.35) sendMessage(d.id, 'ai', d.autoText);
-    });
-  }, 20000);
+  /* Legend */
+  $('legend').innerHTML = DIVISIONS.slice().sort((a, b) => a.id - b.id).map(d =>
+    `<div data-id="${d.id}"><b style="background:${d.color}">${d.id}</b>${d.name}</div>`).join('');
+  $('legend').onclick = e => { const r = e.target.closest('[data-id]'); if (r) openDivision(+r.dataset.id); };
 
+  setInterval(walkSome, 3500);
+  setInterval(autoPost, 20000);
   const last = localStorage.getItem('last_div_' + officeId);
-  if (last) setTimeout(() => openDivision(parseInt(last)), 800);
+  if (last) setTimeout(() => openDivision(+last), 600);
 }
 
-/* ========== FIREBASE ========== */
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, onValue, push } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-
-function listenMessages(divId, callback) {
-  if (messageUnsubs[divId]) messageUnsubs[divId]();
-  const q = ref(db, `offices/${officeId}/messages/${divId}`);
-  messageUnsubs[divId] = onValue(q, (snapshot) => {
-    const data = snapshot.val();
-    const arr = [];
-    if (data) {
-      Object.entries(data).forEach(([key, val]) => arr.push({ id: key, ...val }));
-      arr.sort((a,b) => (a.t||0) - (b.t||0));
-    }
-    callback(arr);
+function placeIn(c, target, home) {
+  const lobby = $('lobby');
+  const t = target || lobby;
+  const jitter = home ? 0 : (Math.random() - .5) * 40;
+  c.el.style.left = (t.offsetLeft + t.offsetWidth / 2 - 13 + jitter) + 'px';
+  c.el.style.top = (t.offsetTop + t.offsetHeight / 2 + 8 - 13 + (home ? 0 : jitter)) + 'px';
+}
+function walkSome() {
+  chars.forEach(c => {
+    if (Math.random() > .25) return;
+    const toHome = c.divId !== c.home && Math.random() < .5;
+    const targetId = toHome ? c.home : DIVISIONS[Math.floor(Math.random() * DIVISIONS.length)].id;
+    c.divId = targetId;
+    placeIn(c, Math.random() < .3 ? $('lobby') : cells.get(targetId), toHome);
+    c.el.classList.add('walk');
+    setTimeout(() => c.el.classList.remove('walk'), 1400);
+  });
+}
+function autoPost() {
+  if (!autoEnabled || !db) return;
+  DIVISIONS.filter(d => d.auto).forEach(d => {
+    if (Math.random() < .35) { sendMessage(d.id, 'ai', d.auto); setRoom(d.id, d.auto); }
   });
 }
 
-function renderMessages(divId) {
-  const d = DIVISIONS.find(x => x.id === divId);
-  const chatBody = document.getElementById('chat-body');
-  chatBody.innerHTML = '';
-  listenMessages(divId, (arr) => {
-    chatBody.innerHTML = '';
-    arr.forEach(m => {
-      const div = document.createElement('div');
-      div.className = `msg ${m.who}`;
-      const whoLabel = m.who === 'ai' ? (d?.name || 'AI') : 'Anda';
-      div.innerHTML = `<div class="bubble">${escapeHtml(m.text)}</div><div class="meta">${whoLabel} • ${new Date(m.t||0).toLocaleTimeString('id-ID')}</div>`;
-      chatBody.appendChild(div);
-    });
-    chatBody.scrollTop = chatBody.scrollHeight;
-  });
+/* Skala agar seluruh gedung muat di layar */
+function fitStage() {
+  const s = Math.min(innerWidth / 1100, (innerHeight - 52) / 700, 1.15);
+  $('stage').style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+addEventListener('resize', fitStage);
+
+function setRoom(id, text) {
+  const r = $('rs-' + id); if (r) r.textContent = text;
+  $('ticker').textContent = text;
+  if (currentDiv === id) $('screen').textContent = text;
 }
 
+/* ===== Firebase pesan ===== */
 function sendMessage(divId, who, text) {
   const d = DIVISIONS.find(x => x.id === divId);
-  push(ref(db, `offices/${officeId}/messages/${divId}`), {
-    who, text, t: Date.now(), uid: auth.currentUser.uid, divName: d?.name || ''
+  push(ref(db, `offices/${officeId}/messages/${divId}`),
+    { who, text, t: Date.now(), uid: auth.currentUser.uid, divName: d?.name || '' });
+}
+function listen(divId) {
+  if (unsub) unsub();
+  const d = DIVISIONS.find(x => x.id === divId);
+  unsub = onValue(ref(db, `offices/${officeId}/messages/${divId}`), snap => {
+    const data = snap.val(), arr = [];
+    if (data) Object.entries(data).forEach(([k, v]) => arr.push({ id: k, ...v }));
+    arr.sort((a, b) => (a.t || 0) - (b.t || 0));
+    const body = $('chat-body');
+    body.innerHTML = arr.map(m => `<div class="msg ${m.who === 'ai' ? 'ai' : 'user'}"><div class="bubble">${esc(m.text)}</div>
+      <div class="meta">${m.who === 'ai' ? esc(d.name) : 'Anda'} • ${new Date(m.t || 0).toLocaleTimeString('id-ID')}</div></div>`).join('');
+    body.scrollTop = body.scrollHeight;
   });
 }
 
-function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-/* ========== CHAT UI ========== */
-const chatPanel = document.getElementById('chat-panel');
-const chatBody = document.getElementById('chat-body');
-const chatDivName = document.getElementById('chat-div-name');
-const chatDivIcon = document.getElementById('chat-div-icon');
-const screenContent = document.getElementById('screen-content');
-const bigScreen = document.getElementById('big-screen');
-
-function openDivision(divId) {
-  const d = DIVISIONS.find(x => x.id === divId);
-  if (!d) return;
-  currentDiv = divId;
-  localStorage.setItem('last_div_' + officeId, divId);
-  chatDivName.textContent = d.name;
-  chatDivIcon.textContent = d.icon;
-  chatDivName.style.color = d.color;
-  chatPanel.classList.add('open');
-  bigScreen.classList.remove('hidden');
-  bigScreen.style.borderColor = d.color;
-  document.querySelector('.screen-header').style.color = d.color;
-  renderMessages(divId);
-  updateScreen(divId, `Selamat datang di divisi ${d.name}. Silakan tanya apa saja.`);
-  chatBody.scrollTop = chatBody.scrollHeight;
+/* ===== Chat ===== */
+function openDivision(id) {
+  const d = DIVISIONS.find(x => x.id === id); if (!d) return;
+  currentDiv = id;
+  localStorage.setItem('last_div_' + officeId, id);
+  $('chat-title').textContent = `${d.icon} ${d.name}`;
+  $('chat-title').style.color = d.color;
+  $('chat').style.setProperty('--c', d.color);
+  $('chat').classList.add('open');
+  $('screen').textContent = `Selamat datang di divisi ${d.name}. Silakan tanya apa saja.`;
+  listen(id);
 }
-document.getElementById('chat-close').onclick = () => {
-  chatPanel.classList.remove('open');
-  currentDiv = null;
-};
-
-/* Meeting + Answer */
-const meetingOverlay = document.getElementById('meeting-overlay');
-const meetingTable = document.getElementById('meeting-table');
-const meetingBubble = document.getElementById('meeting-bubble');
-const skipBtn = document.getElementById('skip-meeting');
-
-const meetingLines = [
-  'Menganalisis pertanyaan...',
-  'Mengambil data terkait...',
-  'Diskusi tim divisi...',
-  'Menyusun jawaban terbaik...',
-  'Siap menyampaikan hasil.'
-];
-
-async function startMeetingAndAnswer(divId, userText) {
-  const d = DIVISIONS.find(x => x.id === divId);
-  meetingOverlay.classList.add('open');
-  meetingTable.innerHTML = '';
-  meetingBubble.style.display = 'none';
-  skipBtn.style.display = 'none';
-
-  const divChars = avatars.filter(c => c.divId === divId);
-  const positions = [
-    { left: '20%', top: '30%' }, { left: '80%', top: '30%' },
-    { left: '20%', top: '70%' }, { left: '80%', top: '70%' },
-    { left: '50%', top: '15%' }
-  ];
-  divChars.forEach((c, i) => {
-    const clone = document.createElement('div');
-    clone.className = 'meeting-avatar';
-    clone.textContent = c.emoji;
-    clone.style.left = positions[i]?.left || '50%';
-    clone.style.top = positions[i]?.top || '50%';
-    clone.style.borderColor = c.color;
-    meetingTable.appendChild(clone);
-  });
-
-  for (let i = 0; i < meetingLines.length; i++) {
-    meetingBubble.textContent = meetingLines[i];
-    meetingBubble.style.display = 'block';
-    meetingBubble.style.animation = 'none';
-    meetingBubble.offsetHeight;
-    meetingBubble.style.animation = 'bubbleIn 0.3s both';
-    await new Promise(r => setTimeout(r, 900));
-  }
-
-  meetingOverlay.classList.remove('open');
-  skipBtn.style.display = 'none';
-
-  const answer = getDemoAnswer(divId, userText);
-  await typeAnswer(answer);
-}
-
-function getDemoAnswer(divId, text) {
-  const d = DIVISIONS.find(x => x.id === divId);
-  const t = text.toLowerCase();
-  const fallback = `Ini jawaban dari divisi ${d.name}. ${d.autoText || 'Silakan ajukan pertanyaan lebih spesifik.'}`;
-  if (t.includes('hai') || t.includes('halo')) return `Halo! Saya dari divisi ${d.name}. Ada yang bisa saya bantu?`;
-  if (t.includes('harga') || t.includes('price')) return 'Informasi harga terkini akan kami perbarui di layar besar.';
-  if (t.includes('reksadana')) return 'Reksadana adalah kumpulan dana yang dikelola secara profesional oleh manajer investasi.';
-  if (t.includes('bitcoin') || t.includes('btc')) return 'Bitcoin adalah aset digital terdesentralisasi yang berjalan pada teknologi blockchain.';
-  if (t.includes('emas')) return 'Emas logam mulia adalah investasi pelindung terhadap inflasi dan tidak stabilnya mata uang.';
-  if (t.includes('coding') || t.includes('code')) return 'Kami siap membantu pengembangan aplikasi, website, dan otomasi kerja.';
-  if (t.includes('resep')) return 'Resep masakan dan minuman siap dibagikan sesuai permintaan Anda.';
-  if (t.includes('viral') || t.includes('tren')) return 'Tren viral saat ini seputar AI agent dan otomasi kantor digital.';
-  return fallback;
-}
-
-async function typeAnswer(answer) {
-  const el = document.getElementById('screen-content');
-  el.textContent = '';
-  const chatDiv = document.createElement('div');
-  chatDiv.className = 'msg ai';
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble';
-  chatDiv.appendChild(bubble);
-  chatBody.appendChild(chatDiv);
-  let i = 0;
-  while (i < answer.length) {
-    el.textContent += answer[i];
-    bubble.textContent += answer[i];
-    i++;
-    chatBody.scrollTop = chatBody.scrollHeight;
-    el.scrollTop = el.scrollHeight;
-    await new Promise(r => setTimeout(r, 15));
-  }
-  sendMessage(currentDiv, 'ai', answer);
-}
-
-document.getElementById('btn-send').onclick = sendChat;
-document.getElementById('chat-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
-});
+$('chat-close').onclick = () => { $('chat').classList.remove('open'); currentDiv = null; };
+$('btn-send').onclick = sendChat;
+$('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
 
 function sendChat() {
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
+  const inp = $('chat-input'), text = inp.value.trim();
   if (!text || !currentDiv) return;
-  input.value = '';
-  sendMessage(currentDiv, 'user', text);
-  startMeetingAndAnswer(currentDiv, text);
+  inp.value = '';
+  const id = currentDiv;
+  sendMessage(id, 'user', text);
+  meetAndAnswer(id, text);
 }
 
-function updateScreen(divId, text) {
-  const screen = document.getElementById(`rscreen-${divId}`);
-  if (screen) screen.textContent = text;
-  if (currentDiv === divId) screenContent.textContent = text;
+async function meetAndAnswer(id, q) {
+  const lines = ['Menganalisis pertanyaan...', 'Mengambil data terkait...', 'Diskusi tim divisi...', 'Menyusun jawaban...'];
+  const t = $('mtable'); t.innerHTML = '';
+  const pos = [['15%','25%'],['75%','25%'],['15%','60%'],['75%','60%'],['45%','5%']];
+  const team = chars.filter(c => c.divId === id).concat(chars.filter(c => c.home === id && c.divId !== id)).slice(0, 5);
+  (team.length ? team : [chars.find(c => c.home === id)]).forEach((c, i) => {
+    const a = document.createElement('div');
+    a.className = 'mav'; a.textContent = c.emoji;
+    a.style.cssText = `left:${pos[i][0]};top:${pos[i][1]};border-color:${c.color}`;
+    t.appendChild(a);
+  });
+  $('meet').classList.add('open');
+  for (const l of lines) { $('mline').textContent = l; await sleep(800); }
+  $('meet').classList.remove('open');
+  const ans = demoAnswer(id, q);
+  setRoom(id, ans);
+  sendMessage(id, 'ai', ans);
 }
 
-/* INIT (setelah login) */
-function initApp() {}
+function demoAnswer(id, text) {
+  const d = DIVISIONS.find(x => x.id === id), t = text.toLowerCase();
+  if (/\b(hai|halo)\b/.test(t)) return `Halo! Saya dari divisi ${d.name}. Ada yang bisa saya bantu?`;
+  if (t.includes('harga')) return 'Informasi harga terkini akan kami perbarui di layar divisi.';
+  if (t.includes('reksadana')) return 'Reksadana adalah kumpulan dana yang dikelola profesional oleh manajer investasi.';
+  if (t.includes('bitcoin') || t.includes('btc')) return 'Bitcoin adalah aset digital terdesentralisasi berbasis blockchain.';
+  if (t.includes('emas')) return 'Emas logam mulia sering dipakai sebagai pelindung nilai dari inflasi.';
+  if (t.includes('resep')) return 'Resep masakan dan minuman siap dibagikan sesuai permintaan Anda.';
+  return `Ini jawaban dari divisi ${d.name}. ${d.auto || 'Silakan ajukan pertanyaan lebih spesifik.'}`;
+}
 </script>
 </body>
 </html>
