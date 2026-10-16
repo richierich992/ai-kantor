@@ -3,135 +3,56 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AI Office Agent - Kantor Isometrik 3D</title>
+<title>AI Office Agent - 3D Isometric Kantor</title>
 <style>
-:root {
-  --bg: #0b0c10;
-  --text: #e2e8f0;
-  --muted: #64748b;
-  --accent: #00f2ff;
-  --floor: #e2e8f0;
-  --wall: #1f2833;
-}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  background: var(--bg); color: var(--text);
+  background: #050507; color: #e2e8f0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   overflow: hidden; height: 100vh;
 }
 
+/* UI Overlay */
+#ui-layer {
+  position: absolute; inset: 0; z-index: 100; pointer-events: none;
+  display: flex; flex-direction: column;
+}
+#ui-layer * { pointer-events: auto; }
+
+header {
+  padding: 12px 20px; background: rgba(10,12,16,0.8); border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(8px);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+.dot { width: 8px; height: 8px; background: #00f2ff; border-radius: 50%; box-shadow: 0 0 10px #00f2ff; animation: blink 1s infinite; }
+.status { font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 10px; }
+#auto-toggle {
+  background: #1f2833; border: 1px solid #64748b; color: #e2e8f0;
+  padding: 4px 10px; border-radius: 16px; font-size: 11px; cursor: pointer;
+}
+#auto-toggle.active { background: #00f2ff; color: #000; border-color: #00f2ff; }
+
 /* Login */
 #login-screen {
-  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; background: var(--bg);
+  position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; background: #050507;
   padding: 24px; text-align: center;
 }
 #login-screen h2 { margin-bottom: 8px; font-size: 24px; letter-spacing: 1px; }
-#login-screen p { color: var(--muted); margin-bottom: 20px; font-size: 14px; }
+#login-screen p { color: #94a3b8; margin-bottom: 20px; font-size: 14px; }
 #office-code {
-  padding: 12px 16px; font-size: 16px; border-radius: 10px; border: 1px solid var(--wall);
-  background: rgba(10,12,16,0.9); color: var(--text); width: 260px; margin-bottom: 16px; text-align: center;
+  padding: 12px 16px; font-size: 16px; border-radius: 10px; border: 1px solid #1f2833;
+  background: rgba(10,12,16,0.9); color: #e2e8f0; width: 260px; margin-bottom: 16px; text-align: center;
 }
 #btn-login {
   padding: 12px 28px; font-size: 16px; font-weight: 700; border: none; border-radius: 10px;
-  background: linear-gradient(135deg, var(--accent), #bc13fe); color: #000; cursor: pointer;
+  background: linear-gradient(135deg, #00f2ff, #bc13fe); color: #000; cursor: pointer;
 }
-.note { margin-top: 16px; font-size: 12px; color: var(--muted); max-width: 300px; line-height: 1.4; }
-
-/* Header */
-#office-app { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
-header {
-  padding: 12px 20px; background: rgba(10,12,16,0.9); border-bottom: 1px solid rgba(255,255,255,0.08);
-  display: flex; align-items: center; justify-content: space-between; z-index: 20; backdrop-filter: blur(8px);
-}
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
-.dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); animation: blink 1s infinite; }
-.status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
-#auto-toggle {
-  background: var(--wall); border: 1px solid var(--muted); color: var(--text);
-  padding: 4px 10px; border-radius: 16px; font-size: 11px; cursor: pointer;
-}
-#auto-toggle.active { background: var(--accent); color: #000; border-color: var(--accent); }
-
-/* ===== ISOMETRIC OFFICE ===== */
-#map-view {
-  flex: 1; position: relative; overflow: hidden;
-  background: radial-gradient(circle at center, #111318 0%, #050608 100%);
-  display: flex; justify-content: center; align-items: center;
-}
-.iso-stage {
-  perspective: 1200px; transform-style: preserve-3d;
-  width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;
-}
-.iso-floor {
-  transform: rotateX(60deg) rotateZ(45deg);
-  transform-origin: bottom center;
-  transform-style: preserve-3d;
-  position: relative; width: 820px; height: 620px;
-}
-.iso-cell {
-  position: absolute; transform-style: preserve-3d;
-  width: 150px; height: 150px;
-  border: 2px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.2s;
-}
-.iso-cell:hover {
-  border-color: var(--accent);
-  background: rgba(0,242,255,0.1);
-  transform: translateZ(20px) scale(1.05);
-}
-.iso-cell.lobby { background: rgba(255,255,255,0.06); border-style: dashed; font-size: 10px; color: var(--muted); font-weight: 700; }
-.iso-cell.meeting { background: rgba(212,175,55,0.08); border-color: #d4af37; font-size: 10px; color: #d4af37; font-weight: 700; }
-
-.room-label {
-  font-size: 10px; font-weight: 800; text-align: center; padding: 4px 6px;
-  background: rgba(0,0,0,0.6); border-radius: 6px; margin-top: 6px; white-space: nowrap;
-}
-.room-badge {
-  width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 900; color: #fff; margin-bottom: 4px;
-}
-.room-screen-iso {
-  width: 110px; height: 70px; background: #000; border: 2px solid #222;
-  border-radius: 4px; display: flex; align-items: center; justify-content: center;
-  font-size: 9px; color: #444; margin-bottom: 4px; position: relative;
-}
-.screen-dot-iso {
-  position: absolute; top: 4px; left: 4px; width: 5px; height: 5px; background: #0f0; border-radius: 50%;
-  box-shadow: 0 0 6px #0f0; animation: blink 1s infinite;
-}
-.avatar-iso {
-  width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 14px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.4); animation: float 3s ease-in-out infinite;
-}
-
-/* Karakter berjalan di lantai isometrik */
-#char-layer { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
-.character {
-  position: absolute; width: 24px; height: 24px; border-radius: 50%;
-  border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
-  font-size: 14px; transition: left 0.7s ease-out, top 0.7s ease-out;
-  box-shadow: 0 0 12px rgba(0,0,0,0.6); cursor: pointer; z-index: 35;
-}
-.character.walking { animation: walkBounce 0.4s ease-in-out infinite; }
-
-/* Layar Besar */
-#big-screen {
-  position: fixed; top: 80px; right: 20px; width: 300px; height: 190px;
-  border: 3px solid var(--accent); border-radius: 10px; background: #000;
-  display: flex; flex-direction: column; padding: 10px; z-index: 45;
-  box-shadow: 0 0 40px var(--accent);
-}
-#big-screen.hidden { display: none; }
-.screen-header { font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid var(--accent); padding-bottom: 4px; }
-.screen-content { flex: 1; overflow-y: auto; font-size: 13px; color: #ccc; font-family: 'Courier New', monospace; }
+.note { margin-top: 16px; font-size: 12px; color: #94a3b8; max-width: 300px; line-height: 1.4; }
 
 /* Chat Panel */
 #chat-panel {
-  position: fixed; inset: 0; z-index: 50; display: none; flex-direction: column;
+  position: fixed; inset: 0; z-index: 150; display: none; flex-direction: column;
   background: rgba(10,12,16,0.95); backdrop-filter: blur(12px);
 }
 #chat-panel.open { display: flex; }
@@ -144,15 +65,15 @@ header {
   display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2);
 }
 .chat-title { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
-.chat-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+.chat-close { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; }
 .chat-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
 .msg { max-width: 80%; display: flex; flex-direction: column; gap: 4px; }
 .msg.ai { align-self: flex-start; }
 .msg.user { align-self: flex-end; }
 .bubble { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
-.msg.ai .bubble { background: #1f1f2e; border: 1px solid rgba(255,255,255,0.08); color: var(--text); border-bottom-left-radius: 4px; }
-.msg.user .bubble { background: var(--accent); color: #000; border-bottom-right-radius: 4px; }
-.meta { font-size: 11px; color: var(--muted); }
+.msg.ai .bubble { background: #1f1f2e; border: 1px solid rgba(255,255,255,0.08); color: #e2e8f0; border-bottom-left-radius: 4px; }
+.msg.user .bubble { background: #00f2ff; color: #000; border-bottom-right-radius: 4px; }
+.meta { font-size: 11px; color: #94a3b8; }
 
 .chat-input-area {
   padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3);
@@ -161,23 +82,23 @@ header {
   display: flex; gap: 10px; max-width: 600px; margin: 0 auto;
   background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 6px 14px;
 }
-textarea { flex: 1; border: none; outline: none; background: transparent; color: var(--text); font-size: 14px; resize: none; min-height: 20px; font-family: inherit; }
-.btn-send { background: linear-gradient(135deg, var(--accent), #bc13fe); border: none; border-radius: 12px; width: 44px; height: 44px; color: #fff; font-weight: 700; cursor: pointer; }
-.hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 6px; }
+textarea { flex: 1; border: none; outline: none; background: transparent; color: #e2e8f0; font-size: 14px; resize: none; min-height: 20px; font-family: inherit; }
+.btn-send { background: linear-gradient(135deg, #00f2ff, #bc13fe); border: none; border-radius: 12px; width: 44px; height: 44px; color: #fff; font-weight: 700; cursor: pointer; }
+.hint { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 6px; }
 
 /* Meeting Overlay */
 #meeting-overlay {
-  position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center;
+  position: fixed; inset: 0; z-index: 250; display: none; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
 }
 #meeting-overlay.open { display: flex; }
 .meeting-room {
-  position: relative; width: 340px; height: 260px; border: 4px solid var(--accent); border-radius: 16px;
+  position: relative; width: 340px; height: 260px; border: 4px solid #00f2ff; border-radius: 16px;
   background: #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 20px; box-shadow: 0 0 60px var(--accent);
+  padding: 20px; box-shadow: 0 0 60px #00f2ff;
   animation: meetingPop 0.4s cubic-bezier(.175,.885,.32,1.275) both;
 }
-.meeting-title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+.meeting-title { font-size: 13px; font-weight: 700; color: #00f2ff; margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
 .meeting-table {
   width: 100%; height: 120px; border: 2px dashed rgba(0,242,255,0.3); border-radius: 12px;
   display: flex; align-items: center; justify-content: center; position: relative; background: rgba(0,0,0,0.1);
@@ -188,73 +109,71 @@ textarea { flex: 1; border: none; outline: none; background: transparent; color:
   animation: meetingFloat 2s ease-in-out infinite;
 }
 .meeting-bubble {
-  position: absolute; top: -36px; background: var(--accent); color: #000;
+  position: absolute; top: -36px; background: #00f2ff; color: #000;
   padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; white-space: nowrap;
   animation: bubbleIn 0.3s both;
 }
 .btn-skip-meeting {
-  margin-top: 16px; background: transparent; border: 1px solid var(--accent); color: var(--accent);
+  margin-top: 16px; background: transparent; border: 1px solid #00f2ff; color: #00f2ff;
   padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;
 }
-.btn-skip-meeting:hover { background: var(--accent); color: #000; }
+.btn-skip-meeting:hover { background: #00f2ff; color: #000; }
+
+/* Big Screen HUD */
+#big-screen {
+  position: fixed; top: 80px; right: 20px; width: 300px; height: 190px;
+  border: 3px solid #00f2ff; border-radius: 10px; background: #000;
+  display: flex; flex-direction: column; padding: 10px; z-index: 120;
+  box-shadow: 0 0 40px #00f2ff;
+}
+#big-screen.hidden { display: none; }
+.screen-header { font-size: 11px; color: #00f2ff; font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid #00f2ff; padding-bottom: 4px; }
+.screen-content { flex: 1; overflow-y: auto; font-size: 13px; color: #ccc; font-family: 'Courier New', monospace; }
 
 .auto-ticker {
   position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
-  font-size: 11px; color: var(--muted); background: rgba(0,0,0,0.5);
-  padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); z-index: 20;
+  font-size: 11px; color: #94a3b8; background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); z-index: 110;
 }
 
 @keyframes blink { 0%,96%,100%{ opacity:1 } 98%{ opacity:0.2 } }
-@keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-5px) } }
-@keyframes walkBounce { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-4px) } }
 @keyframes meetingPop { from{ opacity:0; transform: scale(0.85) } to{ opacity:1; transform: scale(1) } }
 @keyframes meetingFloat { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-8px) } }
 @keyframes bubbleIn { from{ opacity:0; transform: translateY(10px) } to{ opacity:1; transform: translateY(0) } }
 .hidden { display: none !important; }
 
-@media (max-width: 768px){
-  .iso-floor { transform: rotateX(55deg) rotateZ(45deg) scale(0.7); width: 600px; height: 500px; }
-  #big-screen { width: 90vw; right: auto; left: 10px; top: auto; bottom: 90px; height: 140px; }
-  #chat-panel { width: 100%; transform: translateY(100%); transition: transform .3s ease; top: auto; bottom: 0; height: 60vh; }
-  #chat-panel.open { transform: translateY(0); }
-}
+#canvas-container { position: absolute; inset: 0; z-index: 1; }
 </style>
 </head>
 <body>
 
 <!-- Login -->
 <div id="login-screen">
-  <h2>AI Office Agent</h2>
+  <h2>AI Office Agent 3D</h2>
   <p>Masukkan kode kantor untuk sinkronisasi multi-device</p>
   <input type="text" id="office-code" value="AI2026" placeholder="Kode Kantor">
   <button id="btn-login">Masuk</button>
-  <p class="note">Gunakan kode yang sama di HP istri, HP kamu, tablet rumah, tab mobil, dan PC kantor.</p>
+  <p class="note">Gunakan kode yang sama di semua perangkat. Chat tersimpan di Firebase.</p>
 </div>
 
-<!-- App -->
-<div id="office-app" class="hidden">
+<!-- UI -->
+<div id="ui-layer">
   <header>
-    <div class="brand"><div class="dot"></div>AI Office Agent</div>
+    <div class="brand"><div class="dot"></div>AI Office Agent 3D</div>
     <div class="status" id="statusText">Menghubungkan...</div>
     <button id="auto-toggle" class="active">Auto 24 Jam: ON</button>
   </header>
 
-  <div id="map-view">
-    <div class="iso-stage">
-      <div class="iso-floor" id="iso-floor"></div>
-    </div>
-    <div id="char-layer"></div>
-    <div class="auto-ticker" id="auto-ticker">Sistem siap...</div>
-  </div>
+  <div id="canvas-container"></div>
 
   <div id="big-screen" class="hidden">
-    <div class="screen-header">LAYAR INFO DIVISI</div>
-    <div class="screen-content" id="screen-content">Pilih divisi untuk melihat info dan jawaban.</div>
+    <div class="screen-header">LAYAR INFO DIVISI 3D</div>
+    <div class="screen-content" id="screen-content">Klik ruangan divisi di gedung 3D.</div>
   </div>
 
   <div id="meeting-overlay">
     <div class="meeting-room">
-      <div class="meeting-title">RAPAT DIVISI</div>
+      <div class="meeting-title">RAPAT DIVISI 3D</div>
       <div class="meeting-table" id="meeting-table"></div>
       <div class="meeting-bubble" id="meeting-bubble" style="display:none;">Sedang membahas...</div>
     </div>
@@ -269,17 +188,33 @@ textarea { flex: 1; border: none; outline: none; background: transparent; color:
     <div class="chat-body" id="chat-body"></div>
     <div class="chat-input-area">
       <div class="input-wrap">
-        <textarea id="chat-input" placeholder="Ketik pertanyaan untuk divisi ini..."></textarea>
+        <textarea id="chat-input" placeholder="Ketik pertanyaan untuk divisi 3D..."></textarea>
         <button class="btn-send" id="btn-send">➤</button>
       </div>
       <div class="hint">Enter = Kirim • Shift+Enter = Baris baru</div>
     </div>
   </div>
+
+  <div class="auto-ticker" id="auto-ticker">Sistem 3D siap...</div>
 </div>
 
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
 <script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, onValue, push } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
 /* ========== KONFIGURASI FIREBASE ========== */
-/* GANTI dengan konfigurasi asli dari Firebase Console */
  const firebaseConfig = {
     apiKey: "AIzaSyBeb1L6dCevfzX2tw__6MGWfpB6jfKTO6M",
     authDomain: "ai-kantor-project.firebaseapp.com",
@@ -291,26 +226,26 @@ textarea { flex: 1; border: none; outline: none; background: transparent; color:
     measurementId: "G-SRBJYD2F77"
   };
 
-/* ========== DATA DIVISI ========== */
+/* ========== DATA DIVISI 15 ========== */
 const DIVISIONS = [
-  {id:1, name:'Trading Saham', color:'#10b981', icon:'📈', uniform:'🟢', auto:true, autoText:'Saham ABC naik 2,4% hari ini.'},
-  {id:2, name:'Invest Saham', color:'#3b82f6', icon:'📊', uniform:'🔵', auto:false},
-  {id:3, name:'Invest Dividen Saham', color:'#8b5cf6', icon:'💰', uniform:'🟣', auto:false},
-  {id:4, name:'Bibit Reksadana', color:'#14b8a6', icon:'🌱', uniform:'🟡', auto:false},
-  {id:5, name:'Bitcoin Indodax', color:'#f97316', icon:'₿', uniform:'🟠', auto:true, autoText:'BTC di Indodax: Rp 714.250.000'},
-  {id:6, name:'Bitcoin Toko Crypto', color:'#ec4899', icon:'🏪', uniform:'🔴', auto:true, autoText:'Crypto Update: ETH menguat 1,8%'},
-  {id:7, name:'Emas Logam Mulia', color:'#d4af37', icon:'🥇', uniform:'🟡', auto:false},
-  {id:8, name:'Pencatat Keuangan', color:'#1e293b', icon:'📒', uniform:'⚪', auto:false},
-  {id:9, name:'Multimedia Video', color:'#a855f7', icon:'🎬', uniform:'🟥', auto:false},
-  {id:10, name:'Multimedia Grafis', color:'#0ea5e9', icon:'🎨', uniform:'🔷', auto:false},
-  {id:11, name:'Coding', color:'#84cc16', icon:'💻', uniform:'🟩', auto:false},
-  {id:12, name:'Online Shop', color:'#be185d', icon:'🛒', uniform:'🟪', auto:false},
-  {id:13, name:'Viral/Trend News', color:'#f59e0b', icon:'📰', uniform:'🟨', auto:true, autoText:'News: AI kantor menjadi trending teratas.'},
-  {id:14, name:'Resep Masakan & Minuman', color:'#fb923c', icon:'🍜', uniform:'🟧', auto:false},
-  {id:15, name:'AI Chatbot', color:'#6366f1', icon:'🤖', uniform:'🔵', auto:false},
+  {id:1, name:'Trading Saham', color:0x10b981, icon:'📈', emoji:'🟢', auto:true, autoText:'Saham ABC naik 2,4% hari ini.'},
+  {id:2, name:'Invest Saham', color:0x3b82f6, icon:'📊', emoji:'🔵', auto:false},
+  {id:3, name:'Invest Dividen Saham', color:0x8b5cf6, icon:'💰', emoji:'🟣', auto:false},
+  {id:4, name:'Bibit Reksadana', color:0x14b8a6, icon:'🌱', emoji:'🟡', auto:false},
+  {id:5, name:'Bitcoin Indodax', color:0xf97316, icon:'₿', emoji:'🟠', auto:true, autoText:'BTC di Indodax: Rp 714.250.000'},
+  {id:6, name:'Bitcoin Toko Crypto', color:0xec4899, icon:'🏪', emoji:'🔴', auto:true, autoText:'Crypto Update: ETH menguat 1,8%'},
+  {id:7, name:'Emas Logam Mulia', color:0xd4af37, icon:'🥇', emoji:'🟡', auto:false},
+  {id:8, name:'Pencatat Keuangan', color:0x1e293b, icon:'📒', emoji:'⚪', auto:false},
+  {id:9, name:'Multimedia Video', color:0xa855f7, icon:'🎬', emoji:'🟥', auto:false},
+  {id:10, name:'Multimedia Grafis', color:0x0ea5e9, icon:'🎨', emoji:'🔷', auto:false},
+  {id:11, name:'Coding', color:0x84cc16, icon:'💻', emoji:'🟩', auto:false},
+  {id:12, name:'Online Shop', color:0xbe185d, icon:'🛒', emoji:'🟪', auto:false},
+  {id:13, name:'Viral/Trend News', color:0xf59e0b, icon:'📰', emoji:'🟨', auto:true, autoText:'News: AI kantor 3D trending.'},
+  {id:14, name:'Resep Masakan & Minuman', color:0xfb923c, icon:'🍜', emoji:'🟧', auto:false},
+  {id:15, name:'AI Chatbot', color:0x6366f1, icon:'🤖', emoji:'🔵', auto:false},
 ];
 
-/* Grid isometrik 5x4: 15 divisi + lobby + meeting + kosong */
+/* Grid 5x4 isometrik */
 const GRID = [
   {div:1},{div:2},{div:3},{div:4},{div:5},
   {div:7},{type:'lobby'},{type:'lobby'},{div:6},{div:10},
@@ -318,17 +253,17 @@ const GRID = [
   {type:'meeting'},{div:11},{div:13},{div:14},{div:15}
 ];
 
-/* ========== FIREBASE ========== */
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, onValue, push } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-
+/* ========== STATE ========== */
 let app, auth, db, officeId, currentDiv = null;
 let autoEnabled = true;
 let messageUnsubs = {};
+let scene, camera, renderer, controls, raycaster, mouse;
+let divisionMeshes = [];
+let avatars = [];
+let divDataMap = new Map(); /* mesh -> division */
 
 const loginScreen = document.getElementById('login-screen');
-const appEl = document.getElementById('office-app');
+const officeApp = document.getElementById('ui-layer');
 const officeCodeInput = document.getElementById('office-code');
 const btnLogin = document.getElementById('btn-login');
 const statusText = document.getElementById('statusText');
@@ -347,7 +282,8 @@ btnLogin.onclick = async () => {
       if (user) {
         statusText.textContent = `Online sebagai ${user.uid.slice(0,6)}...`;
         loginScreen.classList.add('hidden');
-        appEl.classList.remove('hidden');
+        officeApp.classList.remove('hidden');
+        initThree();
         initApp();
       }
     });
@@ -364,127 +300,142 @@ autoToggle.onclick = () => {
   autoToggle.textContent = autoEnabled ? 'Auto 24 Jam: ON' : 'Auto 24 Jam: OFF';
 };
 
-/* ========== RENDER GEDUNG ISOMETRIK ========== */
-const isoFloor = document.getElementById('iso-floor');
-const charLayer = document.getElementById('char-layer');
-const chars = [];
+/* ========== THREE.JS 3D OFFICE ========== */
+function initThree() {
+  const container = document.getElementById('canvas-container');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x050507);
+  scene.fog = new THREE.Fog(0x050507, 20, 100);
 
-function initApp() {
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 25, 40);
+  camera.lookAt(0, 0, 0);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.minDistance = 15;
+  controls.maxDistance = 80;
+  controls.enablePan = true;
+
+  /* Lighting */
+  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambient);
+  const dir = new THREE.DirectionalLight(0x00f2ff, 0.8);
+  dir.position.set(10, 20, 10);
+  scene.add(dir);
+
+  /* Grid lantai isometrik look */
+  const gridHelper = new THREE.GridHelper(60, 12, 0x1f2833, 0x111111);
+  gridHelper.position.y = 0.01;
+  scene.add(gridHelper);
+
+  /* Bangunan gedung (blok-blok ruangan) */
+  const roomSize = 4;
+  const gap = 1;
+  const startX = -10;
+  const startZ = -6;
+
   GRID.forEach((slot, i) => {
     const row = Math.floor(i / 5);
     const col = i % 5;
-    /* Isometrik offset: x = (col-row)*75, y = (col+row)*38 */
-    const x = (col - row) * 75 + 350;
-    const y = (col + row) * 38 + 100;
+    const x = startX + col * (roomSize + gap);
+    const z = startZ + row * (roomSize + gap);
 
     if (slot.type === 'lobby') {
-      const cell = document.createElement('div');
-      cell.className = 'iso-cell lobby';
-      cell.style.left = x + 'px';
-      cell.style.top = y + 'px';
-      cell.innerHTML = `<div class="room-label">LOBBY</div>`;
-      isoFloor.appendChild(cell);
+      const geo = new THREE.BoxGeometry(roomSize, 2, roomSize);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, 1, z);
+      mesh.userData = { type: 'lobby', name: 'LOBBY' };
+      scene.add(mesh);
       return;
     }
     if (slot.type === 'meeting') {
-      const cell = document.createElement('div');
-      cell.className = 'iso-cell meeting';
-      cell.style.left = x + 'px';
-      cell.style.top = y + 'px';
-      cell.innerHTML = `<div class="room-label">RUANG MEETING</div>`;
-      isoFloor.appendChild(cell);
+      const geo = new THREE.BoxGeometry(roomSize, 2, roomSize);
+      const mat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.6 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, 1, z);
+      mesh.userData = { type: 'meeting', name: 'RUANG MEETING' };
+      scene.add(mesh);
       return;
     }
 
     const d = DIVISIONS.find(x => x.id === slot.div);
-    const cell = document.createElement('div');
-    cell.className = 'iso-cell room';
-    cell.style.setProperty('--div-color', d.color);
-    cell.dataset.div = d.id;
-    cell.style.left = x + 'px';
-    cell.style.top = y + 'px';
-    cell.innerHTML = `
-      <div class="room-badge" style="background:${d.color}">${d.id}</div>
-      <div class="room-screen-iso"><span class="screen-dot-iso"></span><div id="rscreen-${d.id}">Siap</div></div>
-      <div class="avatar-iso" style="color:${d.color}">${d.uniform}</div>
-      <div class="room-label">${d.icon} ${d.name}</div>
-    `;
-    cell.onclick = () => openDivision(d.id);
-    isoFloor.appendChild(cell);
+    const geo = new THREE.BoxGeometry(roomSize, 2.5, roomSize);
+    const mat = new THREE.MeshStandardMaterial({ color: d.color, roughness: 0.4, metalness: 0.2 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, 1.25, z);
+    mesh.userData = { type: 'room', divId: d.id, name: d.name, color: d.color };
+    scene.add(mesh);
+    divisionMeshes.push(mesh);
+    divDataMap.set(mesh, d);
 
-    /* Karakter di atas lantai isometrik */
-    const charEl = document.createElement('div');
-    charEl.className = 'character';
-    charEl.style.setProperty('--div-color', d.color);
-    charEl.textContent = d.uniform;
-    charEl.title = d.name;
-    charEl.style.left = x + 65 + 'px';
-    charEl.style.top = y + 100 + 'px';
-    charLayer.appendChild(charEl);
+    /* Layar besar di atas ruangan */
+    const screenGeo = new THREE.PlaneGeometry(roomSize * 0.8, roomSize * 0.6);
+    const screenMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    const screen = new THREE.Mesh(screenGeo, screenMat);
+    screen.position.set(x, 3, z);
+    screen.lookAt(0, 3, 0);
+    scene.add(screen);
+    d.screenMesh = screen;
+    d.screenText = `Divisi ${d.name}`;
 
-    chars.push({ id: d.id, divId: d.id, name: d.name, el: charEl, color: d.color, uniform: d.uniform, x: x+65, y: y+100 });
+    /* Label nama di atas */
+    // Label akan ditampilkan via CSS2DRenderer atau sprite, tapi untuk ringan kita skip label 3D
   });
 
-  /* Karakter berjalan otomatis */
-  function randomWalk(c) {
-    const targets = DIVISIONS.filter(x => x.id !== c.divId);
-    const t = targets[Math.floor(Math.random() * targets.length)];
-    const cell = document.querySelector(`.room[data-div="${t.id}"]`);
-    if (!cell) return;
-    const rect = cell.getBoundingClientRect();
-    const floorRect = isoFloor.getBoundingClientRect();
-    const nx = rect.left - floorRect.left + 65;
-    const ny = rect.top - floorRect.top + 100;
-    c.divId = t.id;
-    c.el.style.left = nx + 'px';
-    c.el.style.top = ny + 'px';
-    c.el.classList.add('walking');
-    setTimeout(() => c.el.classList.remove('walking'), 700);
+  /* Avatar karakter di setiap ruangan */
+  DIVISIONS.forEach(d => {
+    const geo = new THREE.SphereGeometry(0.4, 16, 16);
+    const mat = new THREE.MeshStandardMaterial({ color: d.color, emissive: d.color, emissiveIntensity: 0.5 });
+    const avatar = new THREE.Mesh(geo, mat);
+    const mesh = divisionMeshes.find(m => m.userData.divId === d.id);
+    if (mesh) {
+      avatar.position.set(mesh.position.x, 2.5, mesh.position.z);
+    } else {
+      avatar.position.set(0, 2.5, 0);
+    }
+    scene.add(avatar);
+    avatars.push({ id: d.id, divId: d.id, mesh: avatar, color: d.color, emoji: d.emoji });
+  });
+
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+
+  window.addEventListener('resize', onWindowResize);
+  renderer.setAnimationLoop(animate);
+}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate() {
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+/* Klik ruangan 3D */
+window.addEventListener('pointerdown', (event) => {
+  if (currentDiv === null) return;
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(divisionMeshes);
+  if (intersects.length > 0) {
+    const mesh = intersects[0].object;
+    const d = divDataMap.get(mesh);
+    if (d) openDivision(d.id);
   }
-  setInterval(() => {
-    chars.forEach(c => { if (Math.random() < 0.25) randomWalk(c); });
-  }, 3500);
-
-  /* Auto 24 Jam */
-  setInterval(() => {
-    if (!autoEnabled) return;
-    DIVISIONS.filter(d => d.auto).forEach(d => {
-      if (Math.random() < 0.35) sendMessage(d.id, 'ai', d.autoText);
-    });
-  }, 20000);
-
-  const last = localStorage.getItem('last_div_' + officeId);
-  if (last) setTimeout(() => openDivision(parseInt(last)), 500);
-}
-
-/* ========== BUKA DIVISI ========== */
-const chatPanel = document.getElementById('chat-panel');
-const chatBody = document.getElementById('chat-body');
-const chatDivName = document.getElementById('chat-div-name');
-const chatDivIcon = document.getElementById('chat-div-icon');
-const screenContent = document.getElementById('screen-content');
-const bigScreen = document.getElementById('big-screen');
-
-function openDivision(divId) {
-  const d = DIVISIONS.find(x => x.id === divId);
-  if (!d) return;
-  currentDiv = divId;
-  localStorage.setItem('last_div_' + officeId, divId);
-  chatDivName.textContent = d.name;
-  chatDivIcon.textContent = d.icon;
-  chatDivName.style.color = d.color;
-  chatPanel.classList.add('open');
-  bigScreen.classList.remove('hidden');
-  bigScreen.style.borderColor = d.color;
-  document.querySelector('.screen-header').style.color = d.color;
-  renderMessages(divId);
-  updateScreen(divId, `Selamat datang di divisi ${d.name}. Silakan tanya apa saja.`);
-  chatBody.scrollTop = chatBody.scrollHeight;
-}
-document.getElementById('chat-close').onclick = () => {
-  chatPanel.classList.remove('open');
-  currentDiv = null;
-};
+});
 
 /* ========== FIREBASE MESSAGES ========== */
 function listenMessages(divId, callback) {
@@ -494,9 +445,7 @@ function listenMessages(divId, callback) {
     const data = snapshot.val();
     const arr = [];
     if (data) {
-      Object.entries(data).forEach(([key, val]) => {
-        arr.push({ id: key, ...val });
-      });
+      Object.entries(data).forEach(([key, val]) => arr.push({ id: key, ...val }));
       arr.sort((a,b) => (a.t||0) - (b.t||0));
     }
     callback(arr);
@@ -505,6 +454,7 @@ function listenMessages(divId, callback) {
 
 function renderMessages(divId) {
   const d = DIVISIONS.find(x => x.id === divId);
+  const chatBody = document.getElementById('chat-body');
   chatBody.innerHTML = '';
   listenMessages(divId, (arr) => {
     chatBody.innerHTML = '';
@@ -522,23 +472,51 @@ function renderMessages(divId) {
 function sendMessage(divId, who, text) {
   const d = DIVISIONS.find(x => x.id === divId);
   push(ref(db, `offices/${officeId}/messages/${divId}`), {
-    who, text, t: Date.now(), uid: auth.currentUser.uid,
-    divName: d?.name || ''
+    who, text, t: Date.now(), uid: auth.currentUser.uid, divName: d?.name || ''
   });
 }
 
 /* ========== CHAT UI ========== */
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+const chatPanel = document.getElementById('chat-panel');
+const chatBody = document.getElementById('chat-body');
+const chatDivName = document.getElementById('chat-div-name');
+const chatDivIcon = document.getElementById('chat-div-icon');
+const screenContent = document.getElementById('screen-content');
+const bigScreen = document.getElementById('big-screen');
+
+function openDivision(divId) {
+  const d = DIVISIONS.find(x => x.id === divId);
+  if (!d) return;
+  currentDiv = divId;
+  localStorage.setItem('last_div_' + officeId, divId);
+  chatDivName.textContent = d.name;
+  chatDivIcon.textContent = d.icon;
+  chatDivName.style.color = '#' + d.color.toString(16).padStart(6, '0');
+  chatPanel.classList.add('open');
+  bigScreen.classList.remove('hidden');
+  bigScreen.style.borderColor = '#' + d.color.toString(16).padStart(6, '0');
+  document.querySelector('.screen-header').style.color = '#' + d.color.toString(16).padStart(6, '0');
+  renderMessages(divId);
+  updateScreen(divId, `Selamat datang di divisi 3D ${d.name}. Silakan tanya apa saja.`);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+document.getElementById('chat-close').onclick = () => {
+  chatPanel.classList.remove('open');
+  currentDiv = null;
+};
+
+/* Meeting + Answer */
 const meetingOverlay = document.getElementById('meeting-overlay');
 const meetingTable = document.getElementById('meeting-table');
 const meetingBubble = document.getElementById('meeting-bubble');
 const skipBtn = document.getElementById('skip-meeting');
 
 const meetingLines = [
-  'Menganalisis pertanyaan...',
-  'Mengambil data terkait...',
-  'Diskusi tim divisi...',
+  'Menganalisis pertanyaan 3D...',
+  'Mengambil data divisi...',
+  'Diskusi tim di ruang meeting...',
   'Menyusun jawaban terbaik...',
   'Siap menyampaikan hasil.'
 ];
@@ -550,7 +528,7 @@ async function startMeetingAndAnswer(divId, userText) {
   meetingBubble.style.display = 'none';
   skipBtn.style.display = 'none';
 
-  const divChars = chars.filter(c => c.divId === divId);
+  const divChars = avatars.filter(c => c.divId === divId);
   const positions = [
     { left: '20%', top: '30%' }, { left: '80%', top: '30%' },
     { left: '20%', top: '70%' }, { left: '80%', top: '70%' },
@@ -559,10 +537,10 @@ async function startMeetingAndAnswer(divId, userText) {
   divChars.forEach((c, i) => {
     const clone = document.createElement('div');
     clone.className = 'meeting-avatar';
-    clone.textContent = c.uniform;
+    clone.textContent = c.emoji;
     clone.style.left = positions[i]?.left || '50%';
     clone.style.top = positions[i]?.top || '50%';
-    clone.style.borderColor = c.color;
+    clone.style.borderColor = '#' + c.color.toString(16).padStart(6, '0');
     meetingTable.appendChild(clone);
   });
 
@@ -585,15 +563,15 @@ async function startMeetingAndAnswer(divId, userText) {
 function getDemoAnswer(divId, text) {
   const d = DIVISIONS.find(x => x.id === divId);
   const t = text.toLowerCase();
-  const fallback = `Ini jawaban otomatis dari divisi ${d.name}. ${d.autoText || 'Silakan ajukan pertanyaan lebih spesifik.'}`;
-  if (t.includes('hai') || t.includes('halo')) return `Halo! Saya dari divisi ${d.name}. Ada yang bisa saya bantu?`;
-  if (t.includes('harga') || t.includes('price')) return 'Informasi harga terkini akan kami perbarui di layar besar.';
-  if (t.includes('reksadana')) return 'Reksadana adalah kumpulan dana yang dikelola secara profesional oleh manajer investasi.';
-  if (t.includes('bitcoin') || t.includes('btc')) return 'Bitcoin adalah aset digital terdesentralisasi yang berjalan pada teknologi blockchain.';
-  if (t.includes('emas')) return 'Emas logam mulia adalah investasi pelindung terhadap inflasi dan tidak stabilnya mata uang.';
-  if (t.includes('coding') || t.includes('code')) return 'Kami siap membantu pengembangan aplikasi, website, dan otomasi kerja.';
-  if (t.includes('resep')) return 'Resep masakan dan minuman siap dibagikan sesuai permintaan Anda.';
-  if (t.includes('viral') || t.includes('tren')) return 'Tren viral saat ini seputar AI agent dan otomasi kantor digital.';
+  const fallback = `Ini jawaban dari divisi 3D ${d.name}. ${d.autoText || 'Silakan ajukan pertanyaan lebih spesifik.'}`;
+  if (t.includes('hai') || t.includes('halo')) return `Halo! Saya dari divisi ${d.name} di kantor 3D. Ada yang bisa saya bantu?`;
+  if (t.includes('harga') || t.includes('price')) return 'Informasi harga terkini ditampilkan di layar besar 3D.';
+  if (t.includes('reksadana')) return 'Reksadana adalah kumpulan dana dikelola manajer investasi profesional.';
+  if (t.includes('bitcoin') || t.includes('btc')) return 'Bitcoin adalah aset digital terdesentralisasi pada blockchain.';
+  if (t.includes('emas')) return 'Emas logam mulia melindungi dari inflasi dan ketidakstabilan mata uang.';
+  if (t.includes('coding') || t.includes('code')) return 'Kami siap membantu pengembangan aplikasi dan otomasi kerja 3D.';
+  if (t.includes('resep')) return 'Resep masakan dan minuman siap dibagikan sesuai permintaan.';
+  if (t.includes('viral') || t.includes('tren')) return 'Tren viral AI agent kantor 3D sedang naik daun.';
   return fallback;
 }
 
@@ -633,9 +611,25 @@ function sendChat() {
 }
 
 function updateScreen(divId, text) {
-  const screen = document.getElementById(`rscreen-${divId}`);
-  if (screen) screen.textContent = text;
+  const d = DIVISIONS.find(x => x.id === divId);
+  if (d.screenMesh) {
+    /* Untuk yang serius bisa ganti tekstur canvas, tapi untuk ringan kita tampilkan di HUD */
+  }
   if (currentDiv === divId) screenContent.textContent = text;
+}
+
+/* Auto 24 Jam */
+setInterval(() => {
+  if (!autoEnabled) return;
+  DIVISIONS.filter(d => d.auto).forEach(d => {
+    if (Math.random() < 0.35) sendMessage(d.id, 'ai', d.autoText);
+  });
+}, 20000);
+
+/* ========== INIT (setelah login) ========== */
+function initApp() {
+  const last = localStorage.getItem('last_div_' + officeId);
+  if (last) setTimeout(() => openDivision(parseInt(last)), 800);
 }
 </script>
 </body>
