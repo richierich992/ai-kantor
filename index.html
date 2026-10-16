@@ -3,144 +3,67 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kantor AI</title>
+<title>Kantor AI 3D</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#14213d;--ink:#e8eefc}
-html,body{height:100%}
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);overflow:hidden;
- background:radial-gradient(circle at 12% 18%,#3f8f4f 0 7%,transparent 7.5%),radial-gradient(circle at 90% 85%,#2f7a43 0 9%,transparent 9.5%),
- radial-gradient(circle at 6% 80%,#4da05c 0 6%,transparent 6.5%),linear-gradient(160deg,#8fc7e8,#cfe6d6 55%,#9ccf9f)}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#e8eefc;overflow:hidden;background:#bfe3f5}
 .hidden{display:none!important}
-
-/* Login */
 #login{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#14213d,#1f3b6e);padding:24px;text-align:center}
-#login h2{font-size:28px;margin-bottom:6px}
-#login p{color:#b8c6e6;font-size:14px;margin-bottom:18px}
+#login h2{font-size:28px;margin-bottom:6px}#login p{color:#b8c6e6;font-size:14px;margin-bottom:18px}
 #login input{padding:12px 16px;font-size:16px;border-radius:12px;border:2px solid #3a5a9a;background:#0f1a33;color:#fff;width:260px;text-align:center;margin-bottom:14px}
 #login button{padding:12px 32px;font-size:16px;font-weight:700;border:0;border-radius:12px;background:#ffc93c;color:#2a1d00;cursor:pointer}
-#login .note{font-size:12px;max-width:300px;margin:16px 0 0}
-
-/* Header */
-header{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;background:rgba(20,33,61,.92);backdrop-filter:blur(6px)}
-.brand{font-weight:800;font-size:17px;display:flex;align-items:center;gap:10px}
-.dot{width:9px;height:9px;border-radius:50%;background:#4ade80;box-shadow:0 0 10px #4ade80}
-.right{display:flex;align-items:center;gap:12px;font-size:12px;color:#b8c6e6}
-#auto-toggle{background:#26396b;border:1px solid #4a64a8;color:#fff;padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer}
-#auto-toggle.active{background:#4ade80;color:#06280f;border-color:#4ade80}
-
-/* Stage */
-#map{position:fixed;inset:52px 0 0 0;perspective:1800px;overflow:hidden}
-#stage{position:absolute;left:50%;top:50%;transform-origin:center}
-#building{position:relative;display:grid;grid-template-columns:repeat(6,150px);grid-template-rows:repeat(5,140px);gap:10px;padding:16px;
- background:#e9eef7;border:6px solid #b7c3da;border-radius:18px;transform:rotateX(34deg) rotateZ(-5deg);transform-style:preserve-3d;
- box-shadow:0 10px 0 #8d9bb8,0 18px 0 #6f7e9f,0 40px 60px rgba(10,30,60,.45)}
-
-.room{--c:#888;position:relative;border-radius:10px;cursor:pointer;overflow:hidden;
- background:linear-gradient(180deg,color-mix(in srgb,var(--c) 14%,#fff),color-mix(in srgb,var(--c) 30%,#fff));
- border:4px solid color-mix(in srgb,var(--c) 70%,#222);box-shadow:0 5px 0 color-mix(in srgb,var(--c) 55%,#111);transition:transform .15s,filter .15s}
-.room:hover{transform:translateZ(14px) translateY(-4px);filter:brightness(1.06);z-index:5}
-.tag{position:absolute;top:6px;left:6px;right:6px;z-index:3;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;background:var(--c);
- color:#fff;font-weight:800;font-size:12px;line-height:1.1;text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:0 2px 0 rgba(0,0,0,.2)}
-.tag b{display:grid;place-items:center;min-width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.28);font-size:11px}
-.floor{position:absolute;inset:36px 8px 22px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-content:center}
-.floor i{height:26px;border-radius:5px;background:#fff;border:2px solid color-mix(in srgb,var(--c) 40%,#999);position:relative}
-.floor i::before{content:"";position:absolute;left:50%;top:-9px;width:16px;height:11px;transform:translateX(-50%);border-radius:2px;background:#10192e;border:2px solid #3b4a6b}
-.floor i::after{content:"";position:absolute;left:50%;top:5px;width:8px;height:8px;transform:translateX(-50%);border-radius:2px;background:color-mix(in srgb,var(--c) 45%,#fff)}
-.ico{position:absolute;right:8px;bottom:18px;font-size:26px;opacity:.9}
-.rs{position:absolute;left:6px;right:6px;bottom:4px;z-index:3;font-size:10px;font-weight:600;padding:2px 6px;border-radius:5px;background:rgba(10,18,40,.85);color:#9ff5c1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-.lobby{grid-area:2/2/5/5;border-radius:12px;background:repeating-conic-gradient(#f7f9fd 0 25%,#e6ecf6 0 50%) 0 0/48px 48px;border:3px dashed #aab7d0;display:grid;place-items:center;text-align:center;color:#24407a}
-.rug{padding:18px 26px;border-radius:14px;background:rgba(255,255,255,.85);border:2px solid #b9c8e6}
-.rug .logo{font-size:38px}.rug h3{font-size:22px}.rug p{font-size:12px;max-width:190px;margin:4px auto 0}
-.plant{position:absolute;font-size:26px}
-.entrance{grid-area:5/1/6/5;border-radius:12px;background:#dfe6f2;border:3px solid #aab7d0;display:flex;align-items:center;justify-content:center;gap:18px;color:#24407a;font-weight:800}
-.entrance .desk{padding:10px 24px;border-radius:30px;background:#fff;border:3px solid #7e93c2;box-shadow:0 4px 0 #7e93c2}
-.meeting{grid-area:4/1/5/2;background:linear-gradient(#f0f1f5,#d9dde8);border:4px solid #66708c;color:#2b3350;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:800;font-size:12px}
-.meeting span{font-size:28px}
-
-/* Characters */
-.char{position:absolute;z-index:20;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:16px;background:#fff;border:3px solid var(--c);
- box-shadow:0 3px 0 rgba(0,0,0,.25);transition:left 1.4s ease-in-out,top 1.4s ease-in-out;pointer-events:none}
-.char.walk{animation:hop .35s ease-in-out infinite}
-@keyframes hop{50%{margin-top:-5px}}
-
-/* Legend & slogan */
-#legend{position:fixed;right:14px;top:70px;z-index:60;width:200px;padding:10px 12px;border-radius:14px;background:rgba(20,33,61,.94);border:1px solid #3a5a9a;max-height:calc(100vh - 140px);overflow:auto}
-#legend div{display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:12px;cursor:pointer}
-#legend div:hover{color:#ffc93c}
+header{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:rgba(20,33,61,.93)}
+.brand{font-weight:800;display:flex;align-items:center;gap:10px}.dot{width:9px;height:9px;border-radius:50%;background:#4ade80;box-shadow:0 0 10px #4ade80}
+.r{display:flex;align-items:center;gap:10px;font-size:12px;color:#b8c6e6}
+.r button,#mode{background:#26396b;border:1px solid #4a64a8;color:#fff;padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer}
+#auto.on{background:#4ade80;color:#06280f;border-color:#4ade80}
+#map{position:fixed;inset:52px 0 0 0;touch-action:none}
+#legend{position:fixed;left:12px;top:64px;z-index:60;width:190px;padding:8px 10px;border-radius:14px;background:rgba(20,33,61,.92);max-height:calc(100vh - 130px);overflow:auto}
+#legend div{display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:12px;cursor:pointer}#legend div:hover{color:#ffc93c}
 #legend b{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:11px;flex:none;color:#fff}
-#slogan{position:fixed;left:16px;bottom:14px;z-index:60;padding:8px 14px;border-radius:12px;background:rgba(20,33,61,.9);font-size:13px;font-weight:700}
-#ticker{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:60;font-size:12px;padding:5px 12px;border-radius:20px;background:rgba(20,33,61,.9);color:#b8c6e6;max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-/* Chat */
-#chat{position:fixed;z-index:150;top:52px;right:0;bottom:0;width:420px;display:none;flex-direction:column;background:#0f1a33;border-left:1px solid #3a5a9a}
+#hint{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:60;font-size:12px;padding:6px 14px;border-radius:20px;background:rgba(20,33,61,.9);color:#b8c6e6;white-space:nowrap}
+#chat{position:fixed;z-index:150;top:52px;right:0;bottom:0;width:390px;display:none;flex-direction:column;background:#0f1a33;border-left:1px solid #3a5a9a}
 #chat.open{display:flex}
-.ch{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #26396b;font-weight:800}
-.ch button{background:none;border:0;color:#b8c6e6;font-size:20px;cursor:pointer}
-#screen{margin:10px 14px 0;padding:8px 10px;border-radius:8px;background:#000;border:2px solid var(--c,#4ade80);color:#9ff5c1;font:12px/1.4 "Courier New",monospace;min-height:44px;max-height:90px;overflow:auto}
+.ch{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #26396b;font-weight:800;gap:8px}
+.ch span:last-child{display:flex;gap:6px}.ch button{background:none;border:0;color:#b8c6e6;font-size:20px;cursor:pointer}
 #chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-.msg{max-width:85%;display:flex;flex-direction:column;gap:3px}
-.msg.ai{align-self:flex-start}.msg.user{align-self:flex-end}
+.msg{max-width:88%;display:flex;flex-direction:column;gap:3px}.msg.ai{align-self:flex-start}.msg.user{align-self:flex-end}
 .bubble{padding:9px 13px;border-radius:12px;font-size:14px;line-height:1.5;white-space:pre-wrap}
-.msg.ai .bubble{background:#1c2b52;border-bottom-left-radius:3px}
-.msg.user .bubble{background:#ffc93c;color:#2a1d00;border-bottom-right-radius:3px}
-.meta{font-size:10px;color:#8fa2cc}
-.msg.user .meta{text-align:right}
+.msg.ai .bubble{background:#1c2b52}.msg.user .bubble{background:#ffc93c;color:#2a1d00}
+.meta{font-size:10px;color:#8fa2cc}.msg.user .meta{text-align:right}
 .inp{padding:12px 14px;border-top:1px solid #26396b;display:flex;gap:8px}
 .inp textarea{flex:1;resize:none;border:1px solid #3a5a9a;border-radius:10px;background:#0a1226;color:#fff;padding:9px 11px;font:14px inherit;min-height:42px}
 .inp button{width:46px;border:0;border-radius:10px;background:#ffc93c;color:#2a1d00;font-weight:800;cursor:pointer}
-
-/* Meeting overlay */
-#meet{position:fixed;inset:0;z-index:250;display:none;place-items:center;background:rgba(10,20,45,.8);backdrop-filter:blur(6px)}
-#meet.open{display:grid}
-.mbox{width:340px;padding:20px;border-radius:16px;background:#e9eef7;border:4px solid #ffc93c;color:#24407a;text-align:center}
-.mtable{position:relative;height:120px;margin:14px 0;border-radius:60px;background:#c79b64;border:4px solid #8a6538}
-.mav{position:absolute;width:30px;height:30px;border-radius:50%;background:#fff;border:3px solid;display:grid;place-items:center;animation:hop .8s infinite}
-#mline{font-weight:700;font-size:14px}
-
-@media(max-width:820px){
- #legend{display:none}
- #chat{top:auto;width:100%;height:62vh;border-left:0;border-top:1px solid #3a5a9a}
- .right span{display:none}
-}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(max-width:820px){#legend,#hint{display:none}#chat{top:auto;width:100%;height:55vh;border-left:0;border-top:1px solid #3a5a9a}.r span{display:none}}
 </style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
-
 <div id="login">
-  <h2>🏢 Kantor AI</h2>
+  <h2>🏢 Kantor AI 3D</h2>
   <p>Masukkan kode kantor untuk sinkron di semua perangkat</p>
-  <input id="office-code" value="AI2026" placeholder="Kode kantor">
-  <button id="btn-login">Masuk</button>
-  <p class="note">Pakai kode yang sama di semua perangkat. Chat tersimpan di Firebase.</p>
+  <input id="code" value="AI2026" placeholder="Kode kantor">
+  <button id="go">Masuk</button>
 </div>
-
 <div id="ui" class="hidden">
-  <header>
-    <div class="brand"><span class="dot"></span>Kantor AI</div>
-    <div class="right"><span id="status">Menghubungkan...</span><button id="auto-toggle" class="active">Auto 24 Jam: ON</button></div>
-  </header>
-  <div id="map"><div id="stage"><div id="building"></div></div></div>
+  <header><div class="brand"><span class="dot"></span>Kantor AI</div>
+    <div class="r"><span id="status">Menghubungkan...</span><button id="auto" class="on">Agent 24 Jam: ON</button><button id="reset">Reset kamera</button></div></header>
+  <div id="map"></div>
   <div id="legend"></div>
-  <div id="slogan">Satu Kantor, Banyak Peluang Bersama AI</div>
-  <div id="ticker">Sistem siap</div>
-
+  <div id="hint">Geser: tarik • Putar: klik kanan / 2 jari • Zoom: scroll / cubit • Klik ruangan untuk fokus & chat</div>
   <div id="chat">
-    <div class="ch"><span id="chat-title">Divisi</span><button id="chat-close" aria-label="Tutup">✕</button></div>
-    <div id="screen">Pilih ruangan untuk mulai.</div>
+    <div class="ch"><span id="ct">Divisi</span><span><button id="mode"></button><button id="cx" aria-label="Tutup">✕</button></span></div>
     <div id="chat-body"></div>
-    <div class="inp"><textarea id="chat-input" placeholder="Tanya divisi ini... (Enter = kirim)"></textarea><button id="btn-send" aria-label="Kirim">➤</button></div>
+    <div class="inp"><textarea id="ci" placeholder="Beri pertanyaan / perintah ke agent ini..."></textarea><button id="send" aria-label="Kirim">➤</button></div>
   </div>
-
-  <div id="meet"><div class="mbox"><b>RAPAT DIVISI</b><div class="mtable" id="mtable"></div><div id="mline"></div></div></div>
 </div>
 
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, onValue, push } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getDatabase,ref,onValue,push,set,query,limitToLast,runTransaction} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import {getAuth,signInAnonymously} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
  const firebaseConfig = {
     apiKey: "AIzaSyBeb1L6dCevfzX2tw__6MGWfpB6jfKTO6M",
@@ -154,213 +77,222 @@ import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/1
   };
 
 
-/* id, nama, warna, ikon, avatar, auto-teks. Posisi ruang: [row, col, rowSpan, colSpan] di grid 6x5 */
-const DIVISIONS = [
- {id:1,name:'Trading Saham',color:'#2e9e44',icon:'📈',emoji:'👩‍💼',pos:[1,1],auto:'Saham ABC naik 2,4% hari ini.'},
- {id:2,name:'Invest Saham',color:'#2f7fe0',icon:'📊',emoji:'👨‍💼',pos:[1,2]},
- {id:3,name:'Invest Dividen Saham',color:'#8a4fd8',icon:'💰',emoji:'👩‍💻',pos:[1,3]},
- {id:4,name:'Bibit Reksadana',color:'#1aa37a',icon:'🌱',emoji:'🧑‍💼',pos:[1,4]},
- {id:5,name:'Bitcoin Indodax',color:'#f08a1c',icon:'₿',emoji:'👨‍💻',pos:[1,5],auto:'BTC di Indodax: Rp 714.250.000'},
- {id:6,name:'Bitcoin Toko Crypto',color:'#e0409a',icon:'🏪',emoji:'👩‍🔧',pos:[1,6],auto:'Crypto Update: ETH menguat 1,8%'},
- {id:7,name:'Emas Logam Mulia',color:'#c99a1c',icon:'🥇',emoji:'🧑‍🏫',pos:[2,1]},
- {id:8,name:'Pencatat Keuangan',color:'#2a4a8a',icon:'📒',emoji:'🧑‍💼',pos:[3,1]},
- {id:9,name:'Multimedia Video',color:'#8f52e8',icon:'🎬',emoji:'🎥',pos:[2,5]},
- {id:10,name:'Multimedia Grafis',color:'#18a0d8',icon:'🎨',emoji:'👩‍🎨',pos:[2,6]},
- {id:12,name:'Online Shop',color:'#d6336c',icon:'🛒',emoji:'🧑‍💼',pos:[3,5]},
- {id:13,name:'Viral / Trend News',color:'#16a6a6',icon:'📰',emoji:'🧑‍💻',pos:[3,6],auto:'News: AI kantor isometrik trending.'},
- {id:14,name:'Resep Masakan & Minuman',color:'#ee5a7a',icon:'🍜',emoji:'👩‍🍳',pos:[4,5]},
- {id:11,name:'Coding',color:'#6aa71a',icon:'💻',emoji:'👨‍💻',pos:[4,6]},
- {id:15,name:'AI Chatbot',color:'#6f4fe0',icon:'🤖',emoji:'🧑‍💼',pos:[5,5],span:2}
+const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms)),PI=Math.PI;
+const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const idr=n=>'Rp '+Math.round(n).toLocaleString('id-ID');
+const px={BBCA:9850,BTC:714250000,ETH:48500000,XAU:1650000};
+const mv=(k,p=.004)=>(px[k]*=1+rnd(-p,p)),pct=()=>rnd(-2.2,2.2).toFixed(2)+'%';
+
+/* m:'24h' = agent berjalan terus. tanpa m = bekerja saat dipanggil. g = pembuat info rutin (SIMULASI) */
+const D=[
+{id:1,name:'Trading Saham',c:'#2e9e44',ic:'📈',m:'24h',g:()=>`BBCA ${idr(mv('BBCA'))} (${pct()})\nSinyal: ${pick(['beli bertahap','tahan','pantau support'])}`},
+{id:2,name:'Invest Saham',c:'#2f7fe0',ic:'📊'},
+{id:3,name:'Invest Dividen Saham',c:'#8a4fd8',ic:'💰'},
+{id:4,name:'Bibit Reksadana',c:'#1aa37a',ic:'🌱'},
+{id:5,name:'Bitcoin Indodax',c:'#f08a1c',ic:'₿',m:'24h',g:()=>`BTC Indodax: ${idr(mv('BTC'))}`},
+{id:6,name:'Bitcoin Toko Crypto',c:'#e0409a',ic:'🏪',m:'24h',g:()=>`ETH ${idr(mv('ETH'))} (${pct()})`},
+{id:7,name:'Emas Logam Mulia',c:'#c99a1c',ic:'🥇',m:'24h',g:()=>`Emas per gram: ${idr(mv('XAU',.002))}`},
+{id:8,name:'Pencatat Keuangan',c:'#2a4a8a',ic:'📒'},
+{id:9,name:'Multimedia Video',c:'#8f52e8',ic:'🎬'},
+{id:10,name:'Multimedia Grafis',c:'#18a0d8',ic:'🎨'},
+{id:12,name:'Online Shop',c:'#d6336c',ic:'🛒'},
+{id:13,name:'Viral / Trend News',c:'#16a6a6',ic:'📰',m:'24h',g:()=>pick(['Tren: AI agent & otomasi kantor','Tren: investasi emas naik dicari','Tren: resep viral minuman dingin'])},
+{id:14,name:'Resep Masakan & Minuman',c:'#ee5a7a',ic:'🍜'},
+{id:11,name:'Coding',c:'#6aa71a',ic:'💻'},
+{id:15,name:'AI Chatbot',c:'#6f4fe0',ic:'🤖'}
 ];
+/* slot: x, z, yaw (muka ruangan menghadap plaza), id (0 = ruang meeting) */
+const SL=[[-20,-13.5,0,1],[-12,-13.5,0,2],[-4,-13.5,0,3],[4,-13.5,0,4],[12,-13.5,0,5],[20,-13.5,0,6],
+[-27.5,-6,PI/2,7],[-27.5,2,PI/2,8],[-27.5,10,PI/2,9],[27.5,-6,-PI/2,10],[27.5,2,-PI/2,12],[27.5,10,-PI/2,13],
+[-16,13.5,PI,14],[-8,13.5,PI,11],[8,13.5,PI,0],[16,13.5,PI,15]];
+const W=8,DP=7,WH=3.4;
 
-let app, auth, db, officeId, currentDiv = null, autoEnabled = true, unsub = null;
-const chars = [], cells = new Map();
-const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+let app,auth,db,oid,cur=null,autoOn=true,unsub=null,rend,cam,ctl,tg=null;
+const scene=new THREE.Scene(),rooms={},chars={},picks=[],RL=[];
 
-/* ===== Login ===== */
-$('btn-login').onclick = async () => {
-  const code = $('office-code').value.trim();
-  if (!code) return;
-  officeId = code.replace(/[.#$\[\]\/]/g, '_');
-  try {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getDatabase(app);
-    const cred = await signInAnonymously(auth);
-    $('status').textContent = 'Online • ' + cred.user.uid.slice(0, 6);
-    $('login').classList.add('hidden');
-    $('ui').classList.remove('hidden');
-    buildOffice();
-    fitStage();
-  } catch (e) {
-    alert('Gagal koneksi Firebase: ' + e.message);
-  }
+/* ===== helper 3D ===== */
+const M=c=>new THREE.MeshLambertMaterial({color:c});
+const box=(w,h,d,c,x,y,z,p)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(x,y,z);(p||scene).add(m);return m};
+const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+const tex=c=>{const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t};
+function label(text,color,sw,sh){const c=cv(512,128),x=c.getContext('2d');x.fillStyle=color;x.beginPath();x.roundRect(4,4,504,120,30);x.fill();
+ x.fillStyle='#fff';x.font='bold 54px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,256,68,470);
+ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex(c),depthWrite:false}));s.scale.set(sw,sh,1);return s}
+function wrap(x,t,mw){const o=[];t.split('\n').forEach(p=>{let l='';p.split(' ').forEach(w=>{const n=l?l+' '+w:w;if(x.measureText(n).width>mw&&l){o.push(l);l=w}else l=n});o.push(l)});return o}
+const wp=(r,x,z)=>r.g.localToWorld(new THREE.Vector3(x,0,z));
+const plazaPt=()=>new THREE.Vector3(rnd(-14,14),0,rnd(-6,6));
+
+/* ===== layar besar ===== */
+const STT={live:['LIVE 24 JAM','#4ade80'],work:['BEKERJA','#fbbf24'],standby:['STANDBY','#94a3b8']};
+function draw(r){const x=r.cx,s=STT[r.st];x.fillStyle='#06101f';x.fillRect(0,0,512,288);x.fillStyle=r.col;x.fillRect(0,0,512,50);
+ x.textBaseline='middle';x.textAlign='left';x.font='bold 26px system-ui';x.fillStyle='#fff';x.fillText(r.ic+' '+r.name,14,26,300);
+ if(!r.meet){x.fillStyle='rgba(0,0,0,.4)';x.beginPath();x.roundRect(322,10,178,30,15);x.fill();x.font='bold 18px system-ui';x.fillStyle=s[1];x.textAlign='center';x.fillText('● '+s[0],411,26)}
+ x.textAlign='left';x.font='22px "Courier New",monospace';x.fillStyle='#9ff5c1';
+ wrap(x,r.txt,484).slice(-7).forEach((l,i)=>x.fillText(l,14,80+i*29));
+ r.tx.needsUpdate=true;r.lamp.material.color.set(s[1])}
+function setSt(r,s){r.st=s;if(r.mon)r.mon.color.set(s==='work'?0xffffff:s==='live'?0x7dd3fc:0x1e3a5f);draw(r)}
+
+/* ===== ruangan ===== */
+function mkRoom([x,z,yaw,id]){
+ const d=D.find(q=>q.id===id)||{name:'Ruang Meeting',c:'#66708c',ic:'🤝',meet:1};
+ const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=yaw;scene.add(g);
+ const col=new THREE.Color(d.c),white=new THREE.Color(1,1,1),lt=col.clone().lerp(white,.78),wl=col.clone().lerp(white,.4);
+ const r={id,d,name:d.name,col:d.c,ic:d.ic,g,yaw,meet:d.meet,st:'standby',lock:false,txt:d.meet?'Tempat agent berkumpul.':'Siap menerima tugas.'};
+ const fl=box(W,.14,DP,lt,0,.07,0,g);
+ box(W,WH,.25,wl,0,WH/2,-DP/2,g);box(.25,WH,DP,wl,-W/2,WH/2,0,g);box(.25,WH,DP,wl,W/2,WH/2,0,g);box(W,.3,.25,col,0,.15,DP/2,g);
+ const c=cv(512,288);r.cx=c.getContext('2d');r.tx=tex(c);
+ box(4.8,2.8,.1,0x0b1220,0,1.95,-DP/2+.17,g);
+ const sc=new THREE.Mesh(new THREE.PlaneGeometry(4.6,2.6),new THREE.MeshBasicMaterial({map:r.tx}));sc.position.set(0,1.95,-DP/2+.23);g.add(sc);
+ fl.userData.id=sc.userData.id=id;picks.push(fl,sc);
+ r.lamp=new THREE.Mesh(new THREE.SphereGeometry(.28,12,12),new THREE.MeshBasicMaterial({color:0x64748b}));r.lamp.position.set(0,WH+.35,-DP/2);g.add(r.lamp);
+ const lb=label((d.meet?'':id+' ')+d.name,d.c,6.4,1.6);lb.position.set(0,WH+1.5,-DP/2+.5);g.add(lb);
+ if(d.meet){
+  const t=new THREE.Mesh(new THREE.CylinderGeometry(1.7,1.7,.12,24),M(0xc79b64));t.position.set(0,.8,.5);g.add(t);box(.3,.8,.3,0x7a5a38,0,.4,.5,g);
+  for(let i=0;i<6;i++){const a=i/6*PI*2,s=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.5,12),M(0x475569));s.position.set(Math.cos(a)*2.3,.25,.5+Math.sin(a)*2.3);g.add(s)}
+ }else{
+  box(2.6,.8,1,0x9c7a54,-1.8,.4,-1.9,g);box(.15,.35,.15,0x1f2937,-1.8,.97,-2.05,g);box(1.15,.7,.07,0x111827,-1.8,1.5,-2.05,g);
+  r.mon=new THREE.MeshBasicMaterial({color:0x1e3a5f});const ms=new THREE.Mesh(new THREE.PlaneGeometry(1.03,.58),r.mon);ms.position.set(-1.8,1.5,-2.01);g.add(ms);
+  box(2.6,.8,1,0x9c7a54,1.8,.4,-1.9,g);box(.9,.05,.6,0xcbd5e1,1.8,.83,-1.8,g);
+  const lid=box(.9,.6,.04,0x1f2937,1.8,1.12,-2.1,g);lid.rotation.x=-.2;
+  const ls=new THREE.Mesh(new THREE.PlaneGeometry(.8,.5),new THREE.MeshBasicMaterial({color:new THREE.Color(d.c).lerp(white,.4)}));ls.position.set(1.8,1.12,-2.07);ls.rotation.x=-.2;g.add(ls);
+  box(.5,.4,.5,0x7a4b2a,3.1,.2,2.6,g);const pl=new THREE.Mesh(new THREE.SphereGeometry(.55,10,8),M(0x2f9e5a));pl.position.set(3.1,.9,2.6);g.add(pl);
+ }
+ rooms[id]=r;RL.push(r);draw(r);return r}
+
+function mkChar(r){
+ const g=new THREE.Group(),c={g,r,d:r.d,path:[],t:0,loc:r,wait:rnd(2,6),face:r.yaw+PI,work:false},col=r.col;
+ const limb=(w,h,d,cl,x,y)=>{const p=new THREE.Group();p.position.set(x,y,0);box(w,h,d,cl,0,-h/2,0,p);g.add(p);return p};
+ c.legL=limb(.24,.75,.26,0x2b3350,-.17,.78);c.legR=limb(.24,.75,.26,0x2b3350,.17,.78);
+ box(.62,.74,.36,col,0,1.15,0,g);
+ c.armL=limb(.18,.68,.2,col,-.42,1.48);c.armR=limb(.18,.68,.2,col,.42,1.48);
+ const h=new THREE.Mesh(new THREE.SphereGeometry(.27,16,12),M(pick([0xf1c27d,0xe0ac69,0xc68642,0x8d5524])));h.position.y=1.8;g.add(h);
+ box(.56,.2,.5,0x1a1a1a,0,1.98,-.02,g);box(.07,.07,.05,0x111111,-.1,1.84,.26,g);box(.07,.07,.05,0x111111,.1,1.84,.26,g);
+ g.position.copy(r.spot);g.rotation.y=r.yaw+PI;scene.add(g);return c}
+
+function go(c,tr,spot,face){const cu=c.loc,p=[];
+ if(cu&&cu!==tr)p.push(cu.inside,cu.front);
+ if(cu!==tr&&(cu||tr))p.push(plazaPt());
+ if(tr&&cu!==tr)p.push(tr.front,tr.inside);
+ p.push(spot);c.path=p.map(v=>v.clone());c.loc=tr;c.face=face;c.done=null}
+const turn=(c,a,k)=>{let d=a-c.g.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));c.g.rotation.y+=d*Math.min(1,k)};
+
+function step(c,dt){
+ const p=c.path[0];let mvg=false;
+ if(p){const dx=p.x-c.g.position.x,dz=p.z-c.g.position.z,d=Math.hypot(dx,dz);
+  if(d<.12){c.path.shift();if(!c.path.length&&c.done){const f=c.done;c.done=null;f()}}
+  else{const s=Math.min(d,3.4*dt);c.g.position.x+=dx/d*s;c.g.position.z+=dz/d*s;turn(c,Math.atan2(dx,dz),dt*10);mvg=true}
+ }else if(c.face!=null)turn(c,c.face,dt*8);
+ c.t+=dt*(mvg?9:1);const s=mvg?Math.sin(c.t)*.7:0,ty=!mvg&&c.work;
+ c.legL.rotation.x=s;c.legR.rotation.x=-s;
+ c.armL.rotation.x=mvg?-s:ty?-1.2+Math.sin(c.t*14)*.12:Math.sin(c.t)*.04;
+ c.armR.rotation.x=mvg?s:ty?-1.2+Math.cos(c.t*14)*.12:-Math.sin(c.t)*.04;
+ c.g.position.y=mvg?Math.abs(Math.sin(c.t))*.08:0;
+ if(!c.path.length&&!c.busy&&!c.work&&c.d.mode!=='24h'){c.wait-=dt;if(c.wait<=0){c.wait=rnd(5,10);const k=Math.random();
+  if(k<.3)go(c,c.r,c.r.spot,c.r.yaw+PI);else if(k<.5)go(c,null,plazaPt(),null);else{const t=pick(RL);go(c,t,wp(t,rnd(-2.5,2.5),rnd(0,2.5)),null)}}}
+}
+
+/* ===== scene ===== */
+function boot(){
+ const host=$('map');
+ rend=new THREE.WebGLRenderer({antialias:true});rend.setPixelRatio(Math.min(devicePixelRatio,2));rend.setSize(host.clientWidth,host.clientHeight);host.appendChild(rend.domElement);
+ scene.background=new THREE.Color(0xbfe3f5);scene.fog=new THREE.Fog(0xbfe3f5,130,280);
+ cam=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,.5,400);cam.position.set(34,44,58);
+ scene.add(new THREE.HemisphereLight(0xffffff,0x6a8f6a,1.1));const sun=new THREE.DirectionalLight(0xffffff,1.3);sun.position.set(30,60,25);scene.add(sun);
+ ctl=new OrbitControls(cam,rend.domElement);ctl.target.set(0,0,2);ctl.enableDamping=true;ctl.maxPolarAngle=1.42;ctl.minDistance=6;ctl.maxDistance=140;
+ ctl.mouseButtons={LEFT:THREE.MOUSE.PAN,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};ctl.touches={ONE:THREE.TOUCH.PAN,TWO:THREE.TOUCH.DOLLY_ROTATE};
+ ctl.addEventListener('start',()=>tg=null);
+
+ box(300,.2,300,0x7fbf7a,0,-.5,0);box(68,.4,40,0xe6ebf5,0,-.2,0);
+ for(let i=0;i<30;i++){const a=i/30*PI*2,x=Math.cos(a)*(48+rnd(0,18)),z=Math.sin(a)*(32+rnd(0,16));
+  box(.5,2,.5,0x6b4a2b,x,1,z);const cn=new THREE.Mesh(new THREE.ConeGeometry(2.2,5,8),M(0x2f7a43));cn.position.set(x,4.5,z);scene.add(cn)}
+ const fc=cv(1024,512),fx=fc.getContext('2d');fx.fillStyle='rgba(255,255,255,.85)';fx.beginPath();fx.roundRect(8,8,1008,496,60);fx.fill();
+ fx.fillStyle='#24407a';fx.textAlign='center';fx.font='bold 130px system-ui';fx.fillText('🧠 Kantor AI',512,230);fx.font='50px system-ui';fx.fillText('Bersama Membangun Masa Depan Finansial',512,340,960);
+ const fm=new THREE.Mesh(new THREE.PlaneGeometry(16,8),new THREE.MeshBasicMaterial({map:tex(fc),transparent:true}));fm.rotation.x=-PI/2;fm.position.y=.08;scene.add(fm);
+ [[-9,-4],[9,-4],[-9,5],[9,5]].forEach(([x,z])=>{box(.9,.6,.9,0x7a4b2a,x,.3,z);const s=new THREE.Mesh(new THREE.SphereGeometry(.9,10,8),M(0x2f9e5a));s.position.set(x,1.3,z);scene.add(s)});
+ box(.6,4,.6,0x14213d,-4.4,2,18);box(.6,4,.6,0x14213d,4.4,2,18);box(9.4,.6,.6,0x14213d,0,4.2,18);
+ const sg=label('KANTOR AI','#14213d',8,2);sg.position.set(0,5.7,18);scene.add(sg);box(2.6,1,.9,0x2a4a8a,-2.4,.5,14.5);
+
+ SL.forEach(mkRoom);scene.updateMatrixWorld(true);
+ RL.forEach(r=>{r.front=wp(r,0,DP/2+1.5);r.inside=wp(r,0,1.2);r.spot=wp(r,-1.8,-.4)});
+ D.forEach(d=>chars[d.id]=mkChar(rooms[d.id]));
+ RL.forEach(r=>{if(!r.meet)draw(r)});
+
+ const ray=new THREE.Raycaster(),mp=new THREE.Vector2();let pd;
+ rend.domElement.addEventListener('pointerdown',e=>pd=[e.clientX,e.clientY]);
+ rend.domElement.addEventListener('pointerup',e=>{if(!pd||Math.hypot(e.clientX-pd[0],e.clientY-pd[1])>6)return;
+  const b=rend.domElement.getBoundingClientRect();mp.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);ray.setFromCamera(mp,cam);
+  const h=ray.intersectObjects(picks,false)[0];if(h)openDiv(h.object.userData.id)});
+ $('reset').onclick=()=>{tg={t:new THREE.Vector3(0,0,2),c:new THREE.Vector3(34,44,58)}};
+ addEventListener('resize',()=>{rend.setSize(host.clientWidth,host.clientHeight);cam.aspect=host.clientWidth/host.clientHeight;cam.updateProjectionMatrix()});
+ $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
+ $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
+ const clk=new THREE.Clock();
+ (function loop(){const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));
+  if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam);requestAnimationFrame(loop)})();
+}
+function focus(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw));tg={t:r.g.position.clone().setY(1.5),c:r.g.position.clone().add(f.multiplyScalar(13)).setY(10)}}
+
+/* ===== agent ===== */
+function applyMode(d){const r=rooms[d.id],c=chars[d.id],live=d.mode==='24h';if(c.busy)return;c.work=live;setSt(r,live?'live':'standby');if(live)go(c,r,r.spot,r.yaw+PI)}
+const baseSt=d=>d.mode==='24h'?'live':'standby';
+const send=(id,who,text)=>push(ref(db,`offices/${oid}/messages/${id}`),{who,text,t:Date.now(),uid:auth.currentUser.uid,divName:D.find(x=>x.id===id).name});
+
+async function job(id,q){
+ const r=rooms[id],c=chars[id],d=r.d;r.lock=true;c.busy=true;setSt(r,'work');r.txt='📩 '+q;draw(r);
+ while(c.path.length)await sleep(200);
+ await new Promise(res=>{go(c,r,r.spot,r.yaw+PI);c.done=res});
+ c.work=true;
+ for(let i=0;i<6;i++){r.txt='⚙️ Menganalisis'+'.'.repeat(i%4);draw(r);await sleep(450)}
+ const ans=demoAnswer(d,q);
+ for(let i=0;i<=ans.length;i+=2){r.txt=ans.slice(0,i);draw(r);await sleep(25)}
+ send(id,'ai',ans);
+ r.lock=false;c.busy=false;c.work=d.mode==='24h';c.wait=6;setSt(r,baseSt(d));
+}
+function demoAnswer(d,text){const t=text.toLowerCase();
+ if(/\b(hai|halo)\b/.test(t))return `Halo! Saya agent ${d.name}. Ada yang bisa saya bantu?`;
+ if(t.includes('harga'))return d.g?d.g():'Data harga akan diperbarui di layar divisi.';
+ if(t.includes('reksadana'))return 'Reksadana adalah kumpulan dana yang dikelola profesional oleh manajer investasi.';
+ if(t.includes('bitcoin')||t.includes('btc'))return 'Bitcoin adalah aset digital terdesentralisasi berbasis blockchain.';
+ if(t.includes('emas'))return 'Emas logam mulia sering dipakai sebagai pelindung nilai dari inflasi.';
+ if(t.includes('resep'))return 'Resep masakan dan minuman siap dibagikan sesuai permintaan Anda.';
+ return `Jawaban dari agent ${d.name}. ${d.g?d.g():'Silakan ajukan pertanyaan lebih spesifik.'}`}
+
+/* ===== chat ===== */
+function modeLbl(){const d=D.find(x=>x.id===cur);if(d)$('mode').textContent=d.mode==='24h'?'🟢 Agent 24 jam':'⚪ Saat dipanggil'}
+function openDiv(id){const r=rooms[id];focus(r);if(!r||r.meet)return;cur=id;$('ct').textContent=`${r.ic} ${r.name}`;$('ct').style.color=r.col;$('chat').classList.add('open');modeLbl();
+ if(unsub)unsub();
+ unsub=onValue(ref(db,`offices/${oid}/messages/${id}`),s=>{const v=s.val(),a=[];if(v)Object.values(v).forEach(m=>a.push(m));a.sort((x,y)=>(x.t||0)-(y.t||0));
+  const b=$('chat-body');b.innerHTML=a.map(m=>`<div class="msg ${m.who==='ai'?'ai':'user'}"><div class="bubble">${esc(m.text)}</div><div class="meta">${m.who==='ai'?esc(r.name):'Anda'} • ${new Date(m.t||0).toLocaleTimeString('id-ID')}</div></div>`).join('');b.scrollTop=b.scrollHeight})}
+$('cx').onclick=()=>{$('chat').classList.remove('open');cur=null;if(unsub){unsub();unsub=null}};
+$('mode').onclick=()=>{const d=D.find(x=>x.id===cur);if(d)set(ref(db,`offices/${oid}/modes/${d.id}`),d.mode==='24h'?'cmd':'24h')};
+function sendChat(){const i=$('ci'),t=i.value.trim();if(!t||!cur)return;i.value='';const id=cur;send(id,'user',t);
+ const c=chars[id];c.q=(c.q||Promise.resolve()).then(()=>job(id,t))}
+$('send').onclick=sendChat;
+$('ci').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat()}});
+$('auto').onclick=e=>{autoOn=!autoOn;e.target.classList.toggle('on',autoOn);e.target.textContent='Agent 24 Jam: '+(autoOn?'ON':'OFF')};
+
+/* ===== login & Firebase ===== */
+$('go').onclick=async()=>{
+ const code=$('code').value.trim();if(!code)return;oid=code.replace(/[.#$\[\]\/]/g,'_');
+ try{
+  app=initializeApp(firebaseConfig);auth=getAuth(app);db=getDatabase(app);
+  const cr=await signInAnonymously(auth);
+  $('status').textContent='Online • '+cr.user.uid.slice(0,6);
+  $('login').classList.add('hidden');$('ui').classList.remove('hidden');
+  boot();
+  /* mode tiap agent (sinkron di semua perangkat) */
+  onValue(ref(db,`offices/${oid}/modes`),s=>{const v=s.val()||{};
+   D.forEach(d=>{const m=v[d.id]||d.m||'cmd';if(m!==d.mode){d.mode=m;applyMode(d)}});modeLbl()});
+  /* layar besar tiap ruangan menampilkan pesan terakhir */
+  D.forEach(d=>onValue(query(ref(db,`offices/${oid}/messages/${d.id}`),limitToLast(1)),s=>{
+   const v=s.val();if(!v)return;const m=Object.values(v)[0],r=rooms[d.id];if(r.lock)return;r.txt=(m.who==='ai'?'':'❓ ')+m.text;draw(r)}));
+  /* agent 24 jam: hanya satu perangkat yang menulis tiap 30 dtk (transaction) */
+  setInterval(()=>{if(!autoOn)return;D.filter(d=>d.mode==='24h').forEach(async d=>{
+   try{const res=await runTransaction(ref(db,`offices/${oid}/runs/${d.id}`),v=>Date.now()-(v||0)>28000?Date.now():undefined);
+    if(res.committed)send(d.id,'ai',d.g?d.g():`Laporan rutin ${d.name}: semua normal.`)}catch(e){}})},6000);
+ }catch(e){alert('Gagal koneksi Firebase: '+e.message)}
 };
-$('auto-toggle').onclick = e => {
-  autoEnabled = !autoEnabled;
-  e.target.classList.toggle('active', autoEnabled);
-  e.target.textContent = 'Auto 24 Jam: ' + (autoEnabled ? 'ON' : 'OFF');
-};
-
-/* ===== Gedung ===== */
-function buildOffice() {
-  const b = $('building');
-  b.innerHTML = `
-    <div class="lobby" id="lobby"><span class="plant" style="left:12px;top:10px">🪴</span><span class="plant" style="right:12px;top:10px">🪴</span>
-      <span class="plant" style="left:12px;bottom:10px">🌿</span><span class="plant" style="right:12px;bottom:10px">🌿</span>
-      <div class="rug"><div class="logo">🧠</div><h3>Kantor AI</h3><p>Bersama Membangun Masa Depan Finansial</p></div></div>
-    <div class="room meeting"><span>🖥️</span>Ruang Meeting</div>
-    <div class="entrance"><div class="desk">🛎️ Resepsionis</div><div>🚪 Pintu Masuk</div></div>`;
-
-  DIVISIONS.forEach(d => {
-    const el = document.createElement('div');
-    el.className = 'room';
-    el.style.setProperty('--c', d.color);
-    el.style.gridArea = `${d.pos[0]}/${d.pos[1]}/span 1/span ${d.span || 1}`;
-    el.innerHTML = `<div class="tag"><b>${d.id}</b>${d.name}</div>
-      <div class="floor"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <div class="ico">${d.icon}</div><div class="rs" id="rs-${d.id}">Siap</div>`;
-    el.onclick = () => openDivision(d.id);
-    b.appendChild(el);
-    cells.set(d.id, el);
-  });
-
-  /* Karakter */
-  DIVISIONS.forEach(d => {
-    const c = document.createElement('div');
-    c.className = 'char';
-    c.style.setProperty('--c', d.color);
-    c.textContent = d.emoji;
-    b.appendChild(c);
-    chars.push({ el: c, divId: d.id, home: d.id, color: d.color, emoji: d.emoji });
-  });
-  requestAnimationFrame(() => chars.forEach(c => placeIn(c, cells.get(c.home), true)));
-
-  /* Legend */
-  $('legend').innerHTML = DIVISIONS.slice().sort((a, b) => a.id - b.id).map(d =>
-    `<div data-id="${d.id}"><b style="background:${d.color}">${d.id}</b>${d.name}</div>`).join('');
-  $('legend').onclick = e => { const r = e.target.closest('[data-id]'); if (r) openDivision(+r.dataset.id); };
-
-  setInterval(walkSome, 3500);
-  setInterval(autoPost, 20000);
-  const last = localStorage.getItem('last_div_' + officeId);
-  if (last) setTimeout(() => openDivision(+last), 600);
-}
-
-function placeIn(c, target, home) {
-  const lobby = $('lobby');
-  const t = target || lobby;
-  const jitter = home ? 0 : (Math.random() - .5) * 40;
-  c.el.style.left = (t.offsetLeft + t.offsetWidth / 2 - 13 + jitter) + 'px';
-  c.el.style.top = (t.offsetTop + t.offsetHeight / 2 + 8 - 13 + (home ? 0 : jitter)) + 'px';
-}
-function walkSome() {
-  chars.forEach(c => {
-    if (Math.random() > .25) return;
-    const toHome = c.divId !== c.home && Math.random() < .5;
-    const targetId = toHome ? c.home : DIVISIONS[Math.floor(Math.random() * DIVISIONS.length)].id;
-    c.divId = targetId;
-    placeIn(c, Math.random() < .3 ? $('lobby') : cells.get(targetId), toHome);
-    c.el.classList.add('walk');
-    setTimeout(() => c.el.classList.remove('walk'), 1400);
-  });
-}
-function autoPost() {
-  if (!autoEnabled || !db) return;
-  DIVISIONS.filter(d => d.auto).forEach(d => {
-    if (Math.random() < .35) { sendMessage(d.id, 'ai', d.auto); setRoom(d.id, d.auto); }
-  });
-}
-
-/* Skala agar seluruh gedung muat di layar */
-function fitStage() {
-  const s = Math.min(innerWidth / 1100, (innerHeight - 52) / 700, 1.15);
-  $('stage').style.transform = `translate(-50%,-50%) scale(${s})`;
-}
-addEventListener('resize', fitStage);
-
-function setRoom(id, text) {
-  const r = $('rs-' + id); if (r) r.textContent = text;
-  $('ticker').textContent = text;
-  if (currentDiv === id) $('screen').textContent = text;
-}
-
-/* ===== Firebase pesan ===== */
-function sendMessage(divId, who, text) {
-  const d = DIVISIONS.find(x => x.id === divId);
-  push(ref(db, `offices/${officeId}/messages/${divId}`),
-    { who, text, t: Date.now(), uid: auth.currentUser.uid, divName: d?.name || '' });
-}
-function listen(divId) {
-  if (unsub) unsub();
-  const d = DIVISIONS.find(x => x.id === divId);
-  unsub = onValue(ref(db, `offices/${officeId}/messages/${divId}`), snap => {
-    const data = snap.val(), arr = [];
-    if (data) Object.entries(data).forEach(([k, v]) => arr.push({ id: k, ...v }));
-    arr.sort((a, b) => (a.t || 0) - (b.t || 0));
-    const body = $('chat-body');
-    body.innerHTML = arr.map(m => `<div class="msg ${m.who === 'ai' ? 'ai' : 'user'}"><div class="bubble">${esc(m.text)}</div>
-      <div class="meta">${m.who === 'ai' ? esc(d.name) : 'Anda'} • ${new Date(m.t || 0).toLocaleTimeString('id-ID')}</div></div>`).join('');
-    body.scrollTop = body.scrollHeight;
-  });
-}
-
-/* ===== Chat ===== */
-function openDivision(id) {
-  const d = DIVISIONS.find(x => x.id === id); if (!d) return;
-  currentDiv = id;
-  localStorage.setItem('last_div_' + officeId, id);
-  $('chat-title').textContent = `${d.icon} ${d.name}`;
-  $('chat-title').style.color = d.color;
-  $('chat').style.setProperty('--c', d.color);
-  $('chat').classList.add('open');
-  $('screen').textContent = `Selamat datang di divisi ${d.name}. Silakan tanya apa saja.`;
-  listen(id);
-}
-$('chat-close').onclick = () => { $('chat').classList.remove('open'); currentDiv = null; };
-$('btn-send').onclick = sendChat;
-$('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
-
-function sendChat() {
-  const inp = $('chat-input'), text = inp.value.trim();
-  if (!text || !currentDiv) return;
-  inp.value = '';
-  const id = currentDiv;
-  sendMessage(id, 'user', text);
-  meetAndAnswer(id, text);
-}
-
-async function meetAndAnswer(id, q) {
-  const lines = ['Menganalisis pertanyaan...', 'Mengambil data terkait...', 'Diskusi tim divisi...', 'Menyusun jawaban...'];
-  const t = $('mtable'); t.innerHTML = '';
-  const pos = [['15%','25%'],['75%','25%'],['15%','60%'],['75%','60%'],['45%','5%']];
-  const team = chars.filter(c => c.divId === id).concat(chars.filter(c => c.home === id && c.divId !== id)).slice(0, 5);
-  (team.length ? team : [chars.find(c => c.home === id)]).forEach((c, i) => {
-    const a = document.createElement('div');
-    a.className = 'mav'; a.textContent = c.emoji;
-    a.style.cssText = `left:${pos[i][0]};top:${pos[i][1]};border-color:${c.color}`;
-    t.appendChild(a);
-  });
-  $('meet').classList.add('open');
-  for (const l of lines) { $('mline').textContent = l; await sleep(800); }
-  $('meet').classList.remove('open');
-  const ans = demoAnswer(id, q);
-  setRoom(id, ans);
-  sendMessage(id, 'ai', ans);
-}
-
-function demoAnswer(id, text) {
-  const d = DIVISIONS.find(x => x.id === id), t = text.toLowerCase();
-  if (/\b(hai|halo)\b/.test(t)) return `Halo! Saya dari divisi ${d.name}. Ada yang bisa saya bantu?`;
-  if (t.includes('harga')) return 'Informasi harga terkini akan kami perbarui di layar divisi.';
-  if (t.includes('reksadana')) return 'Reksadana adalah kumpulan dana yang dikelola profesional oleh manajer investasi.';
-  if (t.includes('bitcoin') || t.includes('btc')) return 'Bitcoin adalah aset digital terdesentralisasi berbasis blockchain.';
-  if (t.includes('emas')) return 'Emas logam mulia sering dipakai sebagai pelindung nilai dari inflasi.';
-  if (t.includes('resep')) return 'Resep masakan dan minuman siap dibagikan sesuai permintaan Anda.';
-  return `Ini jawaban dari divisi ${d.name}. ${d.auto || 'Silakan ajukan pertanyaan lebih spesifik.'}`;
-}
 </script>
 </body>
 </html>
