@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Office Agent - Gedung Kantor 15 Divisi</title>
+<style>
+:root {
+  --bg: #0b0c10;
+  --wall: #1f2833;
+  --floor: #e8e8e8;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --accent: #00f2ff;
+  --panel: rgba(10, 12, 16, 0.9);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  overflow: hidden; height: 100vh;
+}
+
+/* Login */
+#login-screen {
+  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; background: var(--bg);
+  padding: 24px; text-align: center;
+}
+#login-screen h2 { margin-bottom: 8px; font-size: 24px; letter-spacing: 1px; }
+#login-screen p { color: var(--muted); margin-bottom: 20px; font-size: 14px; }
+#office-code {
+  padding: 12px 16px; font-size: 16px; border-radius: 10px; border: 1px solid var(--wall);
+  background: var(--panel); color: var(--text); width: 260px; margin-bottom: 16px;
+  text-align: center;
+}
+#btn-login {
+  padding: 12px 28px; font-size: 16px; font-weight: 700; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), #bc13fe); color: #000; cursor: pointer;
+}
+.note { margin-top: 16px; font-size: 12px; color: var(--muted); max-width: 300px; line-height: 1.4; }
+
+/* Header */
+#office-app { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
+header {
+  padding: 12px 20px; background: var(--panel); border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: space-between; z-index: 20; backdrop-filter: blur(8px);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; letter-spacing: -0.5px; }
+.dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); animation: blink 1s infinite; }
+.status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+#auto-toggle {
+  background: var(--wall); border: 1px solid var(--muted); color: var(--text);
+  padding: 4px 10px; border-radius: 16px; font-size: 11px; cursor: pointer;
+}
+#auto-toggle.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* Office Map */
+#map-view {
+  flex: 1; position: relative; overflow: auto; padding: 20px;
+  display: flex; justify-content: center; align-items: flex-start;
+  background: linear-gradient(180deg, #0a0b10 0%, #050608 100%);
+}
+#office-map {
+  position: relative; display: grid;
+  grid-template-columns: repeat(5, 160px);
+  grid-template-rows: repeat(4, 150px);
+  gap: 10px;
+  width: max-content;
+}
+
+/* Cells */
+.cell {
+  border-radius: 10px; overflow: hidden; position: relative;
+  border: 2px solid var(--wall); background: var(--floor);
+  display: flex; flex-direction: column;
+  transition: transform .15s, border-color .15s;
+}
+.cell:hover { transform: scale(1.03); z-index: 2; }
+.cell.lobby { background: #f0f0f0; border-style: dashed; justify-content: center; align-items: center; font-size: 11px; color: #aaa; font-weight: 700; }
+.cell.meeting { background: #fff3e0; border-color: #d4af37; justify-content: center; align-items: center; font-size: 11px; color: #8a5a00; font-weight: 700; }
+
+/* Room */
+.room { cursor: pointer; }
+.room-header {
+  padding: 6px 8px; font-size: 10px; font-weight: 800; text-align: center;
+  border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: rgba(0,0,0,0.05);
+}
+.room-badge {
+  width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 900; color: #fff;
+}
+.room-screen {
+  flex: 1; background: #000; border: 2px solid #333; margin: 6px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; font-size: 9px; color: #444; padding: 4px;
+  position: relative;
+}
+.screen-dot {
+  position: absolute; top: 4px; left: 6px; width: 6px; height: 6px; background: #0f0; border-radius: 50%;
+  box-shadow: 0 0 6px #0f0; animation: blink 1s infinite;
+}
+.room-desk {
+  height: 28px; border-top: 1px solid rgba(0,0,0,0.1);
+  background: linear-gradient(180deg, #cbd5e1, #94a3b8);
+  display: flex; align-items: center; justify-content: center; position: relative;
+}
+.avatar-desk {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.3); animation: float 3s ease-in-out infinite;
+}
+
+/* Character Layer */
+#char-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.character {
+  position: absolute; width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: left .6s ease-out, top .6s ease-out; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  cursor: pointer; z-index: 2;
+}
+.character.walking { animation: walkBounce .4s ease-in-out infinite; }
+.character-name {
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; color: var(--muted); white-space: nowrap;
+  background: var(--bg); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--wall);
+}
+
+/* Big Screen */
+#big-screen {
+  position: fixed; top: 70px; right: 16px; width: 300px; height: 180px;
+  border: 3px solid var(--accent); border-radius: 10px; background: #000;
+  display: flex; flex-direction: column; padding: 10px;
+  box-shadow: 0 0 40px var(--accent); z-index: 45;
+}
+#big-screen.hidden { display: none; }
+.screen-header { font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid var(--accent); padding-bottom: 4px; }
+.screen-content { flex: 1; overflow-y: auto; font-size: 13px; color: #ccc; font-family: 'Courier New', monospace; }
+
+/* Chat Panel */
+#chat-panel {
+  position: fixed; inset: 0; z-index: 50; display: none; flex-direction: column;
+  background: var(--panel); backdrop-filter: blur(12px);
+}
+#chat-panel.open { display: flex; }
+@media (min-width: 900px){
+  #chat-panel { width: 440px; right: 0; left: auto; top: 0; bottom: 0; transform: translateX(100%); transition: transform .3s ease; }
+  #chat-panel.open { transform: translateX(0); }
+}
+.chat-header {
+  padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2);
+}
+.chat-title { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.chat-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+.chat-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 80%; display: flex; flex-direction: column; gap: 4px; }
+.msg.ai { align-self: flex-start; }
+.msg.user { align-self: flex-end; }
+.bubble { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+.msg.ai .bubble { background: #1f1f2e; border: 1px solid rgba(255,255,255,0.08); color: var(--text); border-bottom-left-radius: 4px; }
+.msg.user .bubble { background: var(--accent); color: #000; border-bottom-right-radius: 4px; }
+.meta { font-size: 11px; color: var(--muted); }
+
+.chat-input-area {
+  padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3);
+}
+.input-wrap {
+  display: flex; gap: 10px; max-width: 600px; margin: 0 auto;
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 6px 14px;
+}
+textarea { flex: 1; border: none; outline: none; background: transparent; color: var(--text); font-size: 14px; resize: none; min-height: 20px; font-family: inherit; }
+.btn-send { background: linear-gradient(135deg, var(--accent), #bc13fe); border: none; border-radius: 12px; width: 44px; height: 44px; color: #fff; font-weight: 700; cursor: pointer; }
+.hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+/* Meeting Overlay */
+#meeting-overlay {
+  position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+}
+#meeting-overlay.open { display: flex; }
+.meeting-room {
+  position: relative; width: 340px; height: 260px; border: 4px solid var(--accent); border-radius: 16px;
+  background: var(--floor); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px; box-shadow: 0 0 60px var(--accent);
+  animation: meetingPop 0.4s cubic-bezier(.175,.885,.32,1.275) both;
+}
+.meeting-title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+.meeting-table {
+  width: 100%; height: 120px; border: 2px dashed rgba(0,242,255,0.3); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; position: relative; background: rgba(0,0,0,0.1);
+}
+.meeting-avatar {
+  width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff;
+  position: absolute; display: flex; align-items: center; justify-content: center; font-size: 14px;
+  animation: meetingFloat 2s ease-in-out infinite;
+}
+.meeting-bubble {
+  position: absolute; top: -36px; background: var(--accent); color: #000;
+  padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; white-space: nowrap;
+  animation: bubbleIn 0.3s both;
+}
+.btn-skip-meeting {
+  margin-top: 16px; background: transparent; border: 1px solid var(--accent); color: var(--accent);
+  padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;
+}
+.btn-skip-meeting:hover { background: var(--accent); color: #000; }
+
+.auto-ticker {
+  position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: var(--muted); background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); z-index: 20;
+}
+
+/* Animasi */
+@keyframes blink { 0%,96%,100%{ opacity:1 } 98%{ opacity:0.2 } }
+@keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-5px) } }
+@keyframes walkBounce { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-4px) } }
+@keyframes meetingPop { from{ opacity:0; transform: scale(0.85) } to{ opacity:1; transform: scale(1) } }
+@keyframes meetingFloat { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-8px) } }
+@keyframes bubbleIn { from{ opacity:0; transform: translateY(10px) } to{ opacity:1; transform: translateY(0) } }
+.hidden { display: none !important; }
+
+@media (max-width: 768px){
+  #office-map { grid-template-columns: repeat(3, 120px); grid-template-rows: repeat(7, 110px); gap: 8px; }
+  #big-screen { width: 90vw; right: auto; left: 10px; top: auto; bottom: 80px; height: 130px; }
+  #chat-panel { width: 100%; transform: translateY(100%); transition: transform .3s ease; top: auto; bottom: 0; height: 60vh; }
+  #chat-panel.open { transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <h2>AI Office Agent</h2>
+  <p>Masukkan kode kantor untuk sinkronisasi multi-device</p>
+  <input type="text" id="office-code" value="AI2026" placeholder="Kode Kantor">
+  <button id="btn-login">Masuk</button>
+  <p class="note">Gunakan kode yang sama di HP istri, HP kamu, tablet rumah, tab mobil, dan PC kantor.</p>
+</div>
+
+<!-- App -->
+<div id="office-app" class="hidden">
+  <header>
+    <div class="brand"><div class="dot"></div>AI Office Agent</div>
+    <div class="status" id="statusText">Menghubungkan...</div>
+    <button id="auto-toggle" class="active">Auto 24 Jam: ON</button>
+  </header>
+
+  <div id="map-view">
+    <div id="office-map"></div>
+    <div id="char-layer"></div>
+    <div class="auto-ticker" id="auto-ticker">Sistem siap...</div>
+  </div>
+
+  <div id="big-screen" class="hidden">
+    <div class="screen-header">LAYAR INFO DIVISI</div>
+    <div class="screen-content" id="screen-content">Pilih divisi untuk melihat info dan jawaban.</div>
+  </div>
+
+  <div id="meeting-overlay">
+    <div class="meeting-room">
+      <div class="meeting-title">RAPAT DIVISI</div>
+      <div class="meeting-table" id="meeting-table"></div>
+      <div class="meeting-bubble" id="meeting-bubble" style="display:none;">Sedang membahas...</div>
+    </div>
+    <button class="btn-skip-meeting" id="skip-meeting" style="display:none;">Langsung Jawab</button>
+  </div>
+
+  <div id="chat-panel">
+    <div class="chat-header">
+      <div class="chat-title"><span id="chat-div-icon">🏢</span> <span id="chat-div-name">Divisi</span></div>
+      <button class="chat-close" id="chat-close">✕</button>
+    </div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="chat-input-area">
+      <div class="input-wrap">
+        <textarea id="chat-input" placeholder="Ketik pertanyaan untuk divisi ini..."></textarea>
+        <button class="btn-send" id="btn-send">➤</button>
+      </div>
+      <div class="hint">Enter = Kirim • Shift+Enter = Baris baru</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* ========== KONFIGURASI FIREBASE ========== */
+ const firebaseConfig = {
+    apiKey: "AIzaSyBeb1L6dCevfzX2tw__6MGWfpB6jfKTO6M",
+    authDomain: "ai-kantor-project.firebaseapp.com",
+    databaseURL: "https://ai-kantor-project-default-rtdb.firebaseio.com",
+    projectId: "ai-kantor-project",
+    storageBucket: "ai-kantor-project.firebasestorage.app",
+    messagingSenderId: "1057185794628",
+    appId: "1:1057185794628:web:7ac036e7c5df69bdbbca11",
+    measurementId: "G-SRBJYD2F77"
+  };
+
+/* ========== DATA DIVISI (15 Divisi) ========== */
+const DIVISIONS = [
+  {id:1, name:'Trading Saham', color:'#10b981', icon:'📈', uniform:'🟢', auto:true, autoText:'Saham ABC naik 2,4% hari ini.'},
+  {id:2, name:'Invest Saham', color:'#3b82f6', icon:'📊', uniform:'🔵', auto:false},
+  {id:3, name:'Invest Dividen Saham', color:'#8b5cf6', icon:'💰', uniform:'🟣', auto:false},
+  {id:4, name:'Bibit Reksadana', color:'#14b8a6', icon:'🌱', uniform:'🟡', auto:false},
+  {id:5, name:'Bitcoin Indodax', color:'#f97316', icon:'₿', uniform:'🟠', auto:true, autoText:'BTC di Indodax: Rp 714.250.000'},
+  {id:6, name:'Bitcoin Toko Crypto', color:'#ec4899', icon:'🏪', uniform:'🔴', auto:true, autoText:'Crypto Update: ETH menguat 1,8%'},
+  {id:7, name:'Emas Logam Mulia', color:'#d4af37', icon:'🥇', uniform:'🟡', auto:false},
+  {id:8, name:'Pencatat Keuangan', color:'#1e293b', icon:'📒', uniform:'⚪', auto:false},
+  {id:9, name:'Multimedia Video', color:'#a855f7', icon:'🎬', uniform:'🟥', auto:false},
+  {id:10, name:'Multimedia Grafis', color:'#0ea5e9', icon:'🎨', uniform:'🔷', auto:false},
+  {id:11, name:'Coding', color:'#84cc16', icon:'💻', uniform:'🟩', auto:false},
+  {id:12, name:'Online Shop', color:'#be185d', icon:'🛒', uniform:'🟪', auto:false},
+  {id:13, name:'Viral/Trend News', color:'#f59e0b', icon:'📰', uniform:'🟨', auto:true, autoText:'News: AI kantor menjadi trending teratas.'},
+  {id:14, name:'Resep Masakan & Minuman', color:'#fb923c', icon:'🍜', uniform:'🟧', auto:false},
+  {id:15, name:'AI Chatbot', color:'#6366f1', icon:'🤖', uniform:'🔵', auto:false},
+];
+
+/* Layout gedung: 5 kolom x 4 baris = 20 sel. 15 divisi + lobby + meeting + 3 kosong/tanaman */
+const GRID = [
+  {div:1},{div:2},{div:3},{div:4},{div:5},
+  {div:7},{type:'lobby'},{type:'lobby'},{div:6},{div:10},
+  {div:8},{type:'lobby'},{type:'lobby'},{div:9},{div:12},
+  {type:'meeting'},{div:11},{div:13},{div:14},{div:15}
+];
+
+/* ========== FIREBASE ========== */
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, onValue, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+let app, auth, db, officeId, currentDiv = null;
+let autoEnabled = true;
+let messageUnsubs = {};
+
+const loginScreen = document.getElementById('login-screen');
+const appEl = document.getElementById('office-app');
+const officeCodeInput = document.getElementById('office-code');
+const btnLogin = document.getElementById('btn-login');
+const statusText = document.getElementById('statusText');
+
+btnLogin.onclick = async () => {
+  const code = officeCodeInput.value.trim();
+  if (!code) return;
+  officeId = code;
+  statusText.textContent = 'Menghubungkan ke Firebase...';
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getDatabase(app);
+    await signInAnonymously(auth);
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        statusText.textContent = `Online sebagai ${user.uid.slice(0,6)}...`;
+        loginScreen.classList.add('hidden');
+        appEl.classList.remove('hidden');
+        initApp();
+      }
+    });
+  } catch (e) {
+    alert('Gagal koneksi Firebase: ' + e.message);
+    statusText.textContent = 'Gagal terkoneksi';
+  }
+};
+
+const autoToggle = document.getElementById('auto-toggle');
+autoToggle.onclick = () => {
+  autoEnabled = !autoToggle.classList.contains('active');
+  autoToggle.classList.toggle('active');
+  autoToggle.textContent = autoEnabled ? 'Auto 24 Jam: ON' : 'Auto 24 Jam: OFF';
+};
+
+/* ========== RENDER GEDUNG ========== */
+const officeMap = document.getElementById('office-map');
+const charLayer = document.getElementById('char-layer');
+const chars = [];
+
+function initApp() {
+  GRID.forEach((slot, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    if (slot.type === 'lobby') {
+      cell.classList.add('lobby');
+      cell.textContent = 'LOBBY';
+      officeMap.appendChild(cell);
+      return;
+    }
+    if (slot.type === 'meeting') {
+      cell.classList.add('meeting');
+      cell.textContent = 'RUANG MEETING';
+      officeMap.appendChild(cell);
+      return;
+    }
+
+    const d = DIVISIONS.find(x => x.id === slot.div);
+    cell.classList.add('room');
+    cell.style.setProperty('--div-color', d.color);
+    cell.dataset.div = d.id;
+    cell.innerHTML = `
+      <div class="room-header">
+        <span class="room-badge" style="background:${d.color}">${d.id}</span>
+        <span>${d.icon} ${d.name}</span>
+      </div>
+      <div class="room-screen"><span class="screen-dot"></span><div id="rscreen-${d.id}">Siap</div></div>
+      <div class="room-desk"><div class="avatar-desk" style="color:${d.color}">${d.uniform}</div></div>
+    `;
+    cell.onclick = () => openDivision(d.id);
+    officeMap.appendChild(cell);
+
+    const charEl = document.createElement('div');
+    charEl.className = 'character';
+    charEl.style.setProperty('--div-color', d.color);
+    charEl.textContent = d.uniform;
+    charEl.title = d.name;
+    charLayer.appendChild(charEl);
+
+    chars.push({ id: d.id, divId: d.id, name: d.name, el: charEl, color: d.color, uniform: d.uniform });
+  });
+
+  /* Hitung posisi ruang untuk karakter */
+  setTimeout(computeRoomPositions, 100);
+
+  function computeRoomPositions() {
+    const rect = officeMap.getBoundingClientRect();
+    DIVISIONS.forEach(d => {
+      const el = document.querySelector(`.room[data-div="${d.id}"]`);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      d.posX = r.left - rect.left + r.width/2;
+      d.posY = r.top - rect.top + r.height/2;
+    });
+    chars.forEach(c => {
+      const d = DIVISIONS.find(x => x.id === c.divId);
+      if (d) { c.el.style.left = d.posX + 'px'; c.el.style.top = d.posY + 'px'; }
+    });
+  }
+
+  /* Karakter berjalan otomatis antar ruang */
+  function randomWalk(c) {
+    const targets = DIVISIONS.filter(x => x.id !== c.divId);
+    const t = targets[Math.floor(Math.random() * targets.length)];
+    c.divId = t.id;
+    c.el.style.left = t.posX + 'px';
+    c.el.style.top = t.posY + 'px';
+    c.el.classList.add('walking');
+    setTimeout(() => c.el.classList.remove('walking'), 400);
+  }
+  setInterval(() => {
+    chars.forEach(c => { if (Math.random() < 0.25) randomWalk(c); });
+  }, 3500);
+
+  /* Auto 24 Jam */
+  setInterval(() => {
+    if (!autoEnabled) return;
+    DIVISIONS.filter(d => d.auto).forEach(d => {
+      if (Math.random() < 0.35) sendMessage(d.id, 'ai', d.autoText);
+    });
+  }, 20000);
+
+  const last = localStorage.getItem('last_div_' + officeId);
+  if (last) setTimeout(() => openDivision(parseInt(last)), 500);
+}
+
+/* ========== BUKA DIVISI ========== */
+const chatPanel = document.getElementById('chat-panel');
+const chatBody = document.getElementById('chat-body');
+const chatDivName = document.getElementById('chat-div-name');
+const chatDivIcon = document.getElementById('chat-div-icon');
+const screenContent = document.getElementById('screen-content');
+const bigScreen = document.getElementById('big-screen');
+
+function openDivision(divId) {
+  const d = DIVISIONS.find(x => x.id === divId);
+  if (!d) return;
+  currentDiv = divId;
+  localStorage.setItem('last_div_' + officeId, divId);
+  chatDivName.textContent = d.name;
+  chatDivIcon.textContent = d.icon;
+  chatDivName.style.color = d.color;
+  chatPanel.classList.add('open');
+  bigScreen.classList.remove('hidden');
+  bigScreen.style.borderColor = d.color;
+  document.querySelector('.screen-header').style.color = d.color;
+  renderMessages(divId);
+  updateScreen(divId, `Selamat datang di divisi ${d.name}. Silakan tanya apa saja.`);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+document.getElementById('chat-close').onclick = () => {
+  chatPanel.classList.remove('open');
+  currentDiv = null;
+};
+
+/* ========== FIREBASE MESSAGES ========== */
+function listenMessages(divId, callback) {
+  if (messageUnsubs[divId]) messageUnsubs[divId]();
+  const q = ref(db, `offices/${officeId}/messages/${divId}`);
+  messageUnsubs[divId] = onValue(q, (snapshot) => {
+    const data = snapshot.val();
+    const arr = [];
+    if (data) {
+      Object.entries(data).forEach(([key, val]) => {
+        arr.push({ id: key, ...val });
+      });
+      arr.sort((a,b) => (a.t||0) - (b.t||0));
+    }
+    callback(arr);
+  });
+}
+
+function renderMessages(divId) {
+  const d = DIVISIONS.find(x => x.id === divId);
+  chatBody.innerHTML = '';
+  listenMessages(divId, (arr) => {
+    chatBody.innerHTML = '';
+    arr.forEach(m => {
+      const div = document.createElement('div');
+      div.className = `msg ${m.who}`;
+      const whoLabel = m.who === 'ai' ? (d?.name || 'AI') : 'Anda';
+      div.innerHTML = `<div class="bubble">${escapeHtml(m.text)}</div><div class="meta">${whoLabel} • ${new Date(m.t||0).toLocaleTimeString('id-ID')}</div>`;
+      chatBody.appendChild(div);
+    });
+    chatBody.scrollTop = chatBody.scrollHeight;
+  });
+}
+
+function sendMessage(divId, who, text) {
+  const d = DIVISIONS.find(x => x.id === divId);
+  push(ref(db, `offices/${officeId}/messages/${divId}`), {
+    who, text, t: Date.now(), uid: auth.currentUser.uid,
+    divName: d?.name || ''
+  });
+}
+
+/* ========== CHAT UI ========== */
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const meetingOverlay = document.getElementById('meeting-overlay');
+const meetingTable = document.getElementById('meeting-table');
+const meetingBubble = document.getElementById('meeting-bubble');
+const skipBtn = document.getElementById('skip-meeting');
+
+const meetingLines = [
+  'Menganalisis pertanyaan...',
+  'Mengambil data terkait...',
+  'Diskusi tim divisi...',
+  'Menyusun jawaban terbaik...',
+  'Siap menyampaikan hasil.'
+];
+
+async function startMeetingAndAnswer(divId, userText) {
+  const d = DIVISIONS.find(x => x.id === divId);
+  meetingOverlay.classList.add('open');
+  meetingTable.innerHTML = '';
+  meetingBubble.style.display = 'none';
+  skipBtn.style.display = 'none';
+
+  const divChars = chars.filter(c => c.divId === divId);
+  const positions = [
+    { left: '20%', top: '30%' }, { left: '80%', top: '30%' },
+    { left: '20%', top: '70%' }, { left: '80%', top: '70%' },
+    { left: '50%', top: '15%' }
+  ];
+  divChars.forEach((c, i) => {
+    const clone = document.createElement('div');
+    clone.className = 'meeting-avatar';
+    clone.textContent = c.uniform;
+    clone.style.left = positions[i]?.left || '50%';
+    clone.style.top = positions[i]?.top || '50%';
+    clone.style.borderColor = c.color;
+    meetingTable.appendChild(clone);
+  });
+
+  for (let i = 0; i < meetingLines.length; i++) {
+    meetingBubble.textContent = meetingLines[i];
+    meetingBubble.style.display = 'block';
+    meetingBubble.style.animation = 'none';
+    meetingBubble.offsetHeight;
+    meetingBubble.style.animation = 'bubbleIn 0.3s both';
+    await new Promise(r => setTimeout(r, 900));
+  }
+
+  meetingOverlay.classList.remove('open');
+  skipBtn.style.display = 'none';
+
+  const answer = getDemoAnswer(divId, userText);
+  await typeAnswer(answer);
+}
+
+function getDemoAnswer(divId, text) {
+  const d = DIVISIONS.find(x => x.id === divId);
+  const t = text.toLowerCase();
+  const fallback = `Ini jawaban otomatis dari divisi ${d.name}. ${d.autoText || 'Silakan ajukan pertanyaan lebih spesifik.'}`;
+  if (t.includes('hai') || t.includes('halo')) return `Halo! Saya dari divisi ${d.name}. Ada yang bisa saya bantu?`;
+  if (t.includes('harga') || t.includes('price')) return 'Informasi harga terkini akan kami perbarui di layar besar.';
+  if (t.includes('reksadana')) return 'Reksadana adalah kumpulan dana yang dikelola secara profesional oleh manajer investasi.';
+  if (t.includes('bitcoin') || t.includes('btc')) return 'Bitcoin adalah aset digital terdesentralisasi yang berjalan pada teknologi blockchain.';
+  if (t.includes('emas')) return 'Emas logam mulia adalah investasi pelindung terhadap inflasi dan tidak stabilnya mata uang.';
+  if (t.includes('coding') || t.includes('code')) return 'Kami siap membantu pengembangan aplikasi, website, dan otomasi kerja.';
+  if (t.includes('resep')) return 'Resep masakan dan minuman siap dibagikan sesuai permintaan Anda.';
+  if (t.includes('viral') || t.includes('tren')) return 'Tren viral saat ini seputar AI agent dan otomasi kantor digital.';
+  return fallback;
+}
+
+async function typeAnswer(answer) {
+  const el = document.getElementById('screen-content');
+  el.textContent = '';
+  const chatDiv = document.createElement('div');
+  chatDiv.className = 'msg ai';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  chatDiv.appendChild(bubble);
+  chatBody.appendChild(chatDiv);
+  let i = 0;
+  while (i < answer.length) {
+    el.textContent += answer[i];
+    bubble.textContent += answer[i];
+    i++;
+    chatBody.scrollTop = chatBody.scrollHeight;
+    el.scrollTop = el.scrollHeight;
+    await new Promise(r => setTimeout(r, 15));
+  }
+  sendMessage(currentDiv, 'ai', answer);
+}
+
+document.getElementById('btn-send').onclick = sendChat;
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !currentDiv) return;
+  input.value = '';
+  sendMessage(currentDiv, 'user', text);
+  startMeetingAndAnswer(currentDiv, text);
+}
+
+function updateScreen(divId, text) {
+  const screen = document.getElementById(`rscreen-${divId}`);
+  if (screen) screen.textContent = text;
+  if (currentDiv === divId) screenContent.textContent = text;
+}
+
+/* ========== SIDE BUILDINGS (kosong, dihindari untuk konsentrasi gedung utama) ========== */
+/* Tidak ada gedung samping agar fokus pada gedung utama seperti referensi */
+
+/* INIT (menunggu login) */
+</script>
+</body>
+</html>
