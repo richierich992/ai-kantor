@@ -3,16 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AI Office Agent - Gedung Kantor 15 Divisi</title>
+<title>AI Office Agent - Kantor Isometrik 3D</title>
 <style>
 :root {
   --bg: #0b0c10;
-  --wall: #1f2833;
-  --floor: #e8e8e8;
   --text: #e2e8f0;
   --muted: #64748b;
   --accent: #00f2ff;
-  --panel: rgba(10, 12, 16, 0.9);
+  --floor: #e2e8f0;
+  --wall: #1f2833;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -31,8 +30,7 @@ body {
 #login-screen p { color: var(--muted); margin-bottom: 20px; font-size: 14px; }
 #office-code {
   padding: 12px 16px; font-size: 16px; border-radius: 10px; border: 1px solid var(--wall);
-  background: var(--panel); color: var(--text); width: 260px; margin-bottom: 16px;
-  text-align: center;
+  background: rgba(10,12,16,0.9); color: var(--text); width: 260px; margin-bottom: 16px; text-align: center;
 }
 #btn-login {
   padding: 12px 28px; font-size: 16px; font-weight: 700; border: none; border-radius: 10px;
@@ -43,10 +41,10 @@ body {
 /* Header */
 #office-app { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
 header {
-  padding: 12px 20px; background: var(--panel); border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 12px 20px; background: rgba(10,12,16,0.9); border-bottom: 1px solid rgba(255,255,255,0.08);
   display: flex; align-items: center; justify-content: space-between; z-index: 20; backdrop-filter: blur(8px);
 }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; letter-spacing: -0.5px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
 .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); animation: blink 1s infinite; }
 .status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
 #auto-toggle {
@@ -55,83 +53,77 @@ header {
 }
 #auto-toggle.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
-/* Office Map */
+/* ===== ISOMETRIC OFFICE ===== */
 #map-view {
-  flex: 1; position: relative; overflow: auto; padding: 20px;
-  display: flex; justify-content: center; align-items: flex-start;
-  background: linear-gradient(180deg, #0a0b10 0%, #050608 100%);
+  flex: 1; position: relative; overflow: hidden;
+  background: radial-gradient(circle at center, #111318 0%, #050608 100%);
+  display: flex; justify-content: center; align-items: center;
 }
-#office-map {
-  position: relative; display: grid;
-  grid-template-columns: repeat(5, 160px);
-  grid-template-rows: repeat(4, 150px);
-  gap: 10px;
-  width: max-content;
+.iso-stage {
+  perspective: 1200px; transform-style: preserve-3d;
+  width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;
 }
+.iso-floor {
+  transform: rotateX(60deg) rotateZ(45deg);
+  transform-origin: bottom center;
+  transform-style: preserve-3d;
+  position: relative; width: 820px; height: 620px;
+}
+.iso-cell {
+  position: absolute; transform-style: preserve-3d;
+  width: 150px; height: 150px;
+  border: 2px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s;
+}
+.iso-cell:hover {
+  border-color: var(--accent);
+  background: rgba(0,242,255,0.1);
+  transform: translateZ(20px) scale(1.05);
+}
+.iso-cell.lobby { background: rgba(255,255,255,0.06); border-style: dashed; font-size: 10px; color: var(--muted); font-weight: 700; }
+.iso-cell.meeting { background: rgba(212,175,55,0.08); border-color: #d4af37; font-size: 10px; color: #d4af37; font-weight: 700; }
 
-/* Cells */
-.cell {
-  border-radius: 10px; overflow: hidden; position: relative;
-  border: 2px solid var(--wall); background: var(--floor);
-  display: flex; flex-direction: column;
-  transition: transform .15s, border-color .15s;
-}
-.cell:hover { transform: scale(1.03); z-index: 2; }
-.cell.lobby { background: #f0f0f0; border-style: dashed; justify-content: center; align-items: center; font-size: 11px; color: #aaa; font-weight: 700; }
-.cell.meeting { background: #fff3e0; border-color: #d4af37; justify-content: center; align-items: center; font-size: 11px; color: #8a5a00; font-weight: 700; }
-
-/* Room */
-.room { cursor: pointer; }
-.room-header {
-  padding: 6px 8px; font-size: 10px; font-weight: 800; text-align: center;
-  border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; gap: 6px;
-  background: rgba(0,0,0,0.05);
+.room-label {
+  font-size: 10px; font-weight: 800; text-align: center; padding: 4px 6px;
+  background: rgba(0,0,0,0.6); border-radius: 6px; margin-top: 6px; white-space: nowrap;
 }
 .room-badge {
-  width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 900; color: #fff;
+  width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 900; color: #fff; margin-bottom: 4px;
 }
-.room-screen {
-  flex: 1; background: #000; border: 2px solid #333; margin: 6px; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center; font-size: 9px; color: #444; padding: 4px;
-  position: relative;
+.room-screen-iso {
+  width: 110px; height: 70px; background: #000; border: 2px solid #222;
+  border-radius: 4px; display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #444; margin-bottom: 4px; position: relative;
 }
-.screen-dot {
-  position: absolute; top: 4px; left: 6px; width: 6px; height: 6px; background: #0f0; border-radius: 50%;
+.screen-dot-iso {
+  position: absolute; top: 4px; left: 4px; width: 5px; height: 5px; background: #0f0; border-radius: 50%;
   box-shadow: 0 0 6px #0f0; animation: blink 1s infinite;
 }
-.room-desk {
-  height: 28px; border-top: 1px solid rgba(0,0,0,0.1);
-  background: linear-gradient(180deg, #cbd5e1, #94a3b8);
-  display: flex; align-items: center; justify-content: center; position: relative;
-}
-.avatar-desk {
-  width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 12px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.3); animation: float 3s ease-in-out infinite;
+.avatar-iso {
+  width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.4); animation: float 3s ease-in-out infinite;
 }
 
-/* Character Layer */
-#char-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+/* Karakter berjalan di lantai isometrik */
+#char-layer { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
 .character {
-  position: absolute; width: 26px; height: 26px; border-radius: 50%;
+  position: absolute; width: 24px; height: 24px; border-radius: 50%;
   border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
-  font-size: 14px; transition: left .6s ease-out, top .6s ease-out; box-shadow: 0 0 10px rgba(0,0,0,0.5);
-  cursor: pointer; z-index: 2;
+  font-size: 14px; transition: left 0.7s ease-out, top 0.7s ease-out;
+  box-shadow: 0 0 12px rgba(0,0,0,0.6); cursor: pointer; z-index: 35;
 }
-.character.walking { animation: walkBounce .4s ease-in-out infinite; }
-.character-name {
-  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
-  font-size: 9px; color: var(--muted); white-space: nowrap;
-  background: var(--bg); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--wall);
-}
+.character.walking { animation: walkBounce 0.4s ease-in-out infinite; }
 
-/* Big Screen */
+/* Layar Besar */
 #big-screen {
-  position: fixed; top: 70px; right: 16px; width: 300px; height: 180px;
+  position: fixed; top: 80px; right: 20px; width: 300px; height: 190px;
   border: 3px solid var(--accent); border-radius: 10px; background: #000;
-  display: flex; flex-direction: column; padding: 10px;
-  box-shadow: 0 0 40px var(--accent); z-index: 45;
+  display: flex; flex-direction: column; padding: 10px; z-index: 45;
+  box-shadow: 0 0 40px var(--accent);
 }
 #big-screen.hidden { display: none; }
 .screen-header { font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid var(--accent); padding-bottom: 4px; }
@@ -140,11 +132,11 @@ header {
 /* Chat Panel */
 #chat-panel {
   position: fixed; inset: 0; z-index: 50; display: none; flex-direction: column;
-  background: var(--panel); backdrop-filter: blur(12px);
+  background: rgba(10,12,16,0.95); backdrop-filter: blur(12px);
 }
 #chat-panel.open { display: flex; }
 @media (min-width: 900px){
-  #chat-panel { width: 440px; right: 0; left: auto; top: 0; bottom: 0; transform: translateX(100%); transition: transform .3s ease; }
+  #chat-panel { width: 440px; right: 0; top: 0; bottom: 0; transform: translateX(100%); transition: transform .3s ease; }
   #chat-panel.open { transform: translateX(0); }
 }
 .chat-header {
@@ -181,7 +173,7 @@ textarea { flex: 1; border: none; outline: none; background: transparent; color:
 #meeting-overlay.open { display: flex; }
 .meeting-room {
   position: relative; width: 340px; height: 260px; border: 4px solid var(--accent); border-radius: 16px;
-  background: var(--floor); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 20px; box-shadow: 0 0 60px var(--accent);
   animation: meetingPop 0.4s cubic-bezier(.175,.885,.32,1.275) both;
 }
@@ -212,7 +204,6 @@ textarea { flex: 1; border: none; outline: none; background: transparent; color:
   padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); z-index: 20;
 }
 
-/* Animasi */
 @keyframes blink { 0%,96%,100%{ opacity:1 } 98%{ opacity:0.2 } }
 @keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-5px) } }
 @keyframes walkBounce { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-4px) } }
@@ -222,8 +213,8 @@ textarea { flex: 1; border: none; outline: none; background: transparent; color:
 .hidden { display: none !important; }
 
 @media (max-width: 768px){
-  #office-map { grid-template-columns: repeat(3, 120px); grid-template-rows: repeat(7, 110px); gap: 8px; }
-  #big-screen { width: 90vw; right: auto; left: 10px; top: auto; bottom: 80px; height: 130px; }
+  .iso-floor { transform: rotateX(55deg) rotateZ(45deg) scale(0.7); width: 600px; height: 500px; }
+  #big-screen { width: 90vw; right: auto; left: 10px; top: auto; bottom: 90px; height: 140px; }
   #chat-panel { width: 100%; transform: translateY(100%); transition: transform .3s ease; top: auto; bottom: 0; height: 60vh; }
   #chat-panel.open { transform: translateY(0); }
 }
@@ -249,7 +240,9 @@ textarea { flex: 1; border: none; outline: none; background: transparent; color:
   </header>
 
   <div id="map-view">
-    <div id="office-map"></div>
+    <div class="iso-stage">
+      <div class="iso-floor" id="iso-floor"></div>
+    </div>
     <div id="char-layer"></div>
     <div class="auto-ticker" id="auto-ticker">Sistem siap...</div>
   </div>
@@ -286,6 +279,7 @@ textarea { flex: 1; border: none; outline: none; background: transparent; color:
 
 <script type="module">
 /* ========== KONFIGURASI FIREBASE ========== */
+/* GANTI dengan konfigurasi asli dari Firebase Console */
  const firebaseConfig = {
     apiKey: "AIzaSyBeb1L6dCevfzX2tw__6MGWfpB6jfKTO6M",
     authDomain: "ai-kantor-project.firebaseapp.com",
@@ -297,7 +291,7 @@ textarea { flex: 1; border: none; outline: none; background: transparent; color:
     measurementId: "G-SRBJYD2F77"
   };
 
-/* ========== DATA DIVISI (15 Divisi) ========== */
+/* ========== DATA DIVISI ========== */
 const DIVISIONS = [
   {id:1, name:'Trading Saham', color:'#10b981', icon:'📈', uniform:'🟢', auto:true, autoText:'Saham ABC naik 2,4% hari ini.'},
   {id:2, name:'Invest Saham', color:'#3b82f6', icon:'📊', uniform:'🔵', auto:false},
@@ -316,7 +310,7 @@ const DIVISIONS = [
   {id:15, name:'AI Chatbot', color:'#6366f1', icon:'🤖', uniform:'🔵', auto:false},
 ];
 
-/* Layout gedung: 5 kolom x 4 baris = 20 sel. 15 divisi + lobby + meeting + 3 kosong/tanaman */
+/* Grid isometrik 5x4: 15 divisi + lobby + meeting + kosong */
 const GRID = [
   {div:1},{div:2},{div:3},{div:4},{div:5},
   {div:7},{type:'lobby'},{type:'lobby'},{div:6},{div:10},
@@ -326,7 +320,7 @@ const GRID = [
 
 /* ========== FIREBASE ========== */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, onValue, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getDatabase, ref, onValue, push } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 let app, auth, db, officeId, currentDiv = null;
@@ -370,80 +364,82 @@ autoToggle.onclick = () => {
   autoToggle.textContent = autoEnabled ? 'Auto 24 Jam: ON' : 'Auto 24 Jam: OFF';
 };
 
-/* ========== RENDER GEDUNG ========== */
-const officeMap = document.getElementById('office-map');
+/* ========== RENDER GEDUNG ISOMETRIK ========== */
+const isoFloor = document.getElementById('iso-floor');
 const charLayer = document.getElementById('char-layer');
 const chars = [];
 
 function initApp() {
   GRID.forEach((slot, i) => {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
+    const row = Math.floor(i / 5);
+    const col = i % 5;
+    /* Isometrik offset: x = (col-row)*75, y = (col+row)*38 */
+    const x = (col - row) * 75 + 350;
+    const y = (col + row) * 38 + 100;
+
     if (slot.type === 'lobby') {
-      cell.classList.add('lobby');
-      cell.textContent = 'LOBBY';
-      officeMap.appendChild(cell);
+      const cell = document.createElement('div');
+      cell.className = 'iso-cell lobby';
+      cell.style.left = x + 'px';
+      cell.style.top = y + 'px';
+      cell.innerHTML = `<div class="room-label">LOBBY</div>`;
+      isoFloor.appendChild(cell);
       return;
     }
     if (slot.type === 'meeting') {
-      cell.classList.add('meeting');
-      cell.textContent = 'RUANG MEETING';
-      officeMap.appendChild(cell);
+      const cell = document.createElement('div');
+      cell.className = 'iso-cell meeting';
+      cell.style.left = x + 'px';
+      cell.style.top = y + 'px';
+      cell.innerHTML = `<div class="room-label">RUANG MEETING</div>`;
+      isoFloor.appendChild(cell);
       return;
     }
 
     const d = DIVISIONS.find(x => x.id === slot.div);
-    cell.classList.add('room');
+    const cell = document.createElement('div');
+    cell.className = 'iso-cell room';
     cell.style.setProperty('--div-color', d.color);
     cell.dataset.div = d.id;
+    cell.style.left = x + 'px';
+    cell.style.top = y + 'px';
     cell.innerHTML = `
-      <div class="room-header">
-        <span class="room-badge" style="background:${d.color}">${d.id}</span>
-        <span>${d.icon} ${d.name}</span>
-      </div>
-      <div class="room-screen"><span class="screen-dot"></span><div id="rscreen-${d.id}">Siap</div></div>
-      <div class="room-desk"><div class="avatar-desk" style="color:${d.color}">${d.uniform}</div></div>
+      <div class="room-badge" style="background:${d.color}">${d.id}</div>
+      <div class="room-screen-iso"><span class="screen-dot-iso"></span><div id="rscreen-${d.id}">Siap</div></div>
+      <div class="avatar-iso" style="color:${d.color}">${d.uniform}</div>
+      <div class="room-label">${d.icon} ${d.name}</div>
     `;
     cell.onclick = () => openDivision(d.id);
-    officeMap.appendChild(cell);
+    isoFloor.appendChild(cell);
 
+    /* Karakter di atas lantai isometrik */
     const charEl = document.createElement('div');
     charEl.className = 'character';
     charEl.style.setProperty('--div-color', d.color);
     charEl.textContent = d.uniform;
     charEl.title = d.name;
+    charEl.style.left = x + 65 + 'px';
+    charEl.style.top = y + 100 + 'px';
     charLayer.appendChild(charEl);
 
-    chars.push({ id: d.id, divId: d.id, name: d.name, el: charEl, color: d.color, uniform: d.uniform });
+    chars.push({ id: d.id, divId: d.id, name: d.name, el: charEl, color: d.color, uniform: d.uniform, x: x+65, y: y+100 });
   });
 
-  /* Hitung posisi ruang untuk karakter */
-  setTimeout(computeRoomPositions, 100);
-
-  function computeRoomPositions() {
-    const rect = officeMap.getBoundingClientRect();
-    DIVISIONS.forEach(d => {
-      const el = document.querySelector(`.room[data-div="${d.id}"]`);
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      d.posX = r.left - rect.left + r.width/2;
-      d.posY = r.top - rect.top + r.height/2;
-    });
-    chars.forEach(c => {
-      const d = DIVISIONS.find(x => x.id === c.divId);
-      if (d) { c.el.style.left = d.posX + 'px'; c.el.style.top = d.posY + 'px'; }
-    });
-  }
-
-  /* Karakter berjalan otomatis antar ruang */
+  /* Karakter berjalan otomatis */
   function randomWalk(c) {
     const targets = DIVISIONS.filter(x => x.id !== c.divId);
     const t = targets[Math.floor(Math.random() * targets.length)];
+    const cell = document.querySelector(`.room[data-div="${t.id}"]`);
+    if (!cell) return;
+    const rect = cell.getBoundingClientRect();
+    const floorRect = isoFloor.getBoundingClientRect();
+    const nx = rect.left - floorRect.left + 65;
+    const ny = rect.top - floorRect.top + 100;
     c.divId = t.id;
-    c.el.style.left = t.posX + 'px';
-    c.el.style.top = t.posY + 'px';
+    c.el.style.left = nx + 'px';
+    c.el.style.top = ny + 'px';
     c.el.classList.add('walking');
-    setTimeout(() => c.el.classList.remove('walking'), 400);
+    setTimeout(() => c.el.classList.remove('walking'), 700);
   }
   setInterval(() => {
     chars.forEach(c => { if (Math.random() < 0.25) randomWalk(c); });
@@ -641,11 +637,6 @@ function updateScreen(divId, text) {
   if (screen) screen.textContent = text;
   if (currentDiv === divId) screenContent.textContent = text;
 }
-
-/* ========== SIDE BUILDINGS (kosong, dihindari untuk konsentrasi gedung utama) ========== */
-/* Tidak ada gedung samping agar fokus pada gedung utama seperti referensi */
-
-/* INIT (menunggu login) */
 </script>
 </body>
 </html>
