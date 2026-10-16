@@ -93,7 +93,7 @@ import {getAuth,signInAnonymously} from 'https://www.gstatic.com/firebasejs/10.1
     appId: "1:1057185794628:web:7ac036e7c5df69bdbbca11",
     measurementId: "G-SRBJYD2F77"
   };
-  
+
 const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms)),PI=Math.PI;
 const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -314,12 +314,12 @@ const ROLE={1:'Beri analisis saham singkat dan sebut risikonya; bukan nasihat ke
  10:'Beri brief desain, palet warna, dan teks untuk dibuat di Canva (gambar contoh dibuat otomatis oleh sistem).',12:'Buat deskripsi produk, caption, dan ide promo.',13:'Rangkum tren dan beri ide konten viral.',
  14:'Beri resep singkat: bahan dan langkah.',11:'Bantu coding: beri solusi dan kode lengkap (maks 40 baris) dalam teks biasa.',15:'Jawab pertanyaan umum dengan ramah.'};
 const feed={};
-async function getAnswer(d,q){const u=localStorage.getItem('ai_url'),inv=d.id<=7;
+async function getAnswer(d,q){const u=localStorage.getItem('ai_url'),inv=d.id<=7;let why='';
  if(u){try{
   const ctx=d.id===13?(feed[13]?' Tren terbaru: '+feed[13].replace(/\n/g,' '):''):inv?' Data terbaru di kantor (yang bertanda SIMULASI atau "bukan data real-time" jangan dianggap fakta pasar): '+Object.entries(feed).map(([i,t])=>D.find(x=>x.id==i).name+': '+t.replace(/\n/g,' ')).join(' | ').slice(0,900):'';
   const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:`Kamu agent divisi "${d.name}" di Kantor AI. ${ROLE[d.id]||''}${inv?' Untuk pertanyaan investasi beri kriteria dan contoh umum, jelaskan risikonya, jangan menjanjikan untung.':''}${ctx} Jawab dalam Bahasa Indonesia, ${d.id===11?'boleh panjang dan sertakan kode':'ringkas (maks 80 kata)'}, tanpa markdown.`,message:q,max:d.id===11?1200:500})});
-  const j=await r.json();if(j.text)return{t:j.text+(inv?'\n⚠ Bukan nasihat keuangan.':''),s:'AI'}}catch(e){}}
- return{t:await demoAnswer(d,q),s:u?'Demo (AI gagal)':'Demo'}}
+  const j=await r.json();if(j.text)return{t:j.text+(inv?'\n⚠ Bukan nasihat keuangan.':''),s:'AI'};why=j.error||('HTTP '+r.status)}catch(e){why=String(e.message||e)}}
+ return{t:await demoAnswer(d,q),s:u?'Demo (AI gagal: '+String(why).slice(0,55)+')':'Demo'}}
 async function getImage(q){const u=localStorage.getItem('ai_url');if(!u)return null;
  try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'image',message:q})});const j=await r.json();if(!j.image)return null;
   return await new Promise(res=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src='data:image/jpeg;base64,'+j.image})}catch(e){return null}}
