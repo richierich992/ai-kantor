@@ -66,7 +66,7 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
   <div id="map"></div>
   <div id="legend"></div>
   <div id="cfgm" class="hidden"><div class="bx"><h3>🤖 Sumber jawaban AI</h3>
-    <p>Tempel URL proxy AI milikmu (lihat file <b>ai-proxy-worker.js</b>). Jangan taruh API key di halaman ini. Kosongkan untuk memakai jawaban demo.</p>
+    <p>Tempel URL proxy AI milikmu (Cloud Function Firebase, lihat <b>firebase-functions-index.js</b>). Jangan taruh API key di halaman ini. Kosongkan untuk memakai jawaban demo.</p>
     <input id="aiurl" placeholder="https://nama-worker.akun.workers.dev"><div class="row"><button id="cfgx">Batal</button><button id="cfgsave">Simpan</button></div></div></div>
   <div id="hint">Geser: tarik • Putar: klik kanan / 2 jari • Zoom: scroll / cubit • Klik ruangan untuk fokus & chat</div>
   <div id="chat">
@@ -306,7 +306,7 @@ const ROLE={1:'Beri analisis saham singkat dan sebut risikonya; bukan nasihat ke
  10:'Beri brief desain, palet warna, dan teks untuk dibuat di Canva.',12:'Buat deskripsi produk, caption, dan ide promo.',13:'Rangkum tren dan beri ide konten viral.',
  14:'Beri resep singkat: bahan dan langkah.',11:'Bantu coding dengan solusi atau kode singkat.',15:'Jawab pertanyaan umum dengan ramah.'};
 async function getAnswer(d,q){const u=localStorage.getItem('ai_url');
- if(u){try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:`Kamu agent divisi "${d.name}" di Kantor AI. ${ROLE[d.id]||''} Jawab dalam Bahasa Indonesia, ringkas (maks 70 kata), tanpa markdown.`,message:q})});
+ if(u){try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await auth.currentUser.getIdToken()},body:JSON.stringify({system:`Kamu agent divisi "${d.name}" di Kantor AI. ${ROLE[d.id]||''} Jawab dalam Bahasa Indonesia, ringkas (maks 70 kata), tanpa markdown.`,message:q})});
   const j=await r.json();if(j.text)return{t:j.text,s:'AI'}}catch(e){}}
  return{t:await demoAnswer(d,q),s:u?'Demo (AI gagal)':'Demo'}}
 function renderSrc(id){const u=localStorage.getItem('ai_url');
