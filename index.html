@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kantor AI 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#e8eefc;overflow:hidden;background:#bfe3f5}
+body{font-family:Nunito,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#e8eefc;overflow:hidden;background:#bfe3f5}
 .hidden{display:none!important}
 #login{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#14213d,#1f3b6e);padding:24px;text-align:center}
 #login h2{font-size:28px;margin-bottom:6px}#login p{color:#b8c6e6;font-size:14px;margin-bottom:18px}
@@ -34,6 +35,20 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;padding:0 16p
 .inp{padding:12px 14px;border-top:1px solid #26396b;display:flex;gap:8px}
 .inp textarea{flex:1;resize:none;border:1px solid #3a5a9a;border-radius:10px;background:#0a1226;color:#fff;padding:9px 11px;font:14px inherit;min-height:42px}
 .inp button{width:46px;border:0;border-radius:10px;background:#ffc93c;color:#2a1d00;font-weight:800;cursor:pointer}
+header,#legend,#hint,#chat{backdrop-filter:blur(10px)}
+header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));border-bottom:1px solid rgba(255,255,255,.14);box-shadow:0 4px 20px rgba(0,0,0,.25)}
+#legend{background:rgba(20,33,61,.82);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+#chat{background:rgba(12,22,46,.94);box-shadow:-10px 0 40px rgba(0,0,0,.35)}
+.bubble{box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.r button:hover,#mode:hover{border-color:#ffc93c}
+#src{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;border-bottom:1px solid #26396b}
+.chip{font-size:11px;padding:4px 10px;border-radius:14px;background:#1c2b52;border:1px solid #3a5a9a;color:#cfe0ff;text-decoration:none;cursor:pointer}
+.chip.ok{background:#14532d;border-color:#4ade80;color:#bbf7d0}.chip:hover{border-color:#ffc93c}
+#cfgm{position:fixed;inset:0;z-index:400;display:grid;place-items:center;background:rgba(5,10,25,.7)}
+#cfgm .bx{width:min(460px,92vw);padding:20px;border-radius:16px;background:#0f1a33;border:1px solid #3a5a9a;display:flex;flex-direction:column;gap:10px}
+#cfgm input{padding:10px;border-radius:10px;border:1px solid #3a5a9a;background:#0a1226;color:#fff}
+#cfgm p{font-size:12px;color:#9fb2dd;line-height:1.5}#cfgm .row{display:flex;gap:8px;justify-content:flex-end}
+#cfgm button{padding:8px 16px;border-radius:10px;border:0;background:#ffc93c;color:#2a1d00;font-weight:700;cursor:pointer}
 @media(max-width:820px){#legend,#hint{display:none}#chat{top:auto;width:100%;height:55vh;border-left:0;border-top:1px solid #3a5a9a}.r span{display:none}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -47,13 +62,16 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;padding:0 16p
 </div>
 <div id="ui" class="hidden">
   <header><div class="brand"><span class="dot"></span>Kantor AI</div>
-    <div class="r"><span id="status">Menghubungkan...</span><button id="auto" class="on">Agent 24 Jam: ON</button><button id="reset">Reset kamera</button></div></header>
+    <div class="r"><span id="status">Menghubungkan...</span><button id="auto" class="on">Agent 24 Jam: ON</button><button id="reset">Reset kamera</button><button id="cfg">⚙ Sumber AI</button></div></header>
   <div id="map"></div>
   <div id="legend"></div>
+  <div id="cfgm" class="hidden"><div class="bx"><h3>🤖 Sumber jawaban AI</h3>
+    <p>Tempel URL proxy AI milikmu (lihat file <b>ai-proxy-worker.js</b>). Jangan taruh API key di halaman ini. Kosongkan untuk memakai jawaban demo.</p>
+    <input id="aiurl" placeholder="https://nama-worker.akun.workers.dev"><div class="row"><button id="cfgx">Batal</button><button id="cfgsave">Simpan</button></div></div></div>
   <div id="hint">Geser: tarik • Putar: klik kanan / 2 jari • Zoom: scroll / cubit • Klik ruangan untuk fokus & chat</div>
   <div id="chat">
     <div class="ch"><span id="ct">Divisi</span><span><button id="mode"></button><button id="cx" aria-label="Tutup">✕</button></span></div>
-    <div id="chat-body"></div>
+    <div id="src"></div><div id="chat-body"></div>
     <div class="inp"><textarea id="ci" placeholder="Beri pertanyaan / perintah ke agent ini..."></textarea><button id="send" aria-label="Kirim">➤</button></div>
   </div>
 </div>
@@ -83,6 +101,10 @@ const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'
 const idr=n=>'Rp '+Math.round(n).toLocaleString('id-ID');
 const px={BBCA:9850,BTC:714250000,ETH:48500000,XAU:1650000};
 const mv=(k,p=.004)=>(px[k]*=1+rnd(-p,p)),pct=()=>rnd(-2.2,2.2).toFixed(2)+'%';
+let cg={t:0,v:null};
+async function getCg(){if(cg.v&&Date.now()-cg.t<30000)return cg.v;
+ try{const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=idr&include_24hr_change=true');cg={t:Date.now(),v:await r.json()}}catch(e){}
+ return cg.v}
 
 /* m:'24h' = agent berjalan terus. tanpa m = bekerja saat dipanggil. g = pembuat info rutin (SIMULASI) */
 const D=[
@@ -90,8 +112,8 @@ const D=[
 {id:2,name:'Invest Saham',c:'#2f7fe0',ic:'📊'},
 {id:3,name:'Invest Dividen Saham',c:'#8a4fd8',ic:'💰'},
 {id:4,name:'Bibit Reksadana',c:'#1aa37a',ic:'🌱'},
-{id:5,name:'Bitcoin Indodax',c:'#f08a1c',ic:'₿',m:'24h',g:()=>`BTC Indodax: ${idr(mv('BTC'))}`},
-{id:6,name:'Bitcoin Toko Crypto',c:'#e0409a',ic:'🏪',m:'24h',g:()=>`ETH ${idr(mv('ETH'))} (${pct()})`},
+{id:5,name:'Bitcoin Indodax',c:'#f08a1c',ic:'₿',m:'24h',g:async()=>{const v=await getCg();return v?`BTC: ${idr(v.bitcoin.idr)} (${v.bitcoin.idr_24h_change.toFixed(2)}% / 24j)\nSumber: CoinGecko`:`BTC (simulasi): ${idr(mv('BTC'))}`}},
+{id:6,name:'Bitcoin Toko Crypto',c:'#e0409a',ic:'🏪',m:'24h',g:async()=>{const v=await getCg();return v?`ETH: ${idr(v.ethereum.idr)} (${v.ethereum.idr_24h_change.toFixed(2)}% / 24j)\nSumber: CoinGecko`:`ETH (simulasi): ${idr(mv('ETH'))}`}},
 {id:7,name:'Emas Logam Mulia',c:'#c99a1c',ic:'🥇',m:'24h',g:()=>`Emas per gram: ${idr(mv('XAU',.002))}`},
 {id:8,name:'Pencatat Keuangan',c:'#2a4a8a',ic:'📒'},
 {id:9,name:'Multimedia Video',c:'#8f52e8',ic:'🎬'},
@@ -113,7 +135,7 @@ const scene=new THREE.Scene(),rooms={},chars={},picks=[],RL=[];
 
 /* ===== helper 3D ===== */
 const M=c=>new THREE.MeshLambertMaterial({color:c});
-const box=(w,h,d,c,x,y,z,p)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(x,y,z);(p||scene).add(m);return m};
+const box=(w,h,d,c,x,y,z,p)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;(p||scene).add(m);return m};
 const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
 const tex=c=>{const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t};
 function label(text,color,sw,sh){const c=cv(512,128),x=c.getContext('2d');x.fillStyle=color;x.beginPath();x.roundRect(4,4,504,120,30);x.fill();
@@ -125,11 +147,15 @@ const plazaPt=()=>new THREE.Vector3(rnd(-14,14),0,rnd(-6,6));
 
 /* ===== layar besar ===== */
 const STT={live:['LIVE 24 JAM','#4ade80'],work:['BEKERJA','#fbbf24'],standby:['STANDBY','#94a3b8']};
-function draw(r){const x=r.cx,s=STT[r.st];x.fillStyle='#06101f';x.fillRect(0,0,512,288);x.fillStyle=r.col;x.fillRect(0,0,512,50);
- x.textBaseline='middle';x.textAlign='left';x.font='bold 26px system-ui';x.fillStyle='#fff';x.fillText(r.ic+' '+r.name,14,26,300);
- if(!r.meet){x.fillStyle='rgba(0,0,0,.4)';x.beginPath();x.roundRect(322,10,178,30,15);x.fill();x.font='bold 18px system-ui';x.fillStyle=s[1];x.textAlign='center';x.fillText('● '+s[0],411,26)}
- x.textAlign='left';x.font='22px "Courier New",monospace';x.fillStyle='#9ff5c1';
- wrap(x,r.txt,484).slice(-7).forEach((l,i)=>x.fillText(l,14,80+i*29));
+function draw(r){const x=r.cx,s=STT[r.st],F='Nunito,system-ui,sans-serif';
+ const g=x.createLinearGradient(0,0,0,576);g.addColorStop(0,'#0a1830');g.addColorStop(1,'#050b18');x.fillStyle=g;x.fillRect(0,0,1024,576);
+ x.fillStyle=r.col;x.fillRect(0,0,1024,96);
+ x.textBaseline='middle';x.textAlign='left';x.font='800 48px '+F;x.fillStyle='#fff';x.fillText(r.ic+' '+r.name,28,50,600);
+ if(!r.meet){x.fillStyle='rgba(0,0,0,.4)';x.beginPath();x.roundRect(660,22,340,52,26);x.fill();x.font='800 30px '+F;x.fillStyle=s[1];x.textAlign='center';x.fillText('● '+s[0],830,50)}
+ x.textAlign='left';x.fillStyle='#d8ffe9';
+ let fs=48,L;do{fs-=4;x.font='600 '+fs+'px '+F;L=wrap(x,r.txt,968)}while(L.length*fs*1.3>400&&fs>22);
+ L.slice(-Math.floor(400/(fs*1.3))).forEach((l,i)=>x.fillText(l,28,140+i*fs*1.3));
+ if(!r.meet){x.font='600 24px '+F;x.fillStyle='#7f93bd';x.fillText('Sumber: '+(r.srcTag||'—'),28,550)}
  r.tx.needsUpdate=true;r.lamp.material.color.set(s[1])}
 function setSt(r,s){r.st=s;if(r.mon)r.mon.color.set(s==='work'?0xffffff:s==='live'?0x7dd3fc:0x1e3a5f);draw(r)}
 
@@ -141,9 +167,9 @@ function mkRoom([x,z,yaw,id]){
  const r={id,d,name:d.name,col:d.c,ic:d.ic,g,yaw,meet:d.meet,st:'standby',lock:false,txt:d.meet?'Tempat agent berkumpul.':'Siap menerima tugas.'};
  const fl=box(W,.14,DP,lt,0,.07,0,g);
  box(W,WH,.25,wl,0,WH/2,-DP/2,g);box(.25,WH,DP,wl,-W/2,WH/2,0,g);box(.25,WH,DP,wl,W/2,WH/2,0,g);box(W,.3,.25,col,0,.15,DP/2,g);
- const c=cv(512,288);r.cx=c.getContext('2d');r.tx=tex(c);
+ const c=cv(1024,576);r.cx=c.getContext('2d');r.tx=tex(c);
  box(4.8,2.8,.1,0x0b1220,0,1.95,-DP/2+.17,g);
- const sc=new THREE.Mesh(new THREE.PlaneGeometry(4.6,2.6),new THREE.MeshBasicMaterial({map:r.tx}));sc.position.set(0,1.95,-DP/2+.23);g.add(sc);
+ const sc=new THREE.Mesh(new THREE.PlaneGeometry(4.6,2.6),new THREE.MeshBasicMaterial({map:r.tx,toneMapped:false}));sc.position.set(0,1.95,-DP/2+.23);g.add(sc);
  fl.userData.id=sc.userData.id=id;picks.push(fl,sc);
  r.lamp=new THREE.Mesh(new THREE.SphereGeometry(.28,12,12),new THREE.MeshBasicMaterial({color:0x64748b}));r.lamp.position.set(0,WH+.35,-DP/2);g.add(r.lamp);
  const lb=label((d.meet?'':id+' ')+d.name,d.c,6.4,1.6);lb.position.set(0,WH+1.5,-DP/2+.5);g.add(lb);
@@ -156,19 +182,27 @@ function mkRoom([x,z,yaw,id]){
   box(2.6,.8,1,0x9c7a54,1.8,.4,-1.9,g);box(.9,.05,.6,0xcbd5e1,1.8,.83,-1.8,g);
   const lid=box(.9,.6,.04,0x1f2937,1.8,1.12,-2.1,g);lid.rotation.x=-.2;
   const ls=new THREE.Mesh(new THREE.PlaneGeometry(.8,.5),new THREE.MeshBasicMaterial({color:new THREE.Color(d.c).lerp(white,.4)}));ls.position.set(1.8,1.12,-2.07);ls.rotation.x=-.2;g.add(ls);
-  box(.5,.4,.5,0x7a4b2a,3.1,.2,2.6,g);const pl=new THREE.Mesh(new THREE.SphereGeometry(.55,10,8),M(0x2f9e5a));pl.position.set(3.1,.9,2.6);g.add(pl);
+  box(5,.03,3.6,col.clone().lerp(white,.55),0,.16,-.9,g);box(.4,2,2,0x8b6b4a,-W/2+.35,1,1.2,g);for(let i=0;i<4;i++)box(.3,.35,.35,[0xef4444,0x3b82f6,0xfacc15,0x22c55e][i],-W/2+.45,.5+i*.45,.7+i*.35,g);box(.5,.4,.5,0x7a4b2a,3.1,.2,2.6,g);const pl=new THREE.Mesh(new THREE.SphereGeometry(.55,10,8),M(0x2f9e5a));pl.position.set(3.1,.9,2.6);g.add(pl);
  }
  rooms[id]=r;RL.push(r);draw(r);return r}
 
 function mkChar(r){
- const g=new THREE.Group(),c={g,r,d:r.d,path:[],t:0,loc:r,wait:rnd(2,6),face:r.yaw+PI,work:false},col=r.col;
+ const g=new THREE.Group(),c={g,r,d:r.d,path:[],t:0,loc:r,wait:rnd(2,6),face:r.yaw+PI,work:false},col=r.col,hair=0x1b1b26,skin=0xf8dcc4,st=pick(['bob','long','short']);
  const limb=(w,h,d,cl,x,y)=>{const p=new THREE.Group();p.position.set(x,y,0);box(w,h,d,cl,0,-h/2,0,p);g.add(p);return p};
- c.legL=limb(.24,.75,.26,0x2b3350,-.17,.78);c.legR=limb(.24,.75,.26,0x2b3350,.17,.78);
- box(.62,.74,.36,col,0,1.15,0,g);
- c.armL=limb(.18,.68,.2,col,-.42,1.48);c.armR=limb(.18,.68,.2,col,.42,1.48);
- const h=new THREE.Mesh(new THREE.SphereGeometry(.27,16,12),M(pick([0xf1c27d,0xe0ac69,0xc68642,0x8d5524])));h.position.y=1.8;g.add(h);
- box(.56,.2,.5,0x1a1a1a,0,1.98,-.02,g);box(.07,.07,.05,0x111111,-.1,1.84,.26,g);box(.07,.07,.05,0x111111,.1,1.84,.26,g);
- g.position.copy(r.spot);g.rotation.y=r.yaw+PI;scene.add(g);return c}
+ c.legL=limb(.2,.5,.22,0x27304f,-.13,.5);c.legR=limb(.2,.5,.22,0x27304f,.13,.5);
+ box(.2,.1,.27,0xf8fafc,0,-.45,.02,c.legL);box(.2,.1,.27,0xf8fafc,0,-.45,.02,c.legR);
+ box(.52,.5,.32,col,0,.78,0,g);box(.3,.08,.34,0xffffff,0,1.0,.01,g);
+ c.armL=limb(.15,.45,.17,col,-.35,1.0);c.armR=limb(.15,.45,.17,col,.35,1.0);
+ [c.armL,c.armR].forEach(a=>box(.14,.12,.16,skin,0,-.45,0,a));
+ const hd=new THREE.Mesh(new THREE.SphereGeometry(.44,24,18),M(skin));hd.position.y=1.45;hd.castShadow=true;g.add(hd);
+ const cap=new THREE.Mesh(new THREE.SphereGeometry(.47,24,16,0,PI*2,0,PI*.45),M(hair));cap.position.y=1.47;cap.rotation.x=-.12;g.add(cap);
+ box(.6,.12,.1,hair,0,1.55,.37,g);
+ const L=st==='long';
+ if(st!=='short'){const h=L?.95:.55,y=L?1.2:1.35;box(.12,h,.5,hair,-.43,y,-.02,g);box(.12,h,.5,hair,.43,y,-.02,g);box(.86,L?.95:.6,.16,hair,0,L?1.2:1.32,-.38,g)}
+ else box(.86,.42,.16,hair,0,1.45,-.4,g);
+ [-.16,.16].forEach(x=>{box(.1,.17,.05,0x161622,x,1.42,.425,g);box(.035,.05,.03,0xffffff,x+.02,1.46,.45,g);box(.1,.05,.04,0xffa6b3,x*1.7,1.32,.33,g)});
+ box(.08,.025,.03,0xd9534f,0,1.31,.435,g);
+ g.scale.setScalar(1.2);g.position.copy(r.spot);g.rotation.y=r.yaw+PI;scene.add(g);return c}
 
 function go(c,tr,spot,face){const cu=c.loc,p=[];
  if(cu&&cu!==tr)p.push(cu.inside,cu.front);
@@ -187,7 +221,7 @@ function step(c,dt){
  c.legL.rotation.x=s;c.legR.rotation.x=-s;
  c.armL.rotation.x=mvg?-s:ty?-1.2+Math.sin(c.t*14)*.12:Math.sin(c.t)*.04;
  c.armR.rotation.x=mvg?s:ty?-1.2+Math.cos(c.t*14)*.12:-Math.sin(c.t)*.04;
- c.g.position.y=mvg?Math.abs(Math.sin(c.t))*.08:0;
+ c.g.position.y=.14+(mvg?Math.abs(Math.sin(c.t))*.1:0);
  if(!c.path.length&&!c.busy&&!c.work&&c.d.mode!=='24h'){c.wait-=dt;if(c.wait<=0){c.wait=rnd(5,10);const k=Math.random();
   if(k<.3)go(c,c.r,c.r.spot,c.r.yaw+PI);else if(k<.5)go(c,null,plazaPt(),null);else{const t=pick(RL);go(c,t,wp(t,rnd(-2.5,2.5),rnd(0,2.5)),null)}}}
 }
@@ -195,15 +229,16 @@ function step(c,dt){
 /* ===== scene ===== */
 function boot(){
  const host=$('map');
- rend=new THREE.WebGLRenderer({antialias:true});rend.setPixelRatio(Math.min(devicePixelRatio,2));rend.setSize(host.clientWidth,host.clientHeight);host.appendChild(rend.domElement);
- scene.background=new THREE.Color(0xbfe3f5);scene.fog=new THREE.Fog(0xbfe3f5,130,280);
+ rend=new THREE.WebGLRenderer({antialias:true});rend.setPixelRatio(Math.min(devicePixelRatio,2));rend.shadowMap.enabled=true;rend.shadowMap.type=THREE.PCFSoftShadowMap;rend.toneMapping=THREE.ACESFilmicToneMapping;rend.toneMappingExposure=1.05;rend.setSize(host.clientWidth,host.clientHeight);host.appendChild(rend.domElement);
+ {const c=cv(8,256),x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#6fb4ec');g.addColorStop(.6,'#cfe8f7');g.addColorStop(1,'#eaf6ee');x.fillStyle=g;x.fillRect(0,0,8,256);scene.background=tex(c)}scene.fog=new THREE.Fog(0xbfe3f5,130,280);
  cam=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,.5,400);cam.position.set(34,44,58);
- scene.add(new THREE.HemisphereLight(0xffffff,0x6a8f6a,1.1));const sun=new THREE.DirectionalLight(0xffffff,1.3);sun.position.set(30,60,25);scene.add(sun);
+ scene.add(new THREE.HemisphereLight(0xffffff,0x6a8f6a,1.1));const sun=new THREE.DirectionalLight(0xfff3dc,1.5);sun.position.set(30,60,25);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);const sh=sun.shadow.camera;sh.left=-50;sh.right=50;sh.top=40;sh.bottom=-40;sh.near=10;sh.far=140;sun.shadow.bias=-.0005;scene.add(sun);
  ctl=new OrbitControls(cam,rend.domElement);ctl.target.set(0,0,2);ctl.enableDamping=true;ctl.maxPolarAngle=1.42;ctl.minDistance=6;ctl.maxDistance=140;
  ctl.mouseButtons={LEFT:THREE.MOUSE.PAN,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};ctl.touches={ONE:THREE.TOUCH.PAN,TWO:THREE.TOUCH.DOLLY_ROTATE};
  ctl.addEventListener('start',()=>tg=null);
 
- box(300,.2,300,0x7fbf7a,0,-.5,0);box(68,.4,40,0xe6ebf5,0,-.2,0);
+ box(300,.2,300,0x7fbf7a,0,-.6,0);box(71,.7,43,0xaab6d0,0,-.37,0);
+ {const c=cv(512,512),x=c.getContext('2d');for(let i=0;i<8;i++)for(let j=0;j<8;j++){x.fillStyle=(i+j)%2?'#eef2fa':'#dfe6f3';x.fillRect(i*64,j*64,64,64)}const t=tex(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(4.25,2.5);const m=new THREE.Mesh(new THREE.PlaneGeometry(68,40),new THREE.MeshLambertMaterial({map:t}));m.rotation.x=-PI/2;m.receiveShadow=true;scene.add(m)}
  for(let i=0;i<30;i++){const a=i/30*PI*2,x=Math.cos(a)*(48+rnd(0,18)),z=Math.sin(a)*(32+rnd(0,16));
   box(.5,2,.5,0x6b4a2b,x,1,z);const cn=new THREE.Mesh(new THREE.ConeGeometry(2.2,5,8),M(0x2f7a43));cn.position.set(x,4.5,z);scene.add(cn)}
  const fc=cv(1024,512),fx=fc.getContext('2d');fx.fillStyle='rgba(255,255,255,.85)';fx.beginPath();fx.roundRect(8,8,1008,496,60);fx.fill();
@@ -231,6 +266,7 @@ function boot(){
  (function loop(){const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));
   if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam);requestAnimationFrame(loop)})();
 }
+function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
 function focus(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw));tg={t:r.g.position.clone().setY(1.5),c:r.g.position.clone().add(f.multiplyScalar(13)).setY(10)}}
 
 /* ===== agent ===== */
@@ -239,28 +275,50 @@ const baseSt=d=>d.mode==='24h'?'live':'standby';
 const send=(id,who,text)=>push(ref(db,`offices/${oid}/messages/${id}`),{who,text,t:Date.now(),uid:auth.currentUser.uid,divName:D.find(x=>x.id===id).name});
 
 async function job(id,q){
- const r=rooms[id],c=chars[id],d=r.d;r.lock=true;c.busy=true;setSt(r,'work');r.txt='📩 '+q;draw(r);
+ const r=rooms[id],c=chars[id],d=r.d;r.lock=true;c.busy=true;setSt(r,'work');r.txt='📩 '+q;r.srcTag='memproses...';draw(r);focusScreen(r);
  while(c.path.length)await sleep(200);
  await new Promise(res=>{go(c,r,r.spot,r.yaw+PI);c.done=res});
- c.work=true;
- for(let i=0;i<6;i++){r.txt='⚙️ Menganalisis'+'.'.repeat(i%4);draw(r);await sleep(450)}
- const ans=demoAnswer(d,q);
+ c.work=true;const P=getAnswer(d,q);
+ let ok=0;P.finally(()=>ok=1);for(let i=0;i<6||!ok;i++){r.txt='⚙️ Menganalisis'+'.'.repeat(i%4);draw(r);await sleep(450)}
+ const {t:ans,s:src}=await P;r.srcTag=src;r.last=ans;
  for(let i=0;i<=ans.length;i+=2){r.txt=ans.slice(0,i);draw(r);await sleep(25)}
  send(id,'ai',ans);
  r.lock=false;c.busy=false;c.work=d.mode==='24h';c.wait=6;setSt(r,baseSt(d));
 }
-function demoAnswer(d,text){const t=text.toLowerCase();
+async function demoAnswer(d,text){const t=text.toLowerCase();const G=d.g?await d.g():null;
  if(/\b(hai|halo)\b/.test(t))return `Halo! Saya agent ${d.name}. Ada yang bisa saya bantu?`;
- if(t.includes('harga'))return d.g?d.g():'Data harga akan diperbarui di layar divisi.';
+ if(t.includes('harga'))return G||'Data harga akan diperbarui di layar divisi.';
  if(t.includes('reksadana'))return 'Reksadana adalah kumpulan dana yang dikelola profesional oleh manajer investasi.';
  if(t.includes('bitcoin')||t.includes('btc'))return 'Bitcoin adalah aset digital terdesentralisasi berbasis blockchain.';
  if(t.includes('emas'))return 'Emas logam mulia sering dipakai sebagai pelindung nilai dari inflasi.';
  if(t.includes('resep'))return 'Resep masakan dan minuman siap dibagikan sesuai permintaan Anda.';
- return `Jawaban dari agent ${d.name}. ${d.g?d.g():'Silakan ajukan pertanyaan lebih spesifik.'}`}
+ return `Jawaban dari agent ${d.name}. ${G||'Silakan ajukan pertanyaan lebih spesifik.'}`}
+
+/* ===== sumber jawaban ===== */
+const IDX=['IDX','https://www.idx.co.id'];
+const SRC={1:[IDX],2:[IDX],3:[IDX],4:[['Bibit','https://bibit.id']],5:[['Indodax','https://indodax.com']],6:[['Tokocrypto','https://www.tokocrypto.com']],
+ 7:[['Logam Mulia','https://www.logammulia.com']],9:[['CapCut','https://www.capcut.com']],10:[['Canva','https://www.canva.com']],
+ 12:[['Canva','https://www.canva.com'],['Tokopedia','https://www.tokopedia.com']],13:[['Google Trends','https://trends.google.com']],
+ 14:[['YouTube','https://www.youtube.com']],11:[['GitHub','https://github.com']]};
+const ROLE={1:'Beri analisis saham singkat dan sebut risikonya; bukan nasihat keuangan.',2:'Bantu analisis investasi saham jangka panjang; bukan nasihat keuangan.',
+ 3:'Bantu memilih saham dividen; bukan nasihat keuangan.',4:'Jelaskan reksadana dengan sederhana.',5:'Bahas Bitcoin dan harga di Indonesia.',6:'Bahas aset kripto populer.',
+ 7:'Bahas emas logam mulia dan harganya.',8:'Bantu mencatat dan merapikan keuangan.',9:'Beri ide konten, skrip (hook, isi, CTA), dan langkah edit di CapCut.',
+ 10:'Beri brief desain, palet warna, dan teks untuk dibuat di Canva.',12:'Buat deskripsi produk, caption, dan ide promo.',13:'Rangkum tren dan beri ide konten viral.',
+ 14:'Beri resep singkat: bahan dan langkah.',11:'Bantu coding dengan solusi atau kode singkat.',15:'Jawab pertanyaan umum dengan ramah.'};
+async function getAnswer(d,q){const u=localStorage.getItem('ai_url');
+ if(u){try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:`Kamu agent divisi "${d.name}" di Kantor AI. ${ROLE[d.id]||''} Jawab dalam Bahasa Indonesia, ringkas (maks 70 kata), tanpa markdown.`,message:q})});
+  const j=await r.json();if(j.text)return{t:j.text,s:'AI'}}catch(e){}}
+ return{t:await demoAnswer(d,q),s:u?'Demo (AI gagal)':'Demo'}}
+function renderSrc(id){const u=localStorage.getItem('ai_url');
+ $('src').innerHTML=`<span class="chip ${u?'ok':''}">🤖 AI ${u?'terhubung':'belum diatur'}</span>`+(SRC[id]||[]).map(([n,l])=>`<a class="chip" href="${l}" target="_blank" rel="noopener">↗ ${n}</a>`).join('')+'<span class="chip" data-copy="1">📋 Salin jawaban</span>'}
+$('src').onclick=e=>{if(e.target.dataset.copy&&cur&&rooms[cur].last)navigator.clipboard?.writeText(rooms[cur].last)};
+$('cfg').onclick=()=>{$('aiurl').value=localStorage.getItem('ai_url')||'';$('cfgm').classList.remove('hidden')};
+$('cfgx').onclick=()=>$('cfgm').classList.add('hidden');
+$('cfgsave').onclick=()=>{const v=$('aiurl').value.trim();v?localStorage.setItem('ai_url',v):localStorage.removeItem('ai_url');$('cfgm').classList.add('hidden');if(cur)renderSrc(cur)};
 
 /* ===== chat ===== */
 function modeLbl(){const d=D.find(x=>x.id===cur);if(d)$('mode').textContent=d.mode==='24h'?'🟢 Agent 24 jam':'⚪ Saat dipanggil'}
-function openDiv(id){const r=rooms[id];focus(r);if(!r||r.meet)return;cur=id;$('ct').textContent=`${r.ic} ${r.name}`;$('ct').style.color=r.col;$('chat').classList.add('open');modeLbl();
+function openDiv(id){const r=rooms[id];focus(r);if(!r||r.meet)return;cur=id;$('ct').textContent=`${r.ic} ${r.name}`;$('ct').style.color=r.col;$('chat').classList.add('open');modeLbl();renderSrc(id);
  if(unsub)unsub();
  unsub=onValue(ref(db,`offices/${oid}/messages/${id}`),s=>{const v=s.val(),a=[];if(v)Object.values(v).forEach(m=>a.push(m));a.sort((x,y)=>(x.t||0)-(y.t||0));
   const b=$('chat-body');b.innerHTML=a.map(m=>`<div class="msg ${m.who==='ai'?'ai':'user'}"><div class="bubble">${esc(m.text)}</div><div class="meta">${m.who==='ai'?esc(r.name):'Anda'} • ${new Date(m.t||0).toLocaleTimeString('id-ID')}</div></div>`).join('');b.scrollTop=b.scrollHeight})}
@@ -290,7 +348,7 @@ $('go').onclick=async()=>{
   /* agent 24 jam: hanya satu perangkat yang menulis tiap 30 dtk (transaction) */
   setInterval(()=>{if(!autoOn)return;D.filter(d=>d.mode==='24h').forEach(async d=>{
    try{const res=await runTransaction(ref(db,`offices/${oid}/runs/${d.id}`),v=>Date.now()-(v||0)>28000?Date.now():undefined);
-    if(res.committed)send(d.id,'ai',d.g?d.g():`Laporan rutin ${d.name}: semua normal.`)}catch(e){}})},6000);
+    if(res.committed)send(d.id,'ai',d.g?await d.g():`Laporan rutin ${d.name}: semua normal.`)}catch(e){}})},6000);
  }catch(e){alert('Gagal koneksi Firebase: '+e.message)}
 };
 </script>
