@@ -1,88 +1,296 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kantor AI 3D</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Office Agent - Kantor Isometrik 15 Divisi</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Nunito,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#e8eefc;overflow:hidden;background:#bfe3f5}
-.hidden{display:none!important}
-#login{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#14213d,#1f3b6e);padding:24px;text-align:center}
-#login h2{font-size:28px;margin-bottom:6px}#login p{color:#b8c6e6;font-size:14px;margin-bottom:18px}
-#login input{padding:12px 16px;font-size:16px;border-radius:12px;border:2px solid #3a5a9a;background:#0f1a33;color:#fff;width:260px;text-align:center;margin-bottom:14px}
-#login button{padding:12px 32px;font-size:16px;font-weight:700;border:0;border-radius:12px;background:#ffc93c;color:#2a1d00;cursor:pointer}
-header{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:rgba(20,33,61,.93)}
-.brand{font-weight:800;display:flex;align-items:center;gap:10px}.dot{width:9px;height:9px;border-radius:50%;background:#4ade80;box-shadow:0 0 10px #4ade80}
-.r{display:flex;align-items:center;gap:10px;font-size:12px;color:#b8c6e6}
-.r button,#mode{background:#26396b;border:1px solid #4a64a8;color:#fff;padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer}
-#auto.on{background:#4ade80;color:#06280f;border-color:#4ade80}
-#map{position:fixed;inset:52px 0 0 0;touch-action:none}
-#legend{position:fixed;left:12px;top:64px;z-index:60;width:190px;padding:8px 10px;border-radius:14px;background:rgba(20,33,61,.92);max-height:calc(100vh - 130px);overflow:auto}
-#legend div{display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:12px;cursor:pointer}#legend div:hover{color:#ffc93c}
-#legend b{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:11px;flex:none;color:#fff}
-#hint{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:60;font-size:12px;padding:6px 14px;border-radius:20px;background:rgba(20,33,61,.9);color:#b8c6e6;white-space:nowrap}
-#chat{position:fixed;z-index:150;top:52px;right:0;bottom:0;width:390px;display:none;flex-direction:column;background:#0f1a33;border-left:1px solid #3a5a9a}
-#chat.open{display:flex}
-.ch{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #26396b;font-weight:800;gap:8px}
-.ch span:last-child{display:flex;gap:6px}.ch button{background:none;border:0;color:#b8c6e6;font-size:20px;cursor:pointer}
-#chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-.msg{max-width:88%;display:flex;flex-direction:column;gap:3px}.msg.ai{align-self:flex-start}.msg.user{align-self:flex-end}
-.bubble{padding:9px 13px;border-radius:12px;font-size:14px;line-height:1.5;white-space:pre-wrap}
-.msg.ai .bubble{background:#1c2b52}.msg.user .bubble{background:#ffc93c;color:#2a1d00}
-.meta{font-size:10px;color:#8fa2cc}.msg.user .meta{text-align:right}
-.inp{padding:12px 14px;border-top:1px solid #26396b;display:flex;gap:8px}
-.inp textarea{flex:1;resize:none;border:1px solid #3a5a9a;border-radius:10px;background:#0a1226;color:#fff;padding:9px 11px;font:14px inherit;min-height:42px}
-.inp button{width:46px;border:0;border-radius:10px;background:#ffc93c;color:#2a1d00;font-weight:800;cursor:pointer}
-header,#legend,#hint,#chat{backdrop-filter:blur(10px)}
-header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));border-bottom:1px solid rgba(255,255,255,.14);box-shadow:0 4px 20px rgba(0,0,0,.25)}
-#legend{background:rgba(20,33,61,.82);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 30px rgba(0,0,0,.3)}
-#chat{background:rgba(12,22,46,.94);box-shadow:-10px 0 40px rgba(0,0,0,.35)}
-.bubble{box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.r button:hover,#mode:hover{border-color:#ffc93c}
-#src{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;border-bottom:1px solid #26396b}
-.chip{font-size:11px;padding:4px 10px;border-radius:14px;background:#1c2b52;border:1px solid #3a5a9a;color:#cfe0ff;text-decoration:none;cursor:pointer}
-.chip.ok{background:#14532d;border-color:#4ade80;color:#bbf7d0}.chip:hover{border-color:#ffc93c}
-#cfgm{position:fixed;inset:0;z-index:400;display:grid;place-items:center;background:rgba(5,10,25,.7)}
-#cfgm .bx{width:min(460px,92vw);padding:20px;border-radius:16px;background:#0f1a33;border:1px solid #3a5a9a;display:flex;flex-direction:column;gap:10px}
-#cfgm input{padding:10px;border-radius:10px;border:1px solid #3a5a9a;background:#0a1226;color:#fff}
-#cfgm p{font-size:12px;color:#9fb2dd;line-height:1.5}#cfgm .row{display:flex;gap:8px;justify-content:flex-end}
-#cfgm button{padding:8px 16px;border-radius:10px;border:0;background:#ffc93c;color:#2a1d00;font-weight:700;cursor:pointer}
-@media(max-width:820px){#legend,#hint{display:none}#chat{top:auto;width:100%;height:55vh;border-left:0;border-top:1px solid #3a5a9a}.r span{display:none}}
+:root {
+  --bg: #0b0c10;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #00f2ff;
+  --floor: #d1d5db;
+  --wall: #1f2833;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  overflow: hidden; height: 100vh;
+}
+
+/* UI Overlay */
+#ui-layer {
+  position: absolute; inset: 0; z-index: 100; pointer-events: none;
+  display: flex; flex-direction: column;
+}
+#ui-layer * { pointer-events: auto; }
+
+header {
+  padding: 12px 20px; background: rgba(10,12,16,0.8); border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(8px);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+.dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); animation: blink 1s infinite; }
+.status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+#auto-toggle {
+  background: var(--wall); border: 1px solid var(--muted); color: var(--text);
+  padding: 4px 10px; border-radius: 16px; font-size: 11px; cursor: pointer;
+}
+#auto-toggle.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* Login */
+#login-screen {
+  position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; background: var(--bg);
+  padding: 24px; text-align: center;
+}
+#login-screen h2 { margin-bottom: 8px; font-size: 24px; letter-spacing: 1px; }
+#login-screen p { color: var(--muted); margin-bottom: 20px; font-size: 14px; }
+#office-code {
+  padding: 12px 16px; font-size: 16px; border-radius: 10px; border: 1px solid var(--wall);
+  background: rgba(10,12,16,0.9); color: var(--text); width: 260px; margin-bottom: 16px; text-align: center;
+}
+#btn-login {
+  padding: 12px 28px; font-size: 16px; font-weight: 700; border: none; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), #bc13fe); color: #000; cursor: pointer;
+}
+.note { margin-top: 16px; font-size: 12px; color: var(--muted); max-width: 300px; line-height: 1.4; }
+
+/* Office Map - Simple Isometric Grid */
+#map-view {
+  flex: 1; position: relative; overflow: auto;
+  display: flex; justify-content: center; align-items: center;
+  background: linear-gradient(180deg, #0a0b10 0%, #050608 100%);
+  padding: 40px;
+}
+#office-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 16px;
+  width: max-content;
+  transform: rotateX(55deg) rotateZ(-40deg) scale(0.85);
+  transform-origin: center bottom;
+  transform-style: preserve-3d;
+}
+
+/* Room Cell */
+.room-cell {
+  width: 140px; height: 140px;
+  border: 3px solid rgba(0,0,0,0.3);
+  background: #f3f4f6;
+  border-radius: 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s;
+  position: relative;
+}
+.room-cell:hover {
+  border-color: #00f2ff;
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 0 30px rgba(0,242,255,0.2);
+  z-index: 10;
+}
+.room-cell.lobby { background: #e5e7eb; border-style: dashed; border-color: #6b7280; font-size: 11px; font-weight: 700; color: #374151; }
+.room-cell.meeting { background: #fef3c7; border-color: #d4af37; font-size: 11px; font-weight: 700; color: #92400e; }
+
+.room-inner { text-align: center; pointer-events: none; }
+.room-icon { font-size: 26px; margin-bottom: 6px; display: block; }
+.room-name { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+  background: rgba(0,0,0,0.7); color: #fff; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+.room-screen {
+  width: 90px; height: 50px; background: #000; border: 2px solid #333;
+  border-radius: 4px; margin-top: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #444; position: relative;
+}
+.screen-dot {
+  position: absolute; top: 4px; left: 4px; width: 5px; height: 5px; background: #0f0; border-radius: 50%;
+  box-shadow: 0 0 6px #0f0; animation: blink 1s infinite;
+}
+.room-avatar {
+  width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+  margin-top: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.3); animation: float 3s ease-in-out infinite;
+}
+.room-badge {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 900; color: #fff; box-shadow: 0 0 8px rgba(0,0,0,0.4);
+}
+
+/* Character Layer */
+#char-layer { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
+.character {
+  position: absolute; width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: left 0.6s ease-out, top 0.6s ease-out;
+  box-shadow: 0 0 12px rgba(0,0,0,0.6); cursor: pointer; z-index: 35;
+}
+.character.walking { animation: walkBounce 0.4s ease-in-out infinite; }
+
+/* Chat Panel */
+#chat-panel {
+  position: fixed; inset: 0; z-index: 150; display: none; flex-direction: column;
+  background: rgba(10,12,16,0.95); backdrop-filter: blur(12px);
+}
+#chat-panel.open { display: flex; }
+@media (min-width: 900px){
+  #chat-panel { width: 440px; right: 0; top: 0; bottom: 0; transform: translateX(100%); transition: transform .3s ease; }
+  #chat-panel.open { transform: translateX(0); }
+}
+.chat-header {
+  padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2);
+}
+.chat-title { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.chat-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+.chat-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 80%; display: flex; flex-direction: column; gap: 4px; }
+.msg.ai { align-self: flex-start; }
+.msg.user { align-self: flex-end; }
+.bubble { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+.msg.ai .bubble { background: #1f1f2e; border: 1px solid rgba(255,255,255,0.08); color: var(--text); border-bottom-left-radius: 4px; }
+.msg.user .bubble { background: var(--accent); color: #000; border-bottom-right-radius: 4px; }
+.meta { font-size: 11px; color: var(--muted); }
+
+.chat-input-area {
+  padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3);
+}
+.input-wrap {
+  display: flex; gap: 10px; max-width: 600px; margin: 0 auto;
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 6px 14px;
+}
+textarea { flex: 1; border: none; outline: none; background: transparent; color: var(--text); font-size: 14px; resize: none; min-height: 20px; font-family: inherit; }
+.btn-send { background: linear-gradient(135deg, var(--accent), #bc13fe); border: none; border-radius: 12px; width: 44px; height: 44px; color: #fff; font-weight: 700; cursor: pointer; }
+.hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+/* Meeting Overlay */
+#meeting-overlay {
+  position: fixed; inset: 0; z-index: 250; display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+}
+#meeting-overlay.open { display: flex; }
+.meeting-room {
+  position: relative; width: 340px; height: 260px; border: 4px solid var(--accent); border-radius: 16px;
+  background: var(--floor); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px; box-shadow: 0 0 60px var(--accent);
+  animation: meetingPop 0.4s cubic-bezier(.175,.885,.32,1.275) both;
+}
+.meeting-title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+.meeting-table {
+  width: 100%; height: 120px; border: 2px dashed rgba(0,242,255,0.3); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; position: relative; background: rgba(0,0,0,0.1);
+}
+.meeting-avatar {
+  width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff;
+  position: absolute; display: flex; align-items: center; justify-content: center; font-size: 14px;
+  animation: meetingFloat 2s ease-in-out infinite;
+}
+.meeting-bubble {
+  position: absolute; top: -36px; background: var(--accent); color: #000;
+  padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; white-space: nowrap;
+  animation: bubbleIn 0.3s both;
+}
+.btn-skip-meeting {
+  margin-top: 16px; background: transparent; border: 1px solid var(--accent); color: var(--accent);
+  padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;
+}
+.btn-skip-meeting:hover { background: var(--accent); color: #000; }
+
+/* Big Screen HUD */
+#big-screen {
+  position: fixed; top: 80px; right: 20px; width: 300px; height: 190px;
+  border: 3px solid var(--accent); border-radius: 10px; background: #000;
+  display: flex; flex-direction: column; padding: 10px; z-index: 120;
+  box-shadow: 0 0 40px var(--accent);
+}
+#big-screen.hidden { display: none; }
+.screen-header { font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid var(--accent); padding-bottom: 4px; }
+.screen-content { flex: 1; overflow-y: auto; font-size: 13px; color: #ccc; font-family: 'Courier New', monospace; }
+
+.auto-ticker {
+  position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: var(--muted); background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); z-index: 110;
+}
+
+@keyframes blink { 0%,96%,100%{ opacity:1 } 98%{ opacity:0.2 } }
+@keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-5px) } }
+@keyframes walkBounce { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-4px) } }
+@keyframes meetingPop { from{ opacity:0; transform: scale(0.85) } to{ opacity:1; transform: scale(1) } }
+@keyframes meetingFloat { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-8px) } }
+@keyframes bubbleIn { from{ opacity:0; transform: translateY(10px) } to{ opacity:1; transform: translateY(0) } }
+.hidden { display: none !important; }
+
+@media (max-width: 768px){
+  #office-grid { transform: rotateX(55deg) rotateZ(-40deg) scale(0.6); gap: 10px; }
+  .room-cell { width: 110px; height: 110px; }
+  #big-screen { width: 90vw; right: auto; left: 10px; top: auto; bottom: 90px; height: 140px; }
+  #chat-panel { width: 100%; transform: translateY(100%); transition: transform .3s ease; top: auto; bottom: 0; height: 60vh; }
+  #chat-panel.open { transform: translateY(0); }
+}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
-<div id="login">
-  <h2>🏢 Kantor AI 3D</h2>
-  <p>Masukkan kode kantor untuk sinkron di semua perangkat</p>
-  <input id="code" value="AI2026" placeholder="Kode kantor">
-  <button id="go">Masuk</button>
+
+<!-- Login -->
+<div id="login-screen">
+  <h2>AI Office Agent</h2>
+  <p>Masukkan kode kantor untuk sinkronisasi multi-device</p>
+  <input type="text" id="office-code" value="AI2026" placeholder="Kode Kantor">
+  <button id="btn-login">Masuk</button>
+  <p class="note">Gunakan kode yang sama di semua perangkat. Chat tersimpan di Firebase.</p>
 </div>
-<div id="ui" class="hidden">
-  <header><div class="brand"><span class="dot"></span>Kantor AI</div>
-    <div class="r"><span id="status">Menghubungkan...</span><button id="auto" class="on">Agent 24 Jam: ON</button><button id="reset">Reset kamera</button><button id="cfg">⚙ Sumber AI</button></div></header>
-  <div id="map"></div>
-  <div id="legend"></div>
-  <div id="cfgm" class="hidden"><div class="bx"><h3>🤖 Sumber jawaban AI</h3>
-    <p>Tempel URL proxy AI milikmu (Cloud Function Firebase, lihat <b>firebase-functions-index.js</b>). Jangan taruh API key di halaman ini. Kosongkan untuk memakai jawaban demo.</p>
-    <input id="aiurl" placeholder="https://nama-worker.akun.workers.dev"><div class="row"><button id="cfgx">Batal</button><button id="cfgsave">Simpan</button></div></div></div>
-  <div id="hint">Geser: tarik • Putar: klik kanan / 2 jari • Zoom: scroll / cubit • Klik ruangan untuk fokus & chat</div>
-  <div id="chat">
-    <div class="ch"><span id="ct">Divisi</span><span><button id="mode"></button><button id="cx" aria-label="Tutup">✕</button></span></div>
-    <div id="src"></div><div id="chat-body"></div>
-    <div class="inp"><textarea id="ci" placeholder="Beri pertanyaan / perintah ke agent ini..."></textarea><button id="send" aria-label="Kirim">➤</button></div>
+
+<!-- UI -->
+<div id="ui-layer">
+  <header>
+    <div class="brand"><div class="dot"></div>AI Office Agent</div>
+    <div class="status" id="statusText">Menghubungkan...</div>
+    <button id="auto-toggle" class="active">Auto 24 Jam: ON</button>
+  </header>
+
+  <div id="map-view">
+    <div id="office-grid"></div>
+    <div id="char-layer"></div>
+    <div class="auto-ticker" id="auto-ticker">Sistem siap...</div>
   </div>
+
+  <div id="big-screen" class="hidden">
+    <div class="screen-header">LAYAR INFO DIVISI</div>
+    <div class="screen-content" id="screen-content">Klik ruangan divisi di gedung isometrik.</div>
+  </div>
+
+  <div id="meeting-overlay">
+    <div class="meeting-room">
+      <div class="meeting-title">RAPAT DIVISI</div>
+      <div class="meeting-table" id="meeting-table"></div>
+      <div class="meeting-bubble" id="meeting-bubble" style="display:none;">Sedang membahas...</div>
+    </div>
+    <button class="btn-skip-meeting" id="skip-meeting" style="display:none;">Langsung Jawab</button>
+  </div>
+
+  <div id="chat-panel">
+    <div class="chat-header">
+      <div class="chat-title"><span id="chat-div-icon">🏢</span> <span id="chat-div-name">Divisi</span></div>
+      <button class="chat-close" id="chat-close">✕</button>
+    </div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="chat-input-area">
+      <div class="input-wrap">
+        <textarea id="chat-input" placeholder="Ketik pertanyaan untuk divisi ini..."></textarea>
+        <button class="btn-send" id="btn-send">➤</button>
+      </div>
+      <div class="hint">Enter = Kirim • Shift+Enter = Baris baru</div>
+    </div>
+  </div>
+
+  <div class="auto-ticker" id="auto-ticker">Sistem siap...</div>
 </div>
 
 <script type="module">
-import * as THREE from 'three';
-import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import {getDatabase,ref,onValue,push,set,query,limitToLast,runTransaction} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-import {getAuth,signInAnonymously} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-
+/* ========== KONFIGURASI FIREBASE ========== */
  const firebaseConfig = {
     apiKey: "AIzaSyBeb1L6dCevfzX2tw__6MGWfpB6jfKTO6M",
     authDomain: "ai-kantor-project.firebaseapp.com",
@@ -95,262 +303,367 @@ import {getAuth,signInAnonymously} from 'https://www.gstatic.com/firebasejs/10.1
   };
 
 
-const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms)),PI=Math.PI;
-const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
-const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const idr=n=>'Rp '+Math.round(n).toLocaleString('id-ID');
-const px={BBCA:9850,BTC:714250000,ETH:48500000,XAU:1650000};
-const mv=(k,p=.004)=>(px[k]*=1+rnd(-p,p)),pct=()=>rnd(-2.2,2.2).toFixed(2)+'%';
-let cg={t:0,v:null};
-async function getCg(){if(cg.v&&Date.now()-cg.t<30000)return cg.v;
- try{const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=idr&include_24hr_change=true');cg={t:Date.now(),v:await r.json()}}catch(e){}
- return cg.v}
-
-/* m:'24h' = agent berjalan terus. tanpa m = bekerja saat dipanggil. g = pembuat info rutin (SIMULASI) */
-const D=[
-{id:1,name:'Trading Saham',c:'#2e9e44',ic:'📈',m:'24h',g:()=>`BBCA ${idr(mv('BBCA'))} (${pct()})\nSinyal: ${pick(['beli bertahap','tahan','pantau support'])}`},
-{id:2,name:'Invest Saham',c:'#2f7fe0',ic:'📊'},
-{id:3,name:'Invest Dividen Saham',c:'#8a4fd8',ic:'💰'},
-{id:4,name:'Bibit Reksadana',c:'#1aa37a',ic:'🌱'},
-{id:5,name:'Bitcoin Indodax',c:'#f08a1c',ic:'₿',m:'24h',g:async()=>{const v=await getCg();return v?`BTC: ${idr(v.bitcoin.idr)} (${v.bitcoin.idr_24h_change.toFixed(2)}% / 24j)\nSumber: CoinGecko`:`BTC (simulasi): ${idr(mv('BTC'))}`}},
-{id:6,name:'Bitcoin Toko Crypto',c:'#e0409a',ic:'🏪',m:'24h',g:async()=>{const v=await getCg();return v?`ETH: ${idr(v.ethereum.idr)} (${v.ethereum.idr_24h_change.toFixed(2)}% / 24j)\nSumber: CoinGecko`:`ETH (simulasi): ${idr(mv('ETH'))}`}},
-{id:7,name:'Emas Logam Mulia',c:'#c99a1c',ic:'🥇',m:'24h',g:()=>`Emas per gram: ${idr(mv('XAU',.002))}`},
-{id:8,name:'Pencatat Keuangan',c:'#2a4a8a',ic:'📒'},
-{id:9,name:'Multimedia Video',c:'#8f52e8',ic:'🎬'},
-{id:10,name:'Multimedia Grafis',c:'#18a0d8',ic:'🎨'},
-{id:12,name:'Online Shop',c:'#d6336c',ic:'🛒'},
-{id:13,name:'Viral / Trend News',c:'#16a6a6',ic:'📰',m:'24h',g:()=>pick(['Tren: AI agent & otomasi kantor','Tren: investasi emas naik dicari','Tren: resep viral minuman dingin'])},
-{id:14,name:'Resep Masakan & Minuman',c:'#ee5a7a',ic:'🍜'},
-{id:11,name:'Coding',c:'#6aa71a',ic:'💻'},
-{id:15,name:'AI Chatbot',c:'#6f4fe0',ic:'🤖'}
+/* ========== DATA DIVISI 15 ========== */
+const DIVISIONS = [
+  {id:1, name:'Trading Saham', color:'#10b981', icon:'📈', emoji:'🟢', auto:true, autoText:'Saham ABC naik 2,4% hari ini.'},
+  {id:2, name:'Invest Saham', color:'#3b82f6', icon:'📊', emoji:'🔵', auto:false},
+  {id:3, name:'Invest Dividen Saham', color:'#8b5cf6', icon:'💰', emoji:'🟣', auto:false},
+  {id:4, name:'Bibit Reksadana', color:'#14b8a6', icon:'🌱', emoji:'🟡', auto:false},
+  {id:5, name:'Bitcoin Indodax', color:'#f97316', icon:'₿', emoji:'🟠', auto:true, autoText:'BTC di Indodax: Rp 714.250.000'},
+  {id:6, name:'Bitcoin Toko Crypto', color:'#ec4899', icon:'🏪', emoji:'🔴', auto:true, autoText:'Crypto Update: ETH menguat 1,8%'},
+  {id:7, name:'Emas Logam Mulia', color:'#d4af37', icon:'🥇', emoji:'🟡', auto:false},
+  {id:8, name:'Pencatat Keuangan', color:'#1e293b', icon:'📒', emoji:'⚪', auto:false},
+  {id:9, name:'Multimedia Video', color:'#a855f7', icon:'🎬', emoji:'🟥', auto:false},
+  {id:10, name:'Multimedia Grafis', color:'#0ea5e9', icon:'🎨', emoji:'🔷', auto:false},
+  {id:11, name:'Coding', color:'#84cc16', icon:'💻', emoji:'🟩', auto:false},
+  {id:12, name:'Online Shop', color:'#be185d', icon:'🛒', emoji:'🟪', auto:false},
+  {id:13, name:'Viral/Trend News', color:'#f59e0b', icon:'📰', emoji:'🟨', auto:true, autoText:'News: AI kantor isometrik trending.'},
+  {id:14, name:'Resep Masakan & Minuman', color:'#fb923c', icon:'🍜', emoji:'🟧', auto:false},
+  {id:15, name:'AI Chatbot', color:'#6366f1', icon:'🤖', emoji:'🔵', auto:false},
 ];
-/* slot: x, z, yaw (muka ruangan menghadap plaza), id (0 = ruang meeting) */
-const SL=[[-20,-13.5,0,1],[-12,-13.5,0,2],[-4,-13.5,0,3],[4,-13.5,0,4],[12,-13.5,0,5],[20,-13.5,0,6],
-[-27.5,-6,PI/2,7],[-27.5,2,PI/2,8],[-27.5,10,PI/2,9],[27.5,-6,-PI/2,10],[27.5,2,-PI/2,12],[27.5,10,-PI/2,13],
-[-16,13.5,PI,14],[-8,13.5,PI,11],[8,13.5,PI,0],[16,13.5,PI,15]];
-const W=8,DP=7,WH=3.4;
 
-let app,auth,db,oid,cur=null,autoOn=true,unsub=null,rend,cam,ctl,tg=null;
-const scene=new THREE.Scene(),rooms={},chars={},picks=[],RL=[];
+/* Grid: 5x4 = 20 sel */
+const GRID = [
+  {div:1},{div:2},{div:3},{div:4},{div:5},
+  {div:7},{type:'lobby'},{type:'lobby'},{div:6},{div:10},
+  {div:8},{type:'lobby'},{type:'lobby'},{div:9},{div:12},
+  {type:'meeting'},{div:11},{div:13},{div:14},{div:15}
+];
 
-/* ===== helper 3D ===== */
-const M=c=>new THREE.MeshLambertMaterial({color:c});
-const box=(w,h,d,c,x,y,z,p)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;(p||scene).add(m);return m};
-const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
-const tex=c=>{const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t};
-function label(text,color,sw,sh){const c=cv(512,128),x=c.getContext('2d');x.fillStyle=color;x.beginPath();x.roundRect(4,4,504,120,30);x.fill();
- x.fillStyle='#fff';x.font='bold 54px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,256,68,470);
- const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex(c),depthWrite:false}));s.scale.set(sw,sh,1);return s}
-function wrap(x,t,mw){const o=[];t.split('\n').forEach(p=>{let l='';p.split(' ').forEach(w=>{const n=l?l+' '+w:w;if(x.measureText(n).width>mw&&l){o.push(l);l=w}else l=n});o.push(l)});return o}
-const wp=(r,x,z)=>r.g.localToWorld(new THREE.Vector3(x,0,z));
-const plazaPt=()=>new THREE.Vector3(rnd(-14,14),0,rnd(-6,6));
+/* ========== STATE ========== */
+let app, auth, db, officeId, currentDiv = null;
+let autoEnabled = true;
+let messageUnsubs = {};
+let avatars = [];
+let roomMap = new Map();
 
-/* ===== layar besar ===== */
-const STT={live:['LIVE 24 JAM','#4ade80'],work:['BEKERJA','#fbbf24'],standby:['STANDBY','#94a3b8']};
-function draw(r){const x=r.cx,s=STT[r.st],F='Nunito,system-ui,sans-serif';
- const g=x.createLinearGradient(0,0,0,576);g.addColorStop(0,'#0a1830');g.addColorStop(1,'#050b18');x.fillStyle=g;x.fillRect(0,0,1024,576);
- x.fillStyle=r.col;x.fillRect(0,0,1024,96);
- x.textBaseline='middle';x.textAlign='left';x.font='800 48px '+F;x.fillStyle='#fff';x.fillText(r.ic+' '+r.name,28,50,600);
- if(!r.meet){x.fillStyle='rgba(0,0,0,.4)';x.beginPath();x.roundRect(660,22,340,52,26);x.fill();x.font='800 30px '+F;x.fillStyle=s[1];x.textAlign='center';x.fillText('● '+s[0],830,50)}
- x.textAlign='left';x.fillStyle='#d8ffe9';
- let fs=48,L;do{fs-=4;x.font='600 '+fs+'px '+F;L=wrap(x,r.txt,968)}while(L.length*fs*1.3>400&&fs>22);
- L.slice(-Math.floor(400/(fs*1.3))).forEach((l,i)=>x.fillText(l,28,140+i*fs*1.3));
- if(!r.meet){x.font='600 24px '+F;x.fillStyle='#7f93bd';x.fillText('Sumber: '+(r.srcTag||'—'),28,550)}
- r.tx.needsUpdate=true;r.lamp.material.color.set(s[1])}
-function setSt(r,s){r.st=s;if(r.mon)r.mon.color.set(s==='work'?0xffffff:s==='live'?0x7dd3fc:0x1e3a5f);draw(r)}
+const loginScreen = document.getElementById('login-screen');
+const uiLayer = document.getElementById('ui-layer');
+const officeCodeInput = document.getElementById('office-code');
+const btnLogin = document.getElementById('btn-login');
+const statusText = document.getElementById('statusText');
 
-/* ===== ruangan ===== */
-function mkRoom([x,z,yaw,id]){
- const d=D.find(q=>q.id===id)||{name:'Ruang Meeting',c:'#66708c',ic:'🤝',meet:1};
- const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=yaw;scene.add(g);
- const col=new THREE.Color(d.c),white=new THREE.Color(1,1,1),lt=col.clone().lerp(white,.78),wl=col.clone().lerp(white,.4);
- const r={id,d,name:d.name,col:d.c,ic:d.ic,g,yaw,meet:d.meet,st:'standby',lock:false,txt:d.meet?'Tempat agent berkumpul.':'Siap menerima tugas.'};
- const fl=box(W,.14,DP,lt,0,.07,0,g);
- box(W,WH,.25,wl,0,WH/2,-DP/2,g);box(.25,WH,DP,wl,-W/2,WH/2,0,g);box(.25,WH,DP,wl,W/2,WH/2,0,g);box(W,.3,.25,col,0,.15,DP/2,g);
- const c=cv(1024,576);r.cx=c.getContext('2d');r.tx=tex(c);
- box(4.8,2.8,.1,0x0b1220,0,1.95,-DP/2+.17,g);
- const sc=new THREE.Mesh(new THREE.PlaneGeometry(4.6,2.6),new THREE.MeshBasicMaterial({map:r.tx,toneMapped:false}));sc.position.set(0,1.95,-DP/2+.23);g.add(sc);
- fl.userData.id=sc.userData.id=id;picks.push(fl,sc);
- r.lamp=new THREE.Mesh(new THREE.SphereGeometry(.28,12,12),new THREE.MeshBasicMaterial({color:0x64748b}));r.lamp.position.set(0,WH+.35,-DP/2);g.add(r.lamp);
- const lb=label((d.meet?'':id+' ')+d.name,d.c,6.4,1.6);lb.position.set(0,WH+1.5,-DP/2+.5);g.add(lb);
- if(d.meet){
-  const t=new THREE.Mesh(new THREE.CylinderGeometry(1.7,1.7,.12,24),M(0xc79b64));t.position.set(0,.8,.5);g.add(t);box(.3,.8,.3,0x7a5a38,0,.4,.5,g);
-  for(let i=0;i<6;i++){const a=i/6*PI*2,s=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.5,12),M(0x475569));s.position.set(Math.cos(a)*2.3,.25,.5+Math.sin(a)*2.3);g.add(s)}
- }else{
-  box(2.6,.8,1,0x9c7a54,-1.8,.4,-1.9,g);box(.15,.35,.15,0x1f2937,-1.8,.97,-2.05,g);box(1.15,.7,.07,0x111827,-1.8,1.5,-2.05,g);
-  r.mon=new THREE.MeshBasicMaterial({color:0x1e3a5f});const ms=new THREE.Mesh(new THREE.PlaneGeometry(1.03,.58),r.mon);ms.position.set(-1.8,1.5,-2.01);g.add(ms);
-  box(2.6,.8,1,0x9c7a54,1.8,.4,-1.9,g);box(.9,.05,.6,0xcbd5e1,1.8,.83,-1.8,g);
-  const lid=box(.9,.6,.04,0x1f2937,1.8,1.12,-2.1,g);lid.rotation.x=-.2;
-  const ls=new THREE.Mesh(new THREE.PlaneGeometry(.8,.5),new THREE.MeshBasicMaterial({color:new THREE.Color(d.c).lerp(white,.4)}));ls.position.set(1.8,1.12,-2.07);ls.rotation.x=-.2;g.add(ls);
-  box(5,.03,3.6,col.clone().lerp(white,.55),0,.16,-.9,g);box(.4,2,2,0x8b6b4a,-W/2+.35,1,1.2,g);for(let i=0;i<4;i++)box(.3,.35,.35,[0xef4444,0x3b82f6,0xfacc15,0x22c55e][i],-W/2+.45,.5+i*.45,.7+i*.35,g);box(.5,.4,.5,0x7a4b2a,3.1,.2,2.6,g);const pl=new THREE.Mesh(new THREE.SphereGeometry(.55,10,8),M(0x2f9e5a));pl.position.set(3.1,.9,2.6);g.add(pl);
- }
- rooms[id]=r;RL.push(r);draw(r);return r}
-
-function mkChar(r){
- const g=new THREE.Group(),c={g,r,d:r.d,path:[],t:0,loc:r,wait:rnd(2,6),face:r.yaw+PI,work:false},col=r.col,hair=0x1b1b26,skin=0xf8dcc4,st=pick(['bob','long','short']);
- const limb=(w,h,d,cl,x,y)=>{const p=new THREE.Group();p.position.set(x,y,0);box(w,h,d,cl,0,-h/2,0,p);g.add(p);return p};
- c.legL=limb(.2,.5,.22,0x27304f,-.13,.5);c.legR=limb(.2,.5,.22,0x27304f,.13,.5);
- box(.2,.1,.27,0xf8fafc,0,-.45,.02,c.legL);box(.2,.1,.27,0xf8fafc,0,-.45,.02,c.legR);
- box(.52,.5,.32,col,0,.78,0,g);box(.3,.08,.34,0xffffff,0,1.0,.01,g);
- c.armL=limb(.15,.45,.17,col,-.35,1.0);c.armR=limb(.15,.45,.17,col,.35,1.0);
- [c.armL,c.armR].forEach(a=>box(.14,.12,.16,skin,0,-.45,0,a));
- const hd=new THREE.Mesh(new THREE.SphereGeometry(.44,24,18),M(skin));hd.position.y=1.45;hd.castShadow=true;g.add(hd);
- const cap=new THREE.Mesh(new THREE.SphereGeometry(.47,24,16,0,PI*2,0,PI*.45),M(hair));cap.position.y=1.47;cap.rotation.x=-.12;g.add(cap);
- box(.6,.12,.1,hair,0,1.55,.37,g);
- const L=st==='long';
- if(st!=='short'){const h=L?.95:.55,y=L?1.2:1.35;box(.12,h,.5,hair,-.43,y,-.02,g);box(.12,h,.5,hair,.43,y,-.02,g);box(.86,L?.95:.6,.16,hair,0,L?1.2:1.32,-.38,g)}
- else box(.86,.42,.16,hair,0,1.45,-.4,g);
- [-.16,.16].forEach(x=>{box(.1,.17,.05,0x161622,x,1.42,.425,g);box(.035,.05,.03,0xffffff,x+.02,1.46,.45,g);box(.1,.05,.04,0xffa6b3,x*1.7,1.32,.33,g)});
- box(.08,.025,.03,0xd9534f,0,1.31,.435,g);
- g.scale.setScalar(1.2);g.position.copy(r.spot);g.rotation.y=r.yaw+PI;scene.add(g);return c}
-
-function go(c,tr,spot,face){const cu=c.loc,p=[];
- if(cu&&cu!==tr)p.push(cu.inside,cu.front);
- if(cu!==tr&&(cu||tr))p.push(plazaPt());
- if(tr&&cu!==tr)p.push(tr.front,tr.inside);
- p.push(spot);c.path=p.map(v=>v.clone());c.loc=tr;c.face=face;c.done=null}
-const turn=(c,a,k)=>{let d=a-c.g.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));c.g.rotation.y+=d*Math.min(1,k)};
-
-function step(c,dt){
- const p=c.path[0];let mvg=false;
- if(p){const dx=p.x-c.g.position.x,dz=p.z-c.g.position.z,d=Math.hypot(dx,dz);
-  if(d<.12){c.path.shift();if(!c.path.length&&c.done){const f=c.done;c.done=null;f()}}
-  else{const s=Math.min(d,3.4*dt);c.g.position.x+=dx/d*s;c.g.position.z+=dz/d*s;turn(c,Math.atan2(dx,dz),dt*10);mvg=true}
- }else if(c.face!=null)turn(c,c.face,dt*8);
- c.t+=dt*(mvg?9:1);const s=mvg?Math.sin(c.t)*.7:0,ty=!mvg&&c.work;
- c.legL.rotation.x=s;c.legR.rotation.x=-s;
- c.armL.rotation.x=mvg?-s:ty?-1.2+Math.sin(c.t*14)*.12:Math.sin(c.t)*.04;
- c.armR.rotation.x=mvg?s:ty?-1.2+Math.cos(c.t*14)*.12:-Math.sin(c.t)*.04;
- c.g.position.y=.14+(mvg?Math.abs(Math.sin(c.t))*.1:0);
- if(!c.path.length&&!c.busy&&!c.work&&c.d.mode!=='24h'){c.wait-=dt;if(c.wait<=0){c.wait=rnd(5,10);const k=Math.random();
-  if(k<.3)go(c,c.r,c.r.spot,c.r.yaw+PI);else if(k<.5)go(c,null,plazaPt(),null);else{const t=pick(RL);go(c,t,wp(t,rnd(-2.5,2.5),rnd(0,2.5)),null)}}}
-}
-
-/* ===== scene ===== */
-function boot(){
- const host=$('map');
- rend=new THREE.WebGLRenderer({antialias:true});rend.setPixelRatio(Math.min(devicePixelRatio,2));rend.shadowMap.enabled=true;rend.shadowMap.type=THREE.PCFSoftShadowMap;rend.toneMapping=THREE.ACESFilmicToneMapping;rend.toneMappingExposure=1.05;rend.setSize(host.clientWidth,host.clientHeight);host.appendChild(rend.domElement);
- {const c=cv(8,256),x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#6fb4ec');g.addColorStop(.6,'#cfe8f7');g.addColorStop(1,'#eaf6ee');x.fillStyle=g;x.fillRect(0,0,8,256);scene.background=tex(c)}scene.fog=new THREE.Fog(0xbfe3f5,130,280);
- cam=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,.5,400);cam.position.set(34,44,58);
- scene.add(new THREE.HemisphereLight(0xffffff,0x6a8f6a,1.1));const sun=new THREE.DirectionalLight(0xfff3dc,1.5);sun.position.set(30,60,25);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);const sh=sun.shadow.camera;sh.left=-50;sh.right=50;sh.top=40;sh.bottom=-40;sh.near=10;sh.far=140;sun.shadow.bias=-.0005;scene.add(sun);
- ctl=new OrbitControls(cam,rend.domElement);ctl.target.set(0,0,2);ctl.enableDamping=true;ctl.maxPolarAngle=1.42;ctl.minDistance=6;ctl.maxDistance=140;
- ctl.mouseButtons={LEFT:THREE.MOUSE.PAN,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};ctl.touches={ONE:THREE.TOUCH.PAN,TWO:THREE.TOUCH.DOLLY_ROTATE};
- ctl.addEventListener('start',()=>tg=null);
-
- box(300,.2,300,0x7fbf7a,0,-.6,0);box(71,.7,43,0xaab6d0,0,-.37,0);
- {const c=cv(512,512),x=c.getContext('2d');for(let i=0;i<8;i++)for(let j=0;j<8;j++){x.fillStyle=(i+j)%2?'#eef2fa':'#dfe6f3';x.fillRect(i*64,j*64,64,64)}const t=tex(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(4.25,2.5);const m=new THREE.Mesh(new THREE.PlaneGeometry(68,40),new THREE.MeshLambertMaterial({map:t}));m.rotation.x=-PI/2;m.receiveShadow=true;scene.add(m)}
- for(let i=0;i<30;i++){const a=i/30*PI*2,x=Math.cos(a)*(48+rnd(0,18)),z=Math.sin(a)*(32+rnd(0,16));
-  box(.5,2,.5,0x6b4a2b,x,1,z);const cn=new THREE.Mesh(new THREE.ConeGeometry(2.2,5,8),M(0x2f7a43));cn.position.set(x,4.5,z);scene.add(cn)}
- const fc=cv(1024,512),fx=fc.getContext('2d');fx.fillStyle='rgba(255,255,255,.85)';fx.beginPath();fx.roundRect(8,8,1008,496,60);fx.fill();
- fx.fillStyle='#24407a';fx.textAlign='center';fx.font='bold 130px system-ui';fx.fillText('🧠 Kantor AI',512,230);fx.font='50px system-ui';fx.fillText('Bersama Membangun Masa Depan Finansial',512,340,960);
- const fm=new THREE.Mesh(new THREE.PlaneGeometry(16,8),new THREE.MeshBasicMaterial({map:tex(fc),transparent:true}));fm.rotation.x=-PI/2;fm.position.y=.08;scene.add(fm);
- [[-9,-4],[9,-4],[-9,5],[9,5]].forEach(([x,z])=>{box(.9,.6,.9,0x7a4b2a,x,.3,z);const s=new THREE.Mesh(new THREE.SphereGeometry(.9,10,8),M(0x2f9e5a));s.position.set(x,1.3,z);scene.add(s)});
- box(.6,4,.6,0x14213d,-4.4,2,18);box(.6,4,.6,0x14213d,4.4,2,18);box(9.4,.6,.6,0x14213d,0,4.2,18);
- const sg=label('KANTOR AI','#14213d',8,2);sg.position.set(0,5.7,18);scene.add(sg);box(2.6,1,.9,0x2a4a8a,-2.4,.5,14.5);
-
- SL.forEach(mkRoom);scene.updateMatrixWorld(true);
- RL.forEach(r=>{r.front=wp(r,0,DP/2+1.5);r.inside=wp(r,0,1.2);r.spot=wp(r,-1.8,-.4)});
- D.forEach(d=>chars[d.id]=mkChar(rooms[d.id]));
- RL.forEach(r=>{if(!r.meet)draw(r)});
-
- const ray=new THREE.Raycaster(),mp=new THREE.Vector2();let pd;
- rend.domElement.addEventListener('pointerdown',e=>pd=[e.clientX,e.clientY]);
- rend.domElement.addEventListener('pointerup',e=>{if(!pd||Math.hypot(e.clientX-pd[0],e.clientY-pd[1])>6)return;
-  const b=rend.domElement.getBoundingClientRect();mp.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);ray.setFromCamera(mp,cam);
-  const h=ray.intersectObjects(picks,false)[0];if(h)openDiv(h.object.userData.id)});
- $('reset').onclick=()=>{tg={t:new THREE.Vector3(0,0,2),c:new THREE.Vector3(34,44,58)}};
- addEventListener('resize',()=>{rend.setSize(host.clientWidth,host.clientHeight);cam.aspect=host.clientWidth/host.clientHeight;cam.updateProjectionMatrix()});
- $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
- $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
- const clk=new THREE.Clock();
- (function loop(){const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));
-  if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam);requestAnimationFrame(loop)})();
-}
-function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
-function focus(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw));tg={t:r.g.position.clone().setY(1.5),c:r.g.position.clone().add(f.multiplyScalar(13)).setY(10)}}
-
-/* ===== agent ===== */
-function applyMode(d){const r=rooms[d.id],c=chars[d.id],live=d.mode==='24h';if(c.busy)return;c.work=live;setSt(r,live?'live':'standby');if(live)go(c,r,r.spot,r.yaw+PI)}
-const baseSt=d=>d.mode==='24h'?'live':'standby';
-const send=(id,who,text)=>push(ref(db,`offices/${oid}/messages/${id}`),{who,text,t:Date.now(),uid:auth.currentUser.uid,divName:D.find(x=>x.id===id).name});
-
-async function job(id,q){
- const r=rooms[id],c=chars[id],d=r.d;r.lock=true;c.busy=true;setSt(r,'work');r.txt='📩 '+q;r.srcTag='memproses...';draw(r);focusScreen(r);
- while(c.path.length)await sleep(200);
- await new Promise(res=>{go(c,r,r.spot,r.yaw+PI);c.done=res});
- c.work=true;const P=getAnswer(d,q);
- let ok=0;P.finally(()=>ok=1);for(let i=0;i<6||!ok;i++){r.txt='⚙️ Menganalisis'+'.'.repeat(i%4);draw(r);await sleep(450)}
- const {t:ans,s:src}=await P;r.srcTag=src;r.last=ans;
- for(let i=0;i<=ans.length;i+=2){r.txt=ans.slice(0,i);draw(r);await sleep(25)}
- send(id,'ai',ans);
- r.lock=false;c.busy=false;c.work=d.mode==='24h';c.wait=6;setSt(r,baseSt(d));
-}
-async function demoAnswer(d,text){const t=text.toLowerCase();const G=d.g?await d.g():null;
- if(/\b(hai|halo)\b/.test(t))return `Halo! Saya agent ${d.name}. Ada yang bisa saya bantu?`;
- if(t.includes('harga'))return G||'Data harga akan diperbarui di layar divisi.';
- if(t.includes('reksadana'))return 'Reksadana adalah kumpulan dana yang dikelola profesional oleh manajer investasi.';
- if(t.includes('bitcoin')||t.includes('btc'))return 'Bitcoin adalah aset digital terdesentralisasi berbasis blockchain.';
- if(t.includes('emas'))return 'Emas logam mulia sering dipakai sebagai pelindung nilai dari inflasi.';
- if(t.includes('resep'))return 'Resep masakan dan minuman siap dibagikan sesuai permintaan Anda.';
- return `Jawaban dari agent ${d.name}. ${G||'Silakan ajukan pertanyaan lebih spesifik.'}`}
-
-/* ===== sumber jawaban ===== */
-const IDX=['IDX','https://www.idx.co.id'];
-const SRC={1:[IDX],2:[IDX],3:[IDX],4:[['Bibit','https://bibit.id']],5:[['Indodax','https://indodax.com']],6:[['Tokocrypto','https://www.tokocrypto.com']],
- 7:[['Logam Mulia','https://www.logammulia.com']],9:[['CapCut','https://www.capcut.com']],10:[['Canva','https://www.canva.com']],
- 12:[['Canva','https://www.canva.com'],['Tokopedia','https://www.tokopedia.com']],13:[['Google Trends','https://trends.google.com']],
- 14:[['YouTube','https://www.youtube.com']],11:[['GitHub','https://github.com']]};
-const ROLE={1:'Beri analisis saham singkat dan sebut risikonya; bukan nasihat keuangan.',2:'Bantu analisis investasi saham jangka panjang; bukan nasihat keuangan.',
- 3:'Bantu memilih saham dividen; bukan nasihat keuangan.',4:'Jelaskan reksadana dengan sederhana.',5:'Bahas Bitcoin dan harga di Indonesia.',6:'Bahas aset kripto populer.',
- 7:'Bahas emas logam mulia dan harganya.',8:'Bantu mencatat dan merapikan keuangan.',9:'Beri ide konten, skrip (hook, isi, CTA), dan langkah edit di CapCut.',
- 10:'Beri brief desain, palet warna, dan teks untuk dibuat di Canva.',12:'Buat deskripsi produk, caption, dan ide promo.',13:'Rangkum tren dan beri ide konten viral.',
- 14:'Beri resep singkat: bahan dan langkah.',11:'Bantu coding dengan solusi atau kode singkat.',15:'Jawab pertanyaan umum dengan ramah.'};
-async function getAnswer(d,q){const u=localStorage.getItem('ai_url');
- if(u){try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+await auth.currentUser.getIdToken()},body:JSON.stringify({system:`Kamu agent divisi "${d.name}" di Kantor AI. ${ROLE[d.id]||''} Jawab dalam Bahasa Indonesia, ringkas (maks 70 kata), tanpa markdown.`,message:q})});
-  const j=await r.json();if(j.text)return{t:j.text,s:'AI'}}catch(e){}}
- return{t:await demoAnswer(d,q),s:u?'Demo (AI gagal)':'Demo'}}
-function renderSrc(id){const u=localStorage.getItem('ai_url');
- $('src').innerHTML=`<span class="chip ${u?'ok':''}">🤖 AI ${u?'terhubung':'belum diatur'}</span>`+(SRC[id]||[]).map(([n,l])=>`<a class="chip" href="${l}" target="_blank" rel="noopener">↗ ${n}</a>`).join('')+'<span class="chip" data-copy="1">📋 Salin jawaban</span>'}
-$('src').onclick=e=>{if(e.target.dataset.copy&&cur&&rooms[cur].last)navigator.clipboard?.writeText(rooms[cur].last)};
-$('cfg').onclick=()=>{$('aiurl').value=localStorage.getItem('ai_url')||'';$('cfgm').classList.remove('hidden')};
-$('cfgx').onclick=()=>$('cfgm').classList.add('hidden');
-$('cfgsave').onclick=()=>{const v=$('aiurl').value.trim();v?localStorage.setItem('ai_url',v):localStorage.removeItem('ai_url');$('cfgm').classList.add('hidden');if(cur)renderSrc(cur)};
-
-/* ===== chat ===== */
-function modeLbl(){const d=D.find(x=>x.id===cur);if(d)$('mode').textContent=d.mode==='24h'?'🟢 Agent 24 jam':'⚪ Saat dipanggil'}
-function openDiv(id){const r=rooms[id];focus(r);if(!r||r.meet)return;cur=id;$('ct').textContent=`${r.ic} ${r.name}`;$('ct').style.color=r.col;$('chat').classList.add('open');modeLbl();renderSrc(id);
- if(unsub)unsub();
- unsub=onValue(ref(db,`offices/${oid}/messages/${id}`),s=>{const v=s.val(),a=[];if(v)Object.values(v).forEach(m=>a.push(m));a.sort((x,y)=>(x.t||0)-(y.t||0));
-  const b=$('chat-body');b.innerHTML=a.map(m=>`<div class="msg ${m.who==='ai'?'ai':'user'}"><div class="bubble">${esc(m.text)}</div><div class="meta">${m.who==='ai'?esc(r.name):'Anda'} • ${new Date(m.t||0).toLocaleTimeString('id-ID')}</div></div>`).join('');b.scrollTop=b.scrollHeight})}
-$('cx').onclick=()=>{$('chat').classList.remove('open');cur=null;if(unsub){unsub();unsub=null}};
-$('mode').onclick=()=>{const d=D.find(x=>x.id===cur);if(d)set(ref(db,`offices/${oid}/modes/${d.id}`),d.mode==='24h'?'cmd':'24h')};
-function sendChat(){const i=$('ci'),t=i.value.trim();if(!t||!cur)return;i.value='';const id=cur;send(id,'user',t);
- const c=chars[id];c.q=(c.q||Promise.resolve()).then(()=>job(id,t))}
-$('send').onclick=sendChat;
-$('ci').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat()}});
-$('auto').onclick=e=>{autoOn=!autoOn;e.target.classList.toggle('on',autoOn);e.target.textContent='Agent 24 Jam: '+(autoOn?'ON':'OFF')};
-
-/* ===== login & Firebase ===== */
-$('go').onclick=async()=>{
- const code=$('code').value.trim();if(!code)return;oid=code.replace(/[.#$\[\]\/]/g,'_');
- try{
-  app=initializeApp(firebaseConfig);auth=getAuth(app);db=getDatabase(app);
-  const cr=await signInAnonymously(auth);
-  $('status').textContent='Online • '+cr.user.uid.slice(0,6);
-  $('login').classList.add('hidden');$('ui').classList.remove('hidden');
-  boot();
-  /* mode tiap agent (sinkron di semua perangkat) */
-  onValue(ref(db,`offices/${oid}/modes`),s=>{const v=s.val()||{};
-   D.forEach(d=>{const m=v[d.id]||d.m||'cmd';if(m!==d.mode){d.mode=m;applyMode(d)}});modeLbl()});
-  /* layar besar tiap ruangan menampilkan pesan terakhir */
-  D.forEach(d=>onValue(query(ref(db,`offices/${oid}/messages/${d.id}`),limitToLast(1)),s=>{
-   const v=s.val();if(!v)return;const m=Object.values(v)[0],r=rooms[d.id];if(r.lock)return;r.txt=(m.who==='ai'?'':'❓ ')+m.text;draw(r)}));
-  /* agent 24 jam: hanya satu perangkat yang menulis tiap 30 dtk (transaction) */
-  setInterval(()=>{if(!autoOn)return;D.filter(d=>d.mode==='24h').forEach(async d=>{
-   try{const res=await runTransaction(ref(db,`offices/${oid}/runs/${d.id}`),v=>Date.now()-(v||0)>28000?Date.now():undefined);
-    if(res.committed)send(d.id,'ai',d.g?await d.g():`Laporan rutin ${d.name}: semua normal.`)}catch(e){}})},6000);
- }catch(e){alert('Gagal koneksi Firebase: '+e.message)}
+btnLogin.onclick = async () => {
+  const code = officeCodeInput.value.trim();
+  if (!code) return;
+  officeId = code;
+  statusText.textContent = 'Menghubungkan ke Firebase...';
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getDatabase(app);
+    await signInAnonymously(auth);
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        statusText.textContent = `Online sebagai ${user.uid.slice(0,6)}...`;
+        loginScreen.classList.add('hidden');
+        uiLayer.classList.remove('hidden');
+        initOffice();
+        initApp();
+      }
+    });
+  } catch (e) {
+    alert('Gagal koneksi Firebase: ' + e.message);
+    statusText.textContent = 'Gagal terkoneksi';
+  }
 };
+
+const autoToggle = document.getElementById('auto-toggle');
+autoToggle.onclick = () => {
+  autoEnabled = !autoToggle.classList.contains('active');
+  autoToggle.classList.toggle('active');
+  autoToggle.textContent = autoEnabled ? 'Auto 24 Jam: ON' : 'Auto 24 Jam: OFF';
+};
+
+/* ========== RENDER OFFICE GRID ========== */
+function initOffice() {
+  const grid = document.getElementById('office-grid');
+  const charLayer = document.getElementById('char-layer');
+
+  GRID.forEach((slot, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'room-cell';
+
+    if (slot.type === 'lobby') {
+      cell.classList.add('lobby');
+      cell.innerHTML = `<div class="room-inner"><div class="room-icon">🏢</div><div class="room-name">LOBBY</div></div>`;
+      grid.appendChild(cell);
+      return;
+    }
+
+    if (slot.type === 'meeting') {
+      cell.classList.add('meeting');
+      cell.innerHTML = `<div class="room-inner"><div class="room-icon">🤝</div><div class="room-name">RUANG MEETING</div></div>`;
+      grid.appendChild(cell);
+      return;
+    }
+
+    const d = DIVISIONS.find(x => x.id === slot.div);
+    cell.style.setProperty('--div-color', d.color);
+    cell.dataset.div = d.id;
+
+    cell.innerHTML = `
+      <div class="room-inner">
+        <div class="room-icon">${d.icon}</div>
+        <div class="room-name">${d.name}</div>
+        <div class="room-screen"><span class="screen-dot"></span><div id="rscreen-${d.id}">Siap</div></div>
+        <div class="room-avatar" style="color:${d.color}">${d.emoji}</div>
+      </div>
+      <div class="room-badge" style="background:${d.color}">${d.id}</div>
+    `;
+    cell.onclick = () => openDivision(d.id);
+    grid.appendChild(cell);
+    roomMap.set(d.id, cell);
+
+    /* Avatar di ruang */
+    const char = document.createElement('div');
+    char.className = 'character';
+    char.textContent = d.emoji;
+    char.title = d.name;
+    char.style.left = '50%';
+    char.style.top = '50%';
+    charLayer.appendChild(char);
+
+    avatars.push({ id: d.id, divId: d.id, name: d.name, el: char, color: d.color, emoji: d.emoji });
+  });
+
+  /* Karakter berjalan otomatis */
+  function randomWalk(c) {
+    const targets = DIVISIONS.filter(x => x.id !== c.divId);
+    const t = targets[Math.floor(Math.random() * targets.length)];
+    const cell = roomMap.get(t.id);
+    if (!cell) return;
+    const rect = cell.getBoundingClientRect();
+    const layerRect = charLayer.getBoundingClientRect();
+    const nx = rect.left - layerRect.left + rect.width/2 - 12;
+    const ny = rect.top - layerRect.top + rect.height/2 - 12;
+    c.divId = t.id;
+    c.el.style.left = nx + 'px';
+    c.el.style.top = ny + 'px';
+    c.el.classList.add('walking');
+    setTimeout(() => c.el.classList.remove('walking'), 600);
+  }
+  setInterval(() => {
+    avatars.forEach(c => { if (Math.random() < 0.3) randomWalk(c); });
+  }, 3500);
+
+  /* Auto 24 Jam - Investasi & Berita update otomatis */
+  setInterval(() => {
+    if (!autoEnabled) return;
+    DIVISIONS.filter(d => d.auto).forEach(d => {
+      if (Math.random() < 0.35) sendMessage(d.id, 'ai', d.autoText);
+    });
+  }, 20000);
+
+  const last = localStorage.getItem('last_div_' + officeId);
+  if (last) setTimeout(() => openDivision(parseInt(last)), 800);
+}
+
+/* ========== FIREBASE ========== */
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, onValue, push } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+function listenMessages(divId, callback) {
+  if (messageUnsubs[divId]) messageUnsubs[divId]();
+  const q = ref(db, `offices/${officeId}/messages/${divId}`);
+  messageUnsubs[divId] = onValue(q, (snapshot) => {
+    const data = snapshot.val();
+    const arr = [];
+    if (data) {
+      Object.entries(data).forEach(([key, val]) => arr.push({ id: key, ...val }));
+      arr.sort((a,b) => (a.t||0) - (b.t||0));
+    }
+    callback(arr);
+  });
+}
+
+function renderMessages(divId) {
+  const d = DIVISIONS.find(x => x.id === divId);
+  const chatBody = document.getElementById('chat-body');
+  chatBody.innerHTML = '';
+  listenMessages(divId, (arr) => {
+    chatBody.innerHTML = '';
+    arr.forEach(m => {
+      const div = document.createElement('div');
+      div.className = `msg ${m.who}`;
+      const whoLabel = m.who === 'ai' ? (d?.name || 'AI') : 'Anda';
+      div.innerHTML = `<div class="bubble">${escapeHtml(m.text)}</div><div class="meta">${whoLabel} • ${new Date(m.t||0).toLocaleTimeString('id-ID')}</div>`;
+      chatBody.appendChild(div);
+    });
+    chatBody.scrollTop = chatBody.scrollHeight;
+  });
+}
+
+function sendMessage(divId, who, text) {
+  const d = DIVISIONS.find(x => x.id === divId);
+  push(ref(db, `offices/${officeId}/messages/${divId}`), {
+    who, text, t: Date.now(), uid: auth.currentUser.uid, divName: d?.name || ''
+  });
+}
+
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ========== CHAT UI ========== */
+const chatPanel = document.getElementById('chat-panel');
+const chatBody = document.getElementById('chat-body');
+const chatDivName = document.getElementById('chat-div-name');
+const chatDivIcon = document.getElementById('chat-div-icon');
+const screenContent = document.getElementById('screen-content');
+const bigScreen = document.getElementById('big-screen');
+
+function openDivision(divId) {
+  const d = DIVISIONS.find(x => x.id === divId);
+  if (!d) return;
+  currentDiv = divId;
+  localStorage.setItem('last_div_' + officeId, divId);
+  chatDivName.textContent = d.name;
+  chatDivIcon.textContent = d.icon;
+  chatDivName.style.color = d.color;
+  chatPanel.classList.add('open');
+  bigScreen.classList.remove('hidden');
+  bigScreen.style.borderColor = d.color;
+  document.querySelector('.screen-header').style.color = d.color;
+  renderMessages(divId);
+  updateScreen(divId, `Selamat datang di divisi ${d.name}. Silakan tanya apa saja.`);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+document.getElementById('chat-close').onclick = () => {
+  chatPanel.classList.remove('open');
+  currentDiv = null;
+};
+
+/* Meeting + Answer */
+const meetingOverlay = document.getElementById('meeting-overlay');
+const meetingTable = document.getElementById('meeting-table');
+const meetingBubble = document.getElementById('meeting-bubble');
+const skipBtn = document.getElementById('skip-meeting');
+
+const meetingLines = [
+  'Menganalisis pertanyaan...',
+  'Mengambil data terkait...',
+  'Diskusi tim divisi...',
+  'Menyusun jawaban terbaik...',
+  'Siap menyampaikan hasil.'
+];
+
+async function startMeetingAndAnswer(divId, userText) {
+  const d = DIVISIONS.find(x => x.id === divId);
+  meetingOverlay.classList.add('open');
+  meetingTable.innerHTML = '';
+  meetingBubble.style.display = 'none';
+  skipBtn.style.display = 'none';
+
+  const divChars = avatars.filter(c => c.divId === divId);
+  const positions = [
+    { left: '20%', top: '30%' }, { left: '80%', top: '30%' },
+    { left: '20%', top: '70%' }, { left: '80%', top: '70%' },
+    { left: '50%', top: '15%' }
+  ];
+  divChars.forEach((c, i) => {
+    const clone = document.createElement('div');
+    clone.className = 'meeting-avatar';
+    clone.textContent = c.emoji;
+    clone.style.left = positions[i]?.left || '50%';
+    clone.style.top = positions[i]?.top || '50%';
+    clone.style.borderColor = c.color;
+    meetingTable.appendChild(clone);
+  });
+
+  for (let i = 0; i < meetingLines.length; i++) {
+    meetingBubble.textContent = meetingLines[i];
+    meetingBubble.style.display = 'block';
+    meetingBubble.style.animation = 'none';
+    meetingBubble.offsetHeight;
+    meetingBubble.style.animation = 'bubbleIn 0.3s both';
+    await new Promise(r => setTimeout(r, 900));
+  }
+
+  meetingOverlay.classList.remove('open');
+  skipBtn.style.display = 'none';
+
+  const answer = await getAnswer(d, userText);
+  await typeAnswer(answer);
+}
+
+async function getAnswer(d, text) {
+  const t = text.toLowerCase();
+  /* Coba AI Proxy jika dikonfigurasi */
+  const aiUrl = localStorage.getItem('ai_url');
+  if (aiUrl) {
+    try {
+      const res = await fetch(aiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: `Kamu agent divisi "${d.name}" di Kantor AI. Jawab dalam Bahasa Indonesia, ringkas, maks 80 kata, tanpa markdown.`,
+          message: text
+        })
+      });
+      if (res.ok) {
+        const j = await res.json();
+        if (j.text) return j.text;
+      }
+    } catch (e) {
+      console.error('AI proxy error:', e);
+    }
+  }
+
+  /* Demo response gratis tanpa API key */
+  if (t.includes('hai') || t.includes('halo')) return `Halo! Saya dari divisi ${d.name}. Ada yang bisa saya bantu?`;
+  if (t.includes('harga') || t.includes('price')) return 'Informasi harga terkini akan kami perbarui di layar besar.';
+  if (t.includes('reksadana')) return 'Reksadana adalah kumpulan dana yang dikelola secara profesional oleh manajer investasi.';
+  if (t.includes('bitcoin') || t.includes('btc')) return 'Bitcoin adalah aset digital terdesentralisasi yang berjalan pada teknologi blockchain.';
+  if (t.includes('emas')) return 'Emas logam mulia adalah investasi pelindung terhadap inflasi dan tidak stabilnya mata uang.';
+  if (t.includes('coding') || t.includes('code')) return 'Kami siap membantu pengembangan aplikasi, website, dan otomasi kerja.';
+  if (t.includes('resep')) return 'Resep masakan dan minuman siap dibagikan sesuai permintaan Anda.';
+  if (t.includes('viral') || t.includes('tren')) return 'Tren viral saat ini seputar AI agent dan otomasi kantor digital.';
+  return `Ini jawaban dari divisi ${d.name}. ${d.autoText || 'Silakan ajukan pertanyaan lebih spesifik.'}`;
+}
+
+async function typeAnswer(answer) {
+  const el = document.getElementById('screen-content');
+  el.textContent = '';
+  const chatDiv = document.createElement('div');
+  chatDiv.className = 'msg ai';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  chatDiv.appendChild(bubble);
+  chatBody.appendChild(chatDiv);
+  let i = 0;
+  while (i < answer.length) {
+    el.textContent += answer[i];
+    bubble.textContent += answer[i];
+    i++;
+    chatBody.scrollTop = chatBody.scrollHeight;
+    el.scrollTop = el.scrollHeight;
+    await new Promise(r => setTimeout(r, 15));
+  }
+  sendMessage(currentDiv, 'ai', answer);
+}
+
+document.getElementById('btn-send').onclick = sendChat;
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !currentDiv) return;
+  input.value = '';
+  sendMessage(currentDiv, 'user', text);
+  startMeetingAndAnswer(currentDiv, text);
+}
+
+function updateScreen(divId, text) {
+  const screen = document.getElementById(`rscreen-${divId}`);
+  if (screen) screen.textContent = text;
+  if (currentDiv === divId) screenContent.textContent = text;
+}
+
+/* INIT (setelah login) */
+function initApp() {}
 </script>
 </body>
 </html>
