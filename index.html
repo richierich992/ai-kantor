@@ -49,6 +49,23 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 #cfgm input{padding:10px;border-radius:10px;border:1px solid #3a5a9a;background:#0a1226;color:#fff}
 #cfgm p{font-size:12px;color:#9fb2dd;line-height:1.5}#cfgm .row{display:flex;gap:8px;justify-content:flex-end}
 #cfgm button{padding:8px 16px;border-radius:10px;border:0;background:#ffc93c;color:#2a1d00;font-weight:700;cursor:pointer}
+#dash{position:fixed;inset:0;z-index:350;display:grid;place-items:center;background:rgba(5,10,25,.72)}
+#dash .dbx{width:min(1000px,96vw);max-height:90vh;display:flex;flex-direction:column;border-radius:16px;background:#0f1a33;border:1px solid #3a5a9a;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#dash .dh{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #26396b}
+#dash .dh b{font-size:16px}#dmsg{font-size:11px;color:#8fa2cc;flex:1}
+#dash .dfs{display:flex;gap:6px;flex-wrap:wrap}#dash select,#dash input[type=date]{background:#0a1226;color:#fff;border:1px solid #3a5a9a;border-radius:8px;padding:4px 8px;font-size:12px}
+#dx{background:none;border:0;color:#b8c6e6;font-size:20px;cursor:pointer}
+#dbody{padding:14px 16px;overflow:auto;font-size:12px}
+#dbody h4{margin:14px 0 6px;font-size:13px;color:#ffc93c}
+.dchips{display:flex;flex-wrap:wrap;gap:6px}.chip.bad{background:#7f1d1d;border-color:#f87171;color:#fecaca}
+.dbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+#dbody button{background:#26396b;border:1px solid #4a64a8;color:#fff;border-radius:10px;padding:5px 12px;font-size:12px;cursor:pointer}
+#dbody button:disabled{opacity:.4;cursor:not-allowed}.dnote{color:#fbbf24;font-size:11px;line-height:1.5}
+#dbody table{width:100%;border-collapse:collapse}#dbody th{text-align:left;color:#8fa2cc;font-weight:600;padding:4px 6px;border-bottom:1px solid #26396b}
+#dbody td{padding:5px 6px;border-bottom:1px solid #1c2b52;vertical-align:top}.msg2{max-width:300px;color:#b8c6e6}
+.dlist>div{padding:5px 0;border-bottom:1px solid #1c2b52;line-height:1.5}.dlist small{color:#9fb2dd}
+.bdg{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:700;background:#334155;color:#e2e8f0}
+.bdg.ok{background:#14532d;color:#bbf7d0}.bdg.err{background:#7f1d1d;color:#fecaca}.bdg.warn{background:#78350f;color:#fde68a}.bdg.run{background:#1e3a8a;color:#bfdbfe}.bdg.idle{background:#334155;color:#cbd5e1}
 @media(max-width:820px){#legend,#hint{display:none}#chat{top:auto;width:100%;height:55vh;border-left:0;border-top:1px solid #3a5a9a}.r span{display:none}}
 </style>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
@@ -62,13 +79,16 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 </div>
 <div id="ui" class="hidden">
   <header><div class="brand"><span class="dot"></span>Kantor AI</div>
-    <div class="r"><span id="status">Menghubungkan...</span><button id="auto" class="on">Agent 24 Jam: ON</button><button id="reset">Reset kamera</button><button id="cfg">⚙ Sumber AI</button></div></header>
+    <div class="r"><span id="status">Menghubungkan...</span><button id="auto" class="on">Agent 24 Jam: ON</button><button id="reset">Reset kamera</button><button id="dashb">📊 Dashboard</button><button id="cfg">⚙ Sumber AI</button></div></header>
   <div id="map"></div>
   <div id="legend"></div>
   <div id="cfgm" class="hidden"><div class="bx"><h3>🤖 Sumber jawaban AI</h3>
     <p>Tempel URL proxy AI milikmu (Cloudflare Worker + Gemini gratis, lihat <b>ai-proxy-gemini.js</b>). Jangan taruh API key di halaman ini. Kosongkan untuk memakai jawaban demo.</p>
-    <input id="aiurl" placeholder="https://nama-worker.akun.workers.dev"><p>URL data pasar (Apps Script: saham, emas, tren). Boleh dikosongkan.</p><input id="dataurl" placeholder="https://script.google.com/macros/s/.../exec"><div class="row"><button id="cfgx">Batal</button><button id="cfgsave">Simpan</button></div></div></div>
+    <input id="aiurl" placeholder="https://nama-worker.akun.workers.dev"><p>URL backend Apps Script (data pasar + dashboard otomatisasi). Boleh dikosongkan.</p><input id="dataurl" placeholder="https://script.google.com/macros/s/.../exec"><p>Token admin (Script Properties: ADMIN_TOKEN) untuk tombol kontrol dashboard. Disimpan hanya di browser ini.</p><input id="admintoken" type="password" placeholder="ADMIN_TOKEN"><div class="row"><button id="cfgx">Batal</button><button id="cfgsave">Simpan</button></div></div></div>
   <div id="hint">Geser: tarik • Putar: klik kanan / 2 jari • Zoom: scroll / cubit • Klik ruangan untuk fokus & chat</div>
+  <div id="dash" class="hidden"><div class="dbx"><div class="dh"><b>📊 Dashboard otomatisasi</b><span id="dmsg"></span>
+    <span class="dfs"><select id="dfdiv"></select><input id="dfdate" type="date" title="Filter tanggal"><select id="dfprio"><option value="">Semua prioritas</option><option value="1">Prioritas 1</option><option value="2">Prioritas 2</option><option value="3">Prioritas 3</option></select></span>
+    <button id="dx" aria-label="Tutup">✕</button></div><div id="dbody">Memuat...</div></div></div>
   <div id="chat">
     <div class="ch"><span id="ct">Divisi</span><span><button id="mode"></button><button id="cx" aria-label="Tutup">✕</button></span></div>
     <div id="src"></div><div id="chat-body"></div>
@@ -94,7 +114,6 @@ import {getAuth,signInAnonymously} from 'https://www.gstatic.com/firebasejs/10.1
     appId: "1:1057185794628:web:7ac036e7c5df69bdbbca11",
     measurementId: "G-SRBJYD2F77"
   };
-
 
 const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms)),PI=Math.PI;
 const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
@@ -416,12 +435,20 @@ const ROLE={1:'Beri analisis saham singkat dan sebut risikonya; bukan nasihat ke
  10:'Beri brief desain, palet warna, dan teks untuk dibuat di Canva (gambar contoh dibuat otomatis oleh sistem).',12:'Buat deskripsi produk, caption, dan ide promo.',13:'Rangkum tren dan beri ide konten viral.',
  14:'Beri resep singkat: bahan dan langkah.',11:'Bantu coding: beri solusi dan kode lengkap (maks 40 baris) dalam teks biasa.',15:'Jawab pertanyaan umum dengan ramah.'};
 const feed={};
+const HIST={};
 async function getAnswer(d,q){const u=localStorage.getItem('ai_url'),inv=d.id<=7;let why='';
- if(u){try{
+ if(u){
   const ctx=d.id===13?(feed[13]?' Tren terbaru: '+feed[13].replace(/\n/g,' '):''):inv?' Data terbaru di kantor (yang bertanda SIMULASI atau "bukan data real-time" jangan dianggap fakta pasar): '+Object.entries(feed).map(([i,t])=>D.find(x=>x.id==i).name+': '+t.replace(/\n/g,' ')).join(' | ').slice(0,900):'';
-  const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:`Kamu agent divisi "${d.name}" di Kantor AI. ${ROLE[d.id]||''}${inv?' Untuk pertanyaan investasi beri kriteria dan contoh umum, jelaskan risikonya, jangan menjanjikan untung.':''}${ctx} Jawab dalam Bahasa Indonesia, ${d.id===11?'boleh panjang dan sertakan kode':'ringkas (maks 80 kata)'}, tanpa markdown.`,message:q,max:d.id===11?1200:500})});
-  const j=await r.json();if(j.text)return{t:j.text+(inv?'\n⚠ Bukan nasihat keuangan.':''),s:'AI'};why=j.error||('HTTP '+r.status)}catch(e){why=String(e.message||e)}}
- return{t:await demoAnswer(d,q),s:u?'Demo (AI gagal: '+String(why).slice(0,55)+')':'Demo'}}
+  const history=(HIST[d.id]||[]).filter(m=>!/^⚠ AI|^Jawaban dari agent|^Halo! Saya agent/.test(m.text)).slice(-10).map(m=>({role:m.who==='ai'?'model':'user',text:String(m.text).slice(0,700)}));
+  if(history.length&&history[history.length-1].role==='user'&&history[history.length-1].text===q.slice(0,700))history.pop();
+  const body=JSON.stringify({system:`Kamu agent divisi "${d.name}" di Kantor AI. ${ROLE[d.id]||''}${inv?' Untuk pertanyaan investasi beri kriteria dan contoh umum, jelaskan risikonya, jangan menjanjikan untung.':''}${ctx} Jawab dalam Bahasa Indonesia, ${d.id===11?'boleh panjang dan sertakan kode':'ringkas (maks 80 kata)'}, tanpa markdown. Perhatikan percakapan sebelumnya dan jawab secara berkesinambungan.`,message:q,history,max:d.id===11?1200:500});
+  for(let i=0;i<2;i++){
+   try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body});const j=await r.json();
+    if(j.text)return{t:j.text+(inv?'\n⚠ Bukan nasihat keuangan.':''),s:'AI'};why=j.error||('HTTP '+r.status)}catch(e){why=String(e.message||e)}
+   if(i===0)await sleep(800)}
+  const hint=/location/i.test(why)?' Gemini menolak lokasi server Cloudflare. Di Cloudflare buka Settings > Runtime > Placement lalu pilih Smart.':'';
+  return{t:'⚠ AI belum bisa menjawab ('+why.slice(0,120)+').'+hint+' Silakan kirim ulang beberapa saat lagi.',s:'Gagal: '+why.slice(0,45)}}
+ return{t:await demoAnswer(d,q),s:'Demo'}}
 async function getImage(q){const u=localStorage.getItem('ai_url');if(!u)return null;
  try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'image',message:q})});const j=await r.json();if(!j.image)return null;
   return await new Promise(res=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src='data:image/jpeg;base64,'+j.image})}catch(e){return null}}
@@ -431,15 +458,48 @@ $('src').onclick=e=>{const k=e.target.dataset,r=cur&&rooms[cur];if(!r)return;
  if(k.copy&&r.last)navigator.clipboard?.writeText(r.last);
  if(k.ask){const q=encodeURIComponent(r.lastQ||'');open(k.ask==='claude'?'https://claude.ai/new?q='+q:'https://chatgpt.com/?q='+q,'_blank')}
  if(k.paste)navigator.clipboard?.readText().then(t=>{if(!t)return;r.srcTag='Tempel manual';r.hold=Date.now()+90000;send(cur,'ai',t.slice(0,700))}).catch(()=>alert('Izinkan akses clipboard di browser.'))};
-$('cfg').onclick=()=>{$('aiurl').value=localStorage.getItem('ai_url')||'';$('dataurl').value=localStorage.getItem('data_url')||'';$('cfgm').classList.remove('hidden')};
+$('cfg').onclick=()=>{$('aiurl').value=localStorage.getItem('ai_url')||'';$('dataurl').value=localStorage.getItem('data_url')||'';$('admintoken').value=localStorage.getItem('admin_token')||'';$('cfgm').classList.remove('hidden')};
 $('cfgx').onclick=()=>$('cfgm').classList.add('hidden');
-$('cfgsave').onclick=()=>{const v=$('aiurl').value.trim();v?localStorage.setItem('ai_url',v):localStorage.removeItem('ai_url');const w=$('dataurl').value.trim();w?localStorage.setItem('data_url',w):localStorage.removeItem('data_url');mk.v=null;$('cfgm').classList.add('hidden');if(cur)renderSrc(cur)};
+$('cfgsave').onclick=()=>{const v=$('aiurl').value.trim();v?localStorage.setItem('ai_url',v):localStorage.removeItem('ai_url');const w=$('dataurl').value.trim();w?localStorage.setItem('data_url',w):localStorage.removeItem('data_url');mk.v=null;const tk=$('admintoken').value.trim();tk?localStorage.setItem('admin_token',tk):localStorage.removeItem('admin_token');$('cfgm').classList.add('hidden');if(cur)renderSrc(cur)};
+
+/* ===== dashboard otomatisasi (backend Apps Script) ===== */
+let DS=null,dashT=null;
+const DNAME=id=>(D.find(x=>x.id===+id)||{}).name||id,bkUrl=()=>localStorage.getItem('data_url');
+async function bGet(){const u=bkUrl();if(!u)throw new Error('URL backend belum diisi (tombol ⚙ Sumber AI)');const r=await fetch(u+(u.includes('?')?'&':'?')+'action=status&_='+Date.now());return r.json()}
+async function bPost(o){const u=bkUrl(),t=localStorage.getItem('admin_token');if(!u)throw new Error('URL backend belum diisi');if(!t)throw new Error('Token admin belum diisi (⚙ Sumber AI)');
+ const r=await fetch(u,{method:'POST',body:JSON.stringify({...o,token:t})}),j=await r.json();if(!j.ok)throw new Error(j.error||'Gagal');return j}
+const stCls={OK:'ok',RUNNING:'run',ERROR:'err',RETRY:'warn',MENUNGGU:'idle',BELUM_ADA_TUGAS:'idle',SUCCESS:'ok',FAILED:'err',QUEUED:'warn',CANCELLED:'idle'},stTxt={BELUM_ADA_TUGAS:'belum ada tugas',MENUNGGU:'menunggu'};
+function renderDash(){const s=DS;if(!s)return;
+ const f=$('dfdiv').value,fd=$('dfdate').value,fp=$('dfprio').value,tok=!!localStorage.getItem('admin_token');
+ const okd=d=>!f||+d===+f,okt=t=>!fd||String(t).startsWith(fd),okp=p=>!fp||+p===+fp,trig=s.triggers.tick===1;
+ const agents=s.agents.filter(a=>okd(a.division)).map(a=>`<tr><td>${a.division}. ${esc(a.name)}</td><td><span class="bdg ${stCls[a.state]||'idle'}">${esc(stTxt[a.state]||a.state)}</span></td><td>${esc(a.lastRun||'—')}</td><td class="msg2">${esc(a.message||'')}</td><td>${a.ok24}/${a.fail24}</td><td><button data-a="run" data-d="${a.division}" ${tok&&a.state!=='BELUM_ADA_TUGAS'?'':'disabled'}>▶</button></td></tr>`).join('');
+ const next=s.next.filter(n=>okd(n.division)&&okp(n.priority)).map(n=>`<div>${esc(n.at)} • ${esc(DNAME(n.division))} • ${esc(n.type)} <i>(prioritas ${n.priority})</i></div>`).join('')||'<div>—</div>';
+ const tasks=s.tasks.filter(t=>okd(t.division)&&okt(t.created)&&okp(t.priority)).map(t=>`<div><span class="bdg ${stCls[t.status]||'idle'}">${esc(t.status)}</span> ${esc(t.created)} • ${esc(DNAME(t.division))} • ${esc(t.type)} • P${t.priority}${t.attempts>1?' • percobaan '+t.attempts:''}<br><small>${esc(t.error||t.summary||'')}</small>${t.status==='QUEUED'&&tok?` <button data-a="cancel" data-t="${esc(t.id)}">batal</button>`:''}</div>`).join('')||'<div>—</div>';
+ const evs=s.events.filter(e=>(e.division?okd(e.division):!f)&&okt(e.time)).map(e=>`<div><span class="bdg ${e.level==='ERROR'?'err':e.level==='WARN'?'warn':e.level==='AUDIT'?'run':'idle'}">${esc(e.level)}</span> ${esc(e.time)}${e.division?' • '+esc(DNAME(e.division)):''} • ${esc(e.event)}<br><small>${esc(e.detail)}</small></div>`).join('')||'<div>—</div>';
+ $('dbody').innerHTML=`<div class="dchips"><span class="chip ${s.enabled?'ok':'bad'}">Otomatisasi: ${s.enabled?'AKTIF':'NONAKTIF'}</span>
+  <span class="chip ${trig?'ok':'bad'}">Scheduler: ${trig?'tiap '+s.tickMinutes+' menit':'trigger belum terpasang atau dobel ('+s.triggers.tick+')'}</span>
+  <span class="chip">Antrean ${s.queue.queued} • Berjalan ${s.queue.running}</span><span class="chip ok">Sukses 24j: ${s.queue.success24h}</span><span class="chip ${s.queue.failed24h?'bad':''}">Gagal 24j: ${s.queue.failed24h}</span>
+  <span class="chip ${s.usage&&s.usage.minutes>=s.usage.budget*.8?'bad':''}">Waktu trigger hari ini: ${s.usage?s.usage.minutes:'?'} / ${s.usage?s.usage.budget:'?'} mnt</span>
+  <span class="chip">Backend ${esc(s.version)} • ${esc(s.time)} WIB</span></div>
+  <div class="dbtns"><button data-a="toggle" ${tok?'':'disabled'}>${s.enabled?'⏸ Nonaktifkan':'▶ Aktifkan'} otomatisasi</button><button data-a="tick" ${tok?'':'disabled'}>⚡ Jalankan pemeriksaan sekarang</button><button data-a="reload">⟳ Muat ulang</button>${tok?'':'<span class="dnote">Isi token admin di ⚙ Sumber AI untuk memakai tombol kontrol</span>'}</div>
+  <h4>Status agen</h4><table><tr><th>Divisi</th><th>Status</th><th>Terakhir jalan</th><th>Pesan terakhir</th><th>✓/✗ 24j</th><th></th></tr>${agents}</table>
+  <h4>Jadwal berikutnya</h4><div class="dlist">${next}</div><h4>Tugas terbaru</h4><div class="dlist">${tasks}</div><h4>Log kejadian</h4><div class="dlist">${evs}</div>`}
+async function loadDash(){try{DS=await bGet();$('dmsg').textContent='Diperbarui '+new Date().toLocaleTimeString('id-ID');renderDash()}
+ catch(e){$('dbody').innerHTML='<div class="dnote">⚠ '+esc(e.message)+'<br>Pastikan URL backend benar dan Apps Script sudah di-deploy ulang dengan versi P1.</div>'}}
+$('dfdiv').innerHTML='<option value="">Semua divisi</option>'+D.slice().sort((a,b)=>a.id-b.id).map(d=>`<option value="${d.id}">${d.id}. ${esc(d.name)}</option>`).join('');
+$('dashb').onclick=()=>{$('dash').classList.remove('hidden');$('dbody').textContent='Memuat...';loadDash();clearInterval(dashT);dashT=setInterval(loadDash,15000)};
+$('dx').onclick=()=>{$('dash').classList.add('hidden');clearInterval(dashT)};
+['dfdiv','dfdate','dfprio'].forEach(i=>$(i).onchange=renderDash);
+$('dbody').onclick=async e=>{const b=e.target.closest('button[data-a]');if(!b||b.disabled)return;const a=b.dataset.a;if(a==='reload'){loadDash();return}
+ b.disabled=true;$('dmsg').textContent='Memproses... (bisa sampai 1 menit)';
+ try{DS=await bPost(a==='toggle'?{action:'toggle',enabled:!DS.enabled}:a==='tick'?{action:'tick'}:a==='run'?{action:'run',division:+b.dataset.d}:{action:'cancel',taskId:b.dataset.t});$('dmsg').textContent='Selesai '+new Date().toLocaleTimeString('id-ID');renderDash()}
+ catch(err){$('dmsg').textContent='⚠ '+err.message;b.disabled=false}};
 
 /* ===== chat ===== */
 function modeLbl(){const d=D.find(x=>x.id===cur);if(d)$('mode').textContent=d.mode==='24h'?'🟢 Agent 24 jam':'⚪ Saat dipanggil'}
 function openDiv(id){const r=rooms[id];focus(r);if(!r||r.meet)return;cur=id;$('ct').textContent=`${r.ic} ${r.name}`;$('ct').style.color=r.col;$('chat').classList.add('open');modeLbl();renderSrc(id);
  if(unsub)unsub();
- unsub=onValue(query(ref(db,`offices/${oid}/messages/${id}`),limitToLast(30)),s=>{const v=s.val(),a=[];if(v)Object.values(v).forEach(m=>a.push(m));a.sort((x,y)=>(x.t||0)-(y.t||0));
+ unsub=onValue(query(ref(db,`offices/${oid}/messages/${id}`),limitToLast(30)),s=>{const v=s.val(),a=[];if(v)Object.values(v).forEach(m=>a.push(m));a.sort((x,y)=>(x.t||0)-(y.t||0));HIST[id]=a;
   const b=$('chat-body');b.innerHTML=a.map(m=>`<div class="msg ${m.who==='ai'?'ai':'user'}"><div class="bubble">${esc(m.text)}</div><div class="meta">${m.who==='ai'?esc(r.name):'Anda'} • ${new Date(m.t||0).toLocaleTimeString('id-ID')}</div></div>`).join('');b.scrollTop=b.scrollHeight})}
 $('cx').onclick=()=>{$('chat').classList.remove('open');cur=null;if(unsub){unsub();unsub=null}};
 $('mode').onclick=()=>{const d=D.find(x=>x.id===cur);if(d)set(ref(db,`offices/${oid}/modes/${d.id}`),d.mode==='24h'?'cmd':'24h')};
