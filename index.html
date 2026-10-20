@@ -150,7 +150,8 @@ async function getMkt(){const u=localStorage.getItem('data_url');if(!u)return nu
 const nf=n=>Math.round(n).toLocaleString('id-ID'),sgn=n=>(n>0?'+':'')+n.toFixed(2)+'%';
 const stk=(v,grp,per)=>{const a=(v?.saham||[]).filter(s=>s.grup===grp&&s.harga!=null);return a.length?a.map(s=>`${s.kode} ${nf(s.harga)}${s.chg!=null?' ('+sgn(s.chg)+')':''}${per&&s.per?' PER '+s.per.toFixed(1):''}`).join(' | ')+'\nSumber: Google Finance (tunda ±20 mnt)':null};
 const ovr=(id,fn)=>{const d=D.find(x=>x.id===id),old=d.g;d.g=async()=>(await fn(await getMkt()))||(old?old():'Data belum tersedia')};
-ovr(1,v=>stk(v,'trading'));ovr(2,v=>stk(v,'invest',1));ovr(3,v=>stk(v,'dividen',1));
+const scrLine=v=>{const s=v&&v.scr;if(!s)return null;const k=(s.lolos||[]).map(x=>x.kode);return `Screener (data ${s.tanggal}): ${k.length}/${s.dievaluasi} lolos${k.length?' — '+k.slice(0,8).join(', ')+(k.length>8?' +'+(k.length-8):''):''}`};
+ovr(1,v=>{const a=stk(v,'trading'),c=scrLine(v);return a?(c?a.replace('\nSumber:','\n'+c+'\nSumber:'):a):(c?c+'\nSumber: Google Finance (riwayat harian)':null)});ovr(2,v=>stk(v,'invest',1));ovr(3,v=>stk(v,'dividen',1));
 ovr(7,v=>v?.emas?.harga?`Emas Antam 1 gr: Rp ${nf(v.emas.harga)} (+pajak Rp ${nf(v.emas.pajak)})\nSumber: logammulia.com${v.emas.tanggal?' • '+v.emas.tanggal:''}`:null);
 ovr(13,v=>v&&((v.trend||[]).length||(v.news||[]).length)?`Tren Google: ${(v.trend||[]).slice(0,5).join(', ')}\nBerita: ${(v.news||[]).slice(0,2).join(' • ')}\nSumber: Google Trends & Google News`:null);
 /* slot: x, z, yaw (muka ruangan menghadap plaza), id (0 = ruang meeting) */
@@ -463,9 +464,10 @@ $('cfgx').onclick=()=>$('cfgm').classList.add('hidden');
 $('cfgsave').onclick=()=>{const v=$('aiurl').value.trim();v?localStorage.setItem('ai_url',v):localStorage.removeItem('ai_url');const w=$('dataurl').value.trim();w?localStorage.setItem('data_url',w):localStorage.removeItem('data_url');mk.v=null;const tk=$('admintoken').value.trim();tk?localStorage.setItem('admin_token',tk):localStorage.removeItem('admin_token');$('cfgm').classList.add('hidden');if(cur)renderSrc(cur)};
 
 /* ===== dashboard otomatisasi (backend Apps Script) ===== */
-let DS=null,dashT=null;
+let DS=null,SCR=null,dashT=null;
 const DNAME=id=>(D.find(x=>x.id===+id)||{}).name||id,bkUrl=()=>localStorage.getItem('data_url');
 async function bGet(){const u=bkUrl();if(!u)throw new Error('URL backend belum diisi (tombol ⚙ Sumber AI)');const r=await fetch(u+(u.includes('?')?'&':'?')+'action=status&_='+Date.now());return r.json()}
+async function bScr(){const u=bkUrl();if(!u)return null;const r=await fetch(u+(u.includes('?')?'&':'?')+'action=screener&_='+Date.now());const j=await r.json();return (j&&j.screener)||null}
 async function bPost(o){const u=bkUrl(),t=localStorage.getItem('admin_token');if(!u)throw new Error('URL backend belum diisi');if(!t)throw new Error('Token admin belum diisi (⚙ Sumber AI)');
  const r=await fetch(u,{method:'POST',body:JSON.stringify({...o,token:t})}),j=await r.json();if(!j.ok)throw new Error(j.error||'Gagal');return j}
 const stCls={OK:'ok',RUNNING:'run',ERROR:'err',RETRY:'warn',MENUNGGU:'idle',BELUM_ADA_TUGAS:'idle',SUCCESS:'ok',FAILED:'err',QUEUED:'warn',CANCELLED:'idle'},stTxt={BELUM_ADA_TUGAS:'belum ada tugas',MENUNGGU:'menunggu'};
@@ -476,15 +478,17 @@ function renderDash(){const s=DS;if(!s)return;
  const next=s.next.filter(n=>okd(n.division)&&okp(n.priority)).map(n=>`<div>${esc(n.at)} • ${esc(DNAME(n.division))} • ${esc(n.type)} <i>(prioritas ${n.priority})</i></div>`).join('')||'<div>—</div>';
  const tasks=s.tasks.filter(t=>okd(t.division)&&okt(t.created)&&okp(t.priority)).map(t=>`<div><span class="bdg ${stCls[t.status]||'idle'}">${esc(t.status)}</span> ${esc(t.created)} • ${esc(DNAME(t.division))} • ${esc(t.type)} • P${t.priority}${t.attempts>1?' • percobaan '+t.attempts:''}<br><small>${esc(t.error||t.summary||'')}</small>${t.status==='QUEUED'&&tok?` <button data-a="cancel" data-t="${esc(t.id)}">batal</button>`:''}</div>`).join('')||'<div>—</div>';
  const evs=s.events.filter(e=>(e.division?okd(e.division):!f)&&okt(e.time)).map(e=>`<div><span class="bdg ${e.level==='ERROR'?'err':e.level==='WARN'?'warn':e.level==='AUDIT'?'run':'idle'}">${esc(e.level)}</span> ${esc(e.time)}${e.division?' • '+esc(DNAME(e.division)):''} • ${esc(e.event)}<br><small>${esc(e.detail)}</small></div>`).join('')||'<div>—</div>';
+ const sc=SCR,nfd=x=>Math.round(+x).toLocaleString('id-ID');
+ const scrHtml=(f&&+f!==1)?'':sc?`<h4>Screener Trading Saham</h4><div class="dlist"><div>Data per ${esc(sc.tanggal)} • diproses ${esc(sc.t)} WIB • <b>${sc.lolos.length} lolos</b> dari ${sc.dievaluasi} saham${sc.dilewati&&sc.dilewati.length?' • tanpa data: '+esc(sc.dilewati.join(', ')):''}</div><div><small>Aturan aktif: ${sc.rules.map(r=>esc(r.id+': '+r.text)).join(' • ')}</small></div></div><table><tr><th>Kode</th><th>Harga</th><th>Nilai (Rp miliar)</th><th>Volume / MA20</th><th>CMF20</th></tr>${sc.lolos.map(x=>`<tr><td>${esc(x.kode)}</td><td>${nfd(x.harga)}</td><td>${(x.nilai/1e9).toFixed(1)}</td><td>${x.volma20?(x.vol/x.volma20).toFixed(2)+'x':'—'}</td><td>${(+x.cmf).toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="5">Tidak ada saham yang lolos pada data ini</td></tr>'}</table>`:'<h4>Screener Trading Saham</h4><div class="dnote">Belum ada hasil. Berjalan otomatis tiap hari 17.00 WIB, atau tekan ▶ pada baris Trading Saham.</div>';
  $('dbody').innerHTML=`<div class="dchips"><span class="chip ${s.enabled?'ok':'bad'}">Otomatisasi: ${s.enabled?'AKTIF':'NONAKTIF'}</span>
   <span class="chip ${trig?'ok':'bad'}">Scheduler: ${trig?'tiap '+s.tickMinutes+' menit':'trigger belum terpasang atau dobel ('+s.triggers.tick+')'}</span>
   <span class="chip">Antrean ${s.queue.queued} • Berjalan ${s.queue.running}</span><span class="chip ok">Sukses 24j: ${s.queue.success24h}</span><span class="chip ${s.queue.failed24h?'bad':''}">Gagal 24j: ${s.queue.failed24h}</span>
   <span class="chip ${s.usage&&s.usage.minutes>=s.usage.budget*.8?'bad':''}">Waktu trigger hari ini: ${s.usage?s.usage.minutes:'?'} / ${s.usage?s.usage.budget:'?'} mnt</span>
   <span class="chip">Backend ${esc(s.version)} • ${esc(s.time)} WIB</span></div>
   <div class="dbtns"><button data-a="toggle" ${tok?'':'disabled'}>${s.enabled?'⏸ Nonaktifkan':'▶ Aktifkan'} otomatisasi</button><button data-a="tick" ${tok?'':'disabled'}>⚡ Jalankan pemeriksaan sekarang</button><button data-a="reload">⟳ Muat ulang</button>${tok?'':'<span class="dnote">Isi token admin di ⚙ Sumber AI untuk memakai tombol kontrol</span>'}</div>
-  <h4>Status agen</h4><table><tr><th>Divisi</th><th>Status</th><th>Terakhir jalan</th><th>Pesan terakhir</th><th>✓/✗ 24j</th><th></th></tr>${agents}</table>
+  <h4>Status agen</h4><table><tr><th>Divisi</th><th>Status</th><th>Terakhir jalan</th><th>Pesan terakhir</th><th>✓/✗ 24j</th><th></th></tr>${agents}</table>${scrHtml}
   <h4>Jadwal berikutnya</h4><div class="dlist">${next}</div><h4>Tugas terbaru</h4><div class="dlist">${tasks}</div><h4>Log kejadian</h4><div class="dlist">${evs}</div>`}
-async function loadDash(){try{DS=await bGet();$('dmsg').textContent='Diperbarui '+new Date().toLocaleTimeString('id-ID');renderDash()}
+async function loadDash(){try{DS=await bGet();try{SCR=await bScr()}catch(e){SCR=null}$('dmsg').textContent='Diperbarui '+new Date().toLocaleTimeString('id-ID');renderDash()}
  catch(e){$('dbody').innerHTML='<div class="dnote">⚠ '+esc(e.message)+'<br>Pastikan URL backend benar dan Apps Script sudah di-deploy ulang dengan versi P1.</div>'}}
 $('dfdiv').innerHTML='<option value="">Semua divisi</option>'+D.slice().sort((a,b)=>a.id-b.id).map(d=>`<option value="${d.id}">${d.id}. ${esc(d.name)}</option>`).join('');
 $('dashb').onclick=()=>{$('dash').classList.remove('hidden');$('dbody').textContent='Memuat...';loadDash();clearInterval(dashT);dashT=setInterval(loadDash,15000)};
@@ -492,7 +496,7 @@ $('dx').onclick=()=>{$('dash').classList.add('hidden');clearInterval(dashT)};
 ['dfdiv','dfdate','dfprio'].forEach(i=>$(i).onchange=renderDash);
 $('dbody').onclick=async e=>{const b=e.target.closest('button[data-a]');if(!b||b.disabled)return;const a=b.dataset.a;if(a==='reload'){loadDash();return}
  b.disabled=true;$('dmsg').textContent='Memproses... (bisa sampai 1 menit)';
- try{DS=await bPost(a==='toggle'?{action:'toggle',enabled:!DS.enabled}:a==='tick'?{action:'tick'}:a==='run'?{action:'run',division:+b.dataset.d}:{action:'cancel',taskId:b.dataset.t});$('dmsg').textContent='Selesai '+new Date().toLocaleTimeString('id-ID');renderDash()}
+ try{DS=await bPost(a==='toggle'?{action:'toggle',enabled:!DS.enabled}:a==='tick'?{action:'tick'}:a==='run'?{action:'run',division:+b.dataset.d}:{action:'cancel',taskId:b.dataset.t});$('dmsg').textContent='Selesai '+new Date().toLocaleTimeString('id-ID');renderDash();bScr().then(x=>{SCR=x;renderDash()}).catch(()=>{})}
  catch(err){$('dmsg').textContent='⚠ '+err.message;b.disabled=false}};
 
 /* ===== chat ===== */
