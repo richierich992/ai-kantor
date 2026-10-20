@@ -535,10 +535,7 @@ $('go').onclick=async()=>{
     if(res.committed)set(ref(db,`offices/${oid}/feed/${d.id}`),{text:d.g?await d.g():`Laporan rutin ${d.name}: semua normal.`,t:Date.now()})}catch(e){}})},6000);
  }catch(e){alert('Gagal koneksi Firebase: '+e.message)}
 };
-/* ===== [P3] LIVE ADD-ON + KONTROL DASHBOARD Kantor AI 3D =====
- * CARA PASANG: di Index.html, HAPUS semua baris mulai dari "/* ===== [P2] LIVE ADD-ON" sampai tepat sebelum </script> paling bawah,
- * lalu tempel seluruh isi file ini di tempat itu. Tidak perlu mengubah bagian lain, dan Code.gs tidak perlu diubah.
- */
+/* ===== [P3] LIVE ADD-ON + KONTROL DASHBOARD Kantor AI 3D ===== */
 const BK = { s: null, t: 0, busy: null, err: null };
 let slow = false, acting = false;
 const msWib = t => Date.parse(String(t).replace(' ', 'T') + '+07:00') || 0;
