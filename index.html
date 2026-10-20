@@ -535,6 +535,133 @@ $('go').onclick=async()=>{
     if(res.committed)set(ref(db,`offices/${oid}/feed/${d.id}`),{text:d.g?await d.g():`Laporan rutin ${d.name}: semua normal.`,t:Date.now()})}catch(e){}})},6000);
  }catch(e){alert('Gagal koneksi Firebase: '+e.message)}
 };
+/* ===== [P2] LIVE ADD-ON Kantor AI 3D =====
+ * CARA PASANG: tempel SELURUH blok ini di Index.html, di dalam <script type="module">,
+ * tepat SEBELUM tag penutup </script> (setelah bagian "login & Firebase"). Tidak ada kode lama yang perlu diubah/dihapus.
+ * Cara kerja: membungkus draw(), boot(), openDiv(), loadDash() tanpa menyentuh pembuatan scene Three.js.
+ */
+const BK = { s: null, t: 0, busy: null, err: null };
+let slow = false;
+const msWib = t => Date.parse(String(t).replace(' ', 'T') + '+07:00') || 0;
+const ag = id => (BK.s && BK.s.agents || []).find(a => +a.division === +id);
+const ST_COL = { OK: '#4ade80', RUNNING: '#60a5fa', RETRY: '#fbbf24', ERROR: '#f87171' };
+
+/* --- 1) Status backend: satu sumber bersama, cache 20 dtk, timeout 20 dtk, tidak menumpuk permintaan --- */
+function getBk(force) {
+  const u = localStorage.getItem('data_url');
+  if (!u) return Promise.resolve(null);
+  if (BK.busy) return BK.busy;
+  if (!force && BK.s && Date.now() - BK.t < 20000) return Promise.resolve(BK.s);
+  const ac = new AbortController(), to = setTimeout(() => ac.abort(), 20000);
+  BK.busy = (async () => {
+    try {
+      const r = await fetch(u + (u.includes('?') ? '&' : '?') + 'action=status&_=' + Date.now(), { signal: ac.signal }), j = await r.json();
+      if (j && j.ok) { BK.s = j; BK.t = Date.now(); BK.err = null; } else BK.err = (j && j.error) || 'Respons backend tidak valid';
+    } catch (e) { BK.err = e.name === 'AbortError' ? 'Backend tidak merespons (timeout)' : String(e.message || e); }
+    finally { clearTimeout(to); BK.busy = null; }
+    return BK.s;
+  })();
+  return BK.busy;
+}
+
+/* --- 2) Teks monitor per divisi dari data backend --- */
+function alertLine(id) {
+  const e = (BK.s && BK.s.events || []).find(x => +x.division === +id && /^alert_/.test(x.event) && Date.now() - msWib(x.time) < 216e5);
+  return e ? '🔔 ' + e.detail : '';
+}
+function bkText(id) {
+  const a = ag(id), s = BK.s;
+  if (!a) return null;
+  if (id === 15 && s) return `Sistem: ${s.enabled ? 'AKTIF' : 'NONAKTIF'} • antrean ${s.queue.queued} • 24j: ${s.queue.success24h} ok / ${s.queue.failed24h} gagal\nTrigger tiap ${s.tickMinutes} mnt • waktu ${s.usage ? s.usage.minutes + '/' + s.usage.budget : '?'} mnt\n${a.message || ''}`;
+  if (a.state === 'BELUM_ADA_TUGAS' || !a.message) return null; // divisi tanpa tugas backend: layar tetap menampilkan pesan Firebase terakhir
+  return (a.state === 'ERROR' || a.state === 'RETRY' ? '⚠ ' : '') + a.message;
+}
+
+// Kripto (5, 6): pakai data backend (CoinGecko ber-cache) agar browser tidak kena batas API; cadangan: perilaku lama
+[5, 6].forEach(id => {
+  const d = D.find(x => x.id === id), old = d.g;
+  d.g = async () => { await getBk(); const t = bkText(id); return t ? t + '\nSumber: Backend (CoinGecko)' : old(); };
+});
+// Semua agent 24 jam: tambahkan baris alert terbaru (Rule Engine) bila ada
+D.filter(d => d.g).forEach(d => {
+  const g0 = d.g;
+  d.g = async () => { const t = await g0(); await getBk(); const a = alertLine(d.id); return a ? a + '\n' + t : t; };
+});
+
+/* --- 3) Lencana status backend di footer layar (digambar setelah draw() asli) --- */
+const _draw = draw;
+draw = function (r) {
+  _draw(r);
+  const a = r.meet ? null : ag(r.id);
+  if (!a) return;
+  const x = r.cx;
+  x.font = '600 22px Nunito,system-ui,sans-serif'; x.textAlign = 'right'; x.textBaseline = 'middle'; x.fillStyle = ST_COL[a.state] || '#94a3b8';
+  x.fillText('⚙ ' + (stTxt[a.state] || a.state) + (a.lastSuccess ? ' • ' + String(a.lastSuccess).slice(11, 16) : ''), 1000, 550);
+  r.tx.needsUpdate = true;
+};
+
+/* --- 4) Terapkan data backend ke semua ruangan + legend 15 divisi --- */
+function applyBk() {
+  RL.forEach(r => {
+    if (r.meet) return;
+    const t = bkText(r.id);
+    if (r.d.mode !== '24h' && t && !r.lock && Date.now() >= (r.hold || 0)) { const al = alertLine(r.id); r.txt = (al ? al + '\n' : '') + t; r.srcTag = 'Backend'; }
+    draw(r);
+  });
+  renderLegend();
+}
+function renderLegend() {
+  const L = D.slice().sort((a, b) => a.id - b.id);
+  $('legend').innerHTML = `<div style="cursor:default;color:#8fa2cc">${L.length} divisi${BK.err ? ' • ⚠ backend' : ''}</div>` + L.map(d => {
+    const a = ag(d.id), c = a ? (ST_COL[a.state] || '#64748b') : '#64748b';
+    return `<div data-id="${d.id}" title="${esc(a ? (stTxt[a.state] || a.state) : 'belum terhubung backend')}"><b style="background:${d.c}">${d.id}</b><span style="flex:1">${esc(d.name)}</span><i class="ldot" style="background:${c}"></i></div>`;
+  }).join('');
+}
+
+/* --- 5) Pemilih divisi di panel chat (pengganti legend di layar kecil) --- */
+const _openDiv = openDiv;
+openDiv = function (id) {
+  if (!rooms[id]) return;
+  _openDiv(id);
+  const s = $('divsel'); if (s && !rooms[id].meet) s.value = id;
+};
+
+/* --- 6) Dashboard: satu sumber data, tanpa permintaan bertumpuk, scroll tidak loncat, render 3D diperlambat saat dibuka --- */
+loadDash = async function () {
+  if (document.hidden) return;
+  try {
+    const [s, sc] = await Promise.all([getBk(true), bScr().catch(() => null)]);
+    if (!s) throw new Error(BK.err || 'URL backend belum diisi (tombol ⚙ Sumber AI)');
+    DS = s; SCR = sc;
+    $('dmsg').textContent = 'Diperbarui ' + new Date().toLocaleTimeString('id-ID');
+    const b = $('dbody'), y = b.scrollTop; renderDash(); b.scrollTop = y;
+    applyBk();
+  } catch (e) { $('dbody').innerHTML = '<div class="dnote">⚠ ' + esc(e.message) + '<br>Pastikan URL backend benar dan Apps Script sudah di-deploy ulang.</div>'; }
+};
+{
+  const o1 = $('dashb').onclick, o2 = $('dx').onclick;
+  $('dashb').onclick = e => { slow = true; o1(e); };
+  $('dx').onclick = e => { slow = false; o2(e); };
+}
+
+/* --- 7) Boot: bungkus boot() agar add-on aktif setelah scene Three.js siap --- */
+const _boot = boot;
+boot = function () {
+  _boot();
+  const r0 = rend.render.bind(rend); let last = 0;
+  rend.render = (s, c) => { const n = performance.now(); if (slow && n - last < 66) return; last = n; r0(s, c); }; // ±15 fps saat dashboard terbuka
+  const miss = D.filter(d => !rooms[d.id]).map(d => d.id);
+  if (miss.length) console.error('[Kantor AI] Divisi tanpa ruangan 3D:', miss); else console.info('[Kantor AI] 15 divisi terpasang di tata letak 3D:', D.length);
+  document.head.appendChild(Object.assign(document.createElement('style'), { textContent:
+    '.ldot{width:8px;height:8px;border-radius:50%;flex:none}#divsel{max-width:130px;background:#0a1226;color:#fff;border:1px solid #3a5a9a;border-radius:8px;font-size:12px;padding:3px}' }));
+  const sel = document.createElement('select'); sel.id = 'divsel';
+  sel.innerHTML = D.slice().sort((a, b) => a.id - b.id).map(d => `<option value="${d.id}">${d.id}. ${esc(d.name)}</option>`).join('');
+  sel.onchange = () => openDiv(+sel.value);
+  $('mode').before(sel);
+  renderLegend();
+  const tick = async () => { if (document.hidden || !localStorage.getItem('data_url')) return; await getBk(true); applyBk(); };
+  tick(); setInterval(tick, 30000);
+};
 </script>
 </body>
 </html>
