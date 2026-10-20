@@ -535,17 +535,17 @@ $('go').onclick=async()=>{
     if(res.committed)set(ref(db,`offices/${oid}/feed/${d.id}`),{text:d.g?await d.g():`Laporan rutin ${d.name}: semua normal.`,t:Date.now()})}catch(e){}})},6000);
  }catch(e){alert('Gagal koneksi Firebase: '+e.message)}
 };
-/* ===== [P2] LIVE ADD-ON Kantor AI 3D =====
- * Tempel blok ini di Index.html, di dalam script module, tepat sebelum tag penutup script paling bawah
- * (setelah bagian login & Firebase). Tidak ada kode lama yang diubah.
+/* ===== [P3] LIVE ADD-ON + KONTROL DASHBOARD Kantor AI 3D =====
+ * CARA PASANG: di Index.html, HAPUS semua baris mulai dari "/* ===== [P2] LIVE ADD-ON" sampai tepat sebelum </script> paling bawah,
+ * lalu tempel seluruh isi file ini di tempat itu. Tidak perlu mengubah bagian lain, dan Code.gs tidak perlu diubah.
  */
 const BK = { s: null, t: 0, busy: null, err: null };
-let slow = false;
+let slow = false, acting = false;
 const msWib = t => Date.parse(String(t).replace(' ', 'T') + '+07:00') || 0;
 const ag = id => (BK.s && BK.s.agents || []).find(a => +a.division === +id);
 const ST_COL = { OK: '#4ade80', RUNNING: '#60a5fa', RETRY: '#fbbf24', ERROR: '#f87171' };
 
-/* --- 1) Status backend: satu sumber bersama, cache 20 dtk, timeout 20 dtk, tidak menumpuk permintaan --- */
+/* --- 1) Status backend: satu sumber bersama, cache 20 dtk, timeout 20 dtk, tanpa permintaan bertumpuk --- */
 function getBk(force) {
   const u = localStorage.getItem('data_url');
   if (!u) return Promise.resolve(null);
@@ -563,7 +563,23 @@ function getBk(force) {
   return BK.busy;
 }
 
-/* --- 2) Teks monitor per divisi dari data backend --- */
+/* --- 2) Panggilan aksi admin (toggle / tick / run / cancel) ke Apps Script --- */
+async function callAdmin(o, ms = 150000) {
+  const u = localStorage.getItem('data_url'), t = localStorage.getItem('admin_token');
+  if (!u) throw new Error('URL backend belum diisi (tombol ⚙ Sumber AI)');
+  if (!t) throw new Error('Token admin belum diisi (tombol ⚙ Sumber AI)');
+  const ac = new AbortController(), to = setTimeout(() => ac.abort(), ms);
+  try {
+    const r = await fetch(u, { method: 'POST', body: JSON.stringify({ ...o, token: t }), signal: ac.signal });
+    const j = await r.json().catch(() => { throw new Error('Respons backend bukan JSON. Pastikan deployment "Who has access: Anyone" dan sudah memakai versi terbaru'); });
+    if (!j.ok) throw new Error(j.error === 'Token salah' ? 'Token salah. Salin ulang ADMIN_TOKEN dari Script Properties' : (j.error || 'Gagal'));
+    return j;
+  } catch (e) {
+    throw e.name === 'AbortError' ? new Error('Backend tidak merespons (timeout). Tugas mungkin masih berjalan, tekan ⟳ Muat ulang') : e;
+  } finally { clearTimeout(to); }
+}
+
+/* --- 3) Teks monitor per divisi dari data backend --- */
 function alertLine(id) {
   const e = (BK.s && BK.s.events || []).find(x => +x.division === +id && /^alert_/.test(x.event) && Date.now() - msWib(x.time) < 216e5);
   return e ? '🔔 ' + e.detail : '';
@@ -572,11 +588,11 @@ function bkText(id) {
   const a = ag(id), s = BK.s;
   if (!a) return null;
   if (id === 15 && s) return `Sistem: ${s.enabled ? 'AKTIF' : 'NONAKTIF'} • antrean ${s.queue.queued} • 24j: ${s.queue.success24h} ok / ${s.queue.failed24h} gagal\nTrigger tiap ${s.tickMinutes} mnt • waktu ${s.usage ? s.usage.minutes + '/' + s.usage.budget : '?'} mnt\n${a.message || ''}`;
-  if (a.state === 'BELUM_ADA_TUGAS' || !a.message) return null; // divisi tanpa tugas backend: layar tetap menampilkan pesan Firebase terakhir
+  if (a.state === 'BELUM_ADA_TUGAS' || !a.message) return null;
   return (a.state === 'ERROR' || a.state === 'RETRY' ? '⚠ ' : '') + a.message;
 }
 
-// Kripto (5, 6): pakai data backend (CoinGecko ber-cache) agar browser tidak kena batas API; cadangan: perilaku lama
+// Kripto (5, 6): pakai data backend (CoinGecko ber-cache); cadangan: perilaku lama
 [5, 6].forEach(id => {
   const d = D.find(x => x.id === id), old = d.g;
   d.g = async () => { await getBk(); const t = bkText(id); return t ? t + '\nSumber: Backend (CoinGecko)' : old(); };
@@ -587,7 +603,7 @@ D.filter(d => d.g).forEach(d => {
   d.g = async () => { const t = await g0(); await getBk(); const a = alertLine(d.id); return a ? a + '\n' + t : t; };
 });
 
-/* --- 3) Lencana status backend di footer layar (digambar setelah draw() asli) --- */
+/* --- 4) Lencana status backend di footer layar --- */
 const _draw = draw;
 draw = function (r) {
   _draw(r);
@@ -599,7 +615,14 @@ draw = function (r) {
   r.tx.needsUpdate = true;
 };
 
-/* --- 4) Terapkan data backend ke semua ruangan + legend 15 divisi --- */
+/* --- 5) Terapkan data backend ke semua ruangan, legend, dan lencana header --- */
+function updatePill() {
+  const p = $('bkpill'); if (!p) return;
+  const s = BK.s;
+  p.className = 'chip ' + (BK.err ? 'bad' : s && s.enabled ? 'ok' : '');
+  p.textContent = !localStorage.getItem('data_url') ? '⚙ Backend: belum diatur' : BK.err && !s ? '⚠ Backend error' : !s ? '… Backend' : (s.enabled ? '● Otomatisasi AKTIF' : '○ Otomatisasi NONAKTIF') + (BK.err ? ' ⚠' : '');
+  p.title = BK.err || 'Klik untuk membuka dashboard';
+}
 function applyBk() {
   RL.forEach(r => {
     if (r.meet) return;
@@ -607,7 +630,7 @@ function applyBk() {
     if (r.d.mode !== '24h' && t && !r.lock && Date.now() >= (r.hold || 0)) { const al = alertLine(r.id); r.txt = (al ? al + '\n' : '') + t; r.srcTag = 'Backend'; }
     draw(r);
   });
-  renderLegend();
+  renderLegend(); updatePill();
 }
 function renderLegend() {
   const L = D.slice().sort((a, b) => a.id - b.id);
@@ -617,7 +640,7 @@ function renderLegend() {
   }).join('');
 }
 
-/* --- 5) Pemilih divisi di panel chat (pengganti legend di layar kecil) --- */
+/* --- 6) Pemilih divisi di panel chat --- */
 const _openDiv = openDiv;
 openDiv = function (id) {
   if (!rooms[id]) return;
@@ -625,25 +648,72 @@ openDiv = function (id) {
   const s = $('divsel'); if (s && !rooms[id].meet) s.value = id;
 };
 
-/* --- 6) Dashboard: satu sumber data, tanpa permintaan bertumpuk, scroll tidak loncat, render 3D diperlambat saat dibuka --- */
+/* --- 7) Dashboard: render (tombol dikunci saat aksi berjalan), muat ulang, dan kontrol --- */
+const _renderDash = renderDash;
+renderDash = function () {
+  _renderDash();
+  if (acting) $('dbody').querySelectorAll('button[data-a]').forEach(b => { b.disabled = true; });
+};
+['dfdiv', 'dfdate', 'dfprio'].forEach(i => { $(i).onchange = renderDash; });
+
 loadDash = async function () {
-  if (document.hidden) return;
+  if (document.hidden || acting) return;
   try {
     const [s, sc] = await Promise.all([getBk(true), bScr().catch(() => null)]);
     if (!s) throw new Error(BK.err || 'URL backend belum diisi (tombol ⚙ Sumber AI)');
+    if (acting) return;
     DS = s; SCR = sc;
     $('dmsg').textContent = 'Diperbarui ' + new Date().toLocaleTimeString('id-ID');
     const b = $('dbody'), y = b.scrollTop; renderDash(); b.scrollTop = y;
     applyBk();
-  } catch (e) { $('dbody').innerHTML = '<div class="dnote">⚠ ' + esc(e.message) + '<br>Pastikan URL backend benar dan Apps Script sudah di-deploy ulang.</div>'; }
+  } catch (e) { $('dbody').innerHTML = '<div class="dnote">⚠ ' + esc(e.message) + '<br>Pastikan URL backend benar dan Apps Script sudah di-deploy ulang.</div>'; updatePill(); }
 };
+
+$('dbody').onclick = async e => {
+  const b = e.target.closest('button[data-a]');
+  if (!b || b.disabled || acting) return;
+  const a = b.dataset.a;
+  if (a === 'reload') { loadDash(); return; }
+  if (!DS) return;
+  const div = +b.dataset.d || 0;
+  const cfg = {
+    toggle: { p: { action: 'toggle', enabled: !DS.enabled }, t: DS.enabled ? 'Menonaktifkan otomatisasi' : 'Mengaktifkan otomatisasi' },
+    tick:   { p: { action: 'tick' }, t: 'Menjalankan pemeriksaan' },
+    run:    { p: { action: 'run', division: div }, t: 'Menjalankan ' + DNAME(div) },
+    cancel: { p: { action: 'cancel', taskId: b.dataset.t }, t: 'Membatalkan tugas' },
+  }[a];
+  if (!cfg) return;
+  if (a === 'toggle' && DS.enabled && !confirm('Nonaktifkan otomatisasi? Semua agent berhenti diperbarui sampai diaktifkan lagi.')) return;
+  acting = true;
+  if (a === 'run') { [ag(div), (DS.agents || []).find(x => +x.division === div)].forEach(x => { if (x) x.state = 'RUNNING'; }); applyBk(); }
+  renderDash();
+  $('dmsg').textContent = '⏳ ' + cfg.t + '... (bisa sampai 1 menit)';
+  try {
+    const j = await callAdmin(cfg.p);
+    DS = j; BK.s = j; BK.t = Date.now(); BK.err = null;
+    $('dmsg').textContent = '✔ ' + cfg.t.replace(/^Meng|^Men|^Mem/, m => m) + ' selesai ' + new Date().toLocaleTimeString('id-ID');
+    acting = false; renderDash(); applyBk();
+    bScr().then(x => { SCR = x; renderDash(); }).catch(() => {});
+  } catch (err) {
+    $('dmsg').textContent = '⚠ ' + err.message;
+    acting = false; renderDash();
+    getBk(true).then(s => { if (s) { DS = s; renderDash(); applyBk(); } });
+  }
+};
+
 {
   const o1 = $('dashb').onclick, o2 = $('dx').onclick;
   $('dashb').onclick = e => { slow = true; o1(e); };
   $('dx').onclick = e => { slow = false; o2(e); };
 }
 
-/* --- 7) Boot: bungkus boot() agar add-on aktif setelah scene Three.js siap --- */
+// Setelah menyimpan pengaturan (URL / token), langsung uji koneksi backend
+{
+  const sv = $('cfgsave').onclick;
+  $('cfgsave').onclick = () => { sv(); BK.s = null; BK.t = 0; BK.err = null; updatePill(); getBk(true).then(() => applyBk()); };
+}
+
+/* --- 8) Boot: bungkus boot() agar add-on aktif setelah scene Three.js siap --- */
 const _boot = boot;
 boot = function () {
   _boot();
@@ -652,12 +722,15 @@ boot = function () {
   const miss = D.filter(d => !rooms[d.id]).map(d => d.id);
   if (miss.length) console.error('[Kantor AI] Divisi tanpa ruangan 3D:', miss); else console.info('[Kantor AI] 15 divisi terpasang di tata letak 3D:', D.length);
   document.head.appendChild(Object.assign(document.createElement('style'), { textContent:
-    '.ldot{width:8px;height:8px;border-radius:50%;flex:none}#divsel{max-width:130px;background:#0a1226;color:#fff;border:1px solid #3a5a9a;border-radius:8px;font-size:12px;padding:3px}' }));
+    '.ldot{width:8px;height:8px;border-radius:50%;flex:none}#divsel{max-width:130px;background:#0a1226;color:#fff;border:1px solid #3a5a9a;border-radius:8px;font-size:12px;padding:3px}#bkpill{cursor:pointer;white-space:nowrap}' }));
   const sel = document.createElement('select'); sel.id = 'divsel';
   sel.innerHTML = D.slice().sort((a, b) => a.id - b.id).map(d => `<option value="${d.id}">${d.id}. ${esc(d.name)}</option>`).join('');
   sel.onchange = () => openDiv(+sel.value);
   $('mode').before(sel);
-  renderLegend();
+  const pill = document.createElement('span'); pill.id = 'bkpill'; pill.className = 'chip';
+  pill.onclick = () => $('dashb').click();
+  $('auto').before(pill);
+  renderLegend(); updatePill();
   const tick = async () => { if (document.hidden || !localStorage.getItem('data_url')) return; await getBk(true); applyBk(); };
   tick(); setInterval(tick, 30000);
 };
