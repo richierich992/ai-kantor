@@ -536,9 +536,8 @@ $('go').onclick=async()=>{
  }catch(e){alert('Gagal koneksi Firebase: '+e.message)}
 };
 /* ===== [P2] LIVE ADD-ON Kantor AI 3D =====
- * CARA PASANG: tempel SELURUH blok ini di Index.html, di dalam <script type="module">,
- * tepat SEBELUM tag penutup </script> (setelah bagian "login & Firebase"). Tidak ada kode lama yang perlu diubah/dihapus.
- * Cara kerja: membungkus draw(), boot(), openDiv(), loadDash() tanpa menyentuh pembuatan scene Three.js.
+ * Tempel blok ini di Index.html, di dalam script module, tepat sebelum tag penutup script paling bawah
+ * (setelah bagian login & Firebase). Tidak ada kode lama yang diubah.
  */
 const BK = { s: null, t: 0, busy: null, err: null };
 let slow = false;
