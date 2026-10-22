@@ -103,6 +103,11 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getDatabase,ref,onValue,push,set,query,limitToLast,runTransaction} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 import {getAuth,signInAnonymously} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+/* [P5] konfigurasi enam ruang divisi (office_config.js). Bila gagal dimuat, dipakai peta bawaan agar halaman tetap jalan. */
+const CFG=await import('./office_config.js').catch(e=>{console.warn('[Kantor AI] office_config.js tidak termuat, memakai peta bawaan',e);return null});
+const DEPTS=CFG?CFG.DEPARTMENTS:[['finance','Keuangan & Investasi'],['marketing_content','Marketing, Konten & Komersial'],['it_automation','IT & Otomasi'],['research_intelligence','Riset & Intelijen'],['farm_operations','Farm & Operasional'],['hr_admin','HR & Administrasi']].map(([departmentId,name])=>({departmentId,name}));
+const FBMAP={1:'finance',2:'finance',3:'finance',4:'finance',5:'finance',6:'finance',7:'finance',8:'finance',9:'marketing_content',10:'marketing_content',12:'marketing_content',14:'marketing_content',11:'it_automation',15:'it_automation',16:'it_automation',13:'research_intelligence'};
+const deptOfId=id=>(CFG?CFG.departmentOfLegacyId(id):FBMAP[id])||null;
 
  const firebaseConfig = {
     apiKey: "AIzaSyBeb1L6dCevfzX2tw__6MGWfpB6jfKTO6M",
@@ -155,9 +160,20 @@ ovr(1,v=>{const a=stk(v,'trading'),c=scrLine(v);return a?(c?a.replace('\nSumber:
 ovr(7,v=>v?.emas?.harga?`Emas Antam 1 gr: Rp ${nf(v.emas.harga)} (+pajak Rp ${nf(v.emas.pajak)})\nSumber: logammulia.com${v.emas.tanggal?' • '+v.emas.tanggal:''}`:null);
 ovr(13,v=>v&&((v.trend||[]).length||(v.news||[]).length)?`Tren Google: ${(v.trend||[]).slice(0,5).join(', ')}\nBerita: ${(v.news||[]).slice(0,2).join(' • ')}\nSumber: Google Trends & Google News`:null);
 /* slot: x, z, yaw (muka ruangan menghadap plaza), id (0 = ruang meeting) */
-const SL=[[-20,-14,0,1],[-12,-14,0,2],[-4,-14,0,3],[4,-14,0,4],[12,-14,0,5],[20,-14,0,6],
-[-28,-2,0,7],[-20,-2,0,8],[20,-2,0,9],[28,-2,0,10],
-[-28,10,0,0],[-20,10,0,12],[-12,10,0,14],[12,10,0,13],[20,10,0,11],[28,10,0,15]];
+/* [P5] 6 ruang divisi fisik. cells = [ID legacy agen, x, z] (stasiun kerja di dalam ruang); box = batas ruang [x0,x1,z0,z1];
+   single = ruang satu stasiun (berdinding penuh); syn = ruang belum dikonfigurasi (tanpa pekerja aktif). Ruang Meeting (ID 0) dan lobi/Social Hub tetap. */
+const DEPT_COL={finance:'#2e9e44',marketing_content:'#d6336c',it_automation:'#0d9488',research_intelligence:'#2f7fe0',farm_operations:'#a16207',hr_admin:'#8a4fd8'};
+const SYN={farm_operations:{name:'Farm & Operasional',c:'#a16207',ic:'🚜',mode:'planned'},hr_admin:{name:'HR & Administrasi',c:'#8a4fd8',ic:'🗂️',mode:'planned'}};
+const DL=[
+ {id:'finance',box:[-35,-3,-20.5,-6.5],cells:[[1,-31,-17],[2,-23,-17],[3,-15,-17],[4,-7,-17],[5,-31,-10],[6,-23,-10],[7,-15,-10],[8,-7,-10]]},
+ {id:'marketing_content',box:[-1,15,-20.5,-6.5],cells:[[9,3,-17],[10,11,-17],[12,3,-10],[14,11,-10]]},
+ {id:'it_automation',box:[17,33,-20.5,-6.5],cells:[[11,21,-17],[15,29,-17],[16,21,-10]]},
+ {id:'research_intelligence',box:[-24,-16,6.5,13.5],cells:[[13,-20,10]],single:1},
+ {id:'farm_operations',box:[-16,-8,6.5,13.5],cells:[],single:1,syn:[-12,10]},
+ {id:'hr_admin',box:[8,16,6.5,13.5],cells:[],single:1,syn:[12,10]}];
+const SL=[[-28,10,0,0]];
+DL.forEach(dl=>{dl.cells.forEach(([id,x,z])=>SL.push([x,z,0,id,!dl.single,dl.id]));if(dl.syn)SL.push([dl.syn[0],dl.syn[1],0,dl.id,false,dl.id])});
+const DEP={};
 const W=8,DP=7,WH=3.4;
 
 let app,auth,db,oid,cur=null,autoOn=true,unsub=null,rend,cam,ctl,tg=null;
@@ -195,19 +211,19 @@ function draw(r){const x=r.cx,s=STT[r.st],F='Nunito,system-ui,sans-serif';
 function setSt(r,s){r.st=s;if(r.mon)r.mon.color.set(s==='work'?0xffffff:s==='live'?0x7dd3fc:0x1e3a5f);draw(r)}
 
 /* ===== ruangan ===== */
-function mkRoom([x,z,yaw,id]){
- const d=D.find(q=>q.id===id)||{name:'Ruang Meeting',c:'#66708c',ic:'🤝',meet:1};
+function mkRoom([x,z,yaw,id,cell,dep]){
+ const d=D.find(q=>q.id===id)||SYN[id]||{name:'Ruang Meeting',c:'#66708c',ic:'🤝',meet:1};
  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=yaw;scene.add(g);
  const col=new THREE.Color(d.c),white=new THREE.Color(1,1,1),lt=col.clone().lerp(white,.78),wl=col.clone().lerp(white,.82);
  const r={id,d,lane:z<-10?-8:z<5?4.5:16,name:d.name,col:d.c,ic:d.ic,g,yaw,meet:d.meet,st:'standby',lock:false,txt:d.meet?'Tempat agent berkumpul.':'Siap menerima tugas.'};
  const fl=box(W,.14,DP,lt,0,.07,0,g);fl.material=new THREE.MeshLambertMaterial({map:WOOD,color:lt.clone().lerp(new THREE.Color(0xd9b98a),.5)});box(W-.3,.3,.3,col,0,.3,-DP/2+.1,g);
- box(W,WH,.25,wl,0,WH/2,-DP/2,g);box(.25,WH,DP,wl,-W/2,WH/2,0,g);box(.25,WH,DP,wl,W/2,WH/2,0,g);box(W,.3,.25,col,0,.15,DP/2,g);
+ box(W,WH,.25,wl,0,WH/2,-DP/2,g);if(!cell){box(.25,WH,DP,wl,-W/2,WH/2,0,g);box(.25,WH,DP,wl,W/2,WH/2,0,g);box(W,.3,.25,col,0,.15,DP/2,g)}
  const c=cv(1024,576);r.cx=c.getContext('2d');r.tx=tex(c);
  box(4.8,2.8,.1,0x0b1220,0,1.95,-DP/2+.17,g);
  const sc=new THREE.Mesh(new THREE.PlaneGeometry(4.6,2.6),new THREE.MeshBasicMaterial({map:r.tx,toneMapped:false}));sc.position.set(0,1.95,-DP/2+.23);g.add(sc);
- fl.userData.id=sc.userData.id=id;picks.push(fl,sc);
+ fl.userData.id=sc.userData.id=id;fl.userData.dept=sc.userData.dept=dep;picks.push(fl,sc);
  r.lamp=new THREE.Mesh(new THREE.SphereGeometry(.28,12,12),new THREE.MeshBasicMaterial({color:0x64748b}));r.lamp.scale.setScalar(.8);r.lamp.position.set(W/2-.6,WH+.55,-DP/2+.3);g.add(r.lamp);
- const pt=plate((d.meet?'':id+'  ')+d.name,d.c,W-.6,1.05);pt.position.set(0,WH+.55,-DP/2);g.add(pt);r.n0=g.children.length;
+ const pt=plate((d.meet||typeof id==='string'?'':id+'  ')+d.name,d.c,W-.6,1.05);pt.position.set(0,WH+.55,-DP/2);g.add(pt);r.n0=g.children.length;
  if(d.meet){
   const t=new THREE.Mesh(new THREE.CylinderGeometry(1.7,1.7,.12,24),M(0xc79b64));t.position.set(0,.8,.5);g.add(t);box(.3,.8,.3,0x7a5a38,0,.4,.5,g);
   for(let i=0;i<6;i++){const a=i/6*PI*2,s=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.5,12),M(0x475569));s.position.set(Math.cos(a)*2.3,.25,.5+Math.sin(a)*2.3);g.add(s)}
@@ -242,7 +258,7 @@ function mkChar(r){
  box(.08,.025,.03,0xd9534f,0,1.31,.435,g);
  g.scale.setScalar(1.2);g.position.copy(r.spot);g.rotation.y=r.yaw+PI;scene.add(g);return c}
 
-function go(c,tr,spot,face){const cu=c.loc,p=[],la=cu?cu.lane:4.5,lb=tr?tr.lane:4.5;
+function go(c,tr,spot,face){if(c.loc&&tr&&c.loc.dept&&c.loc.dept===tr.dept){c.path=[spot.clone()];c.loc=tr;c.face=face;c.done=null;return}const cu=c.loc,p=[],la=cu?cu.lane:4.5,lb=tr?tr.lane:4.5;
  if(cu&&cu!==tr)p.push(cu.inside,cu.front,new THREE.Vector3(cu.front.x,0,cu.lane));
  if(cu!==tr){p.push(LN(la));if(la!==lb)p.push(LN(lb))}
  if(tr&&cu!==tr)p.push(new THREE.Vector3(tr.front.x,0,tr.lane),tr.front,tr.inside);
@@ -261,7 +277,7 @@ function step(c,dt){
  c.armR.rotation.x=mvg?s:ty?-1.2+Math.cos(c.t*14)*.12:-Math.sin(c.t)*.04;
  c.g.position.y=.14+(mvg?Math.abs(Math.sin(c.t))*.1:0);
  if(!c.path.length&&!c.busy&&!c.work&&c.d.mode!=='24h'){c.wait-=dt;if(c.wait<=0){c.wait=rnd(5,10);const k=Math.random();
-  if(k<.3)go(c,c.r,c.r.spot,c.r.yaw+PI);else if(k<.5)go(c,null,plazaPt(),null);else{const t=pick(RL);go(c,t,wp(t,rnd(-2.5,2.5),rnd(0,2.5)),null)}}}
+  if(k<.4||!c.r.dept)go(c,c.r,c.r.spot,c.r.yaw+PI);else{const t=pick(c.r.dept.cells);go(c,t,wp(t,rnd(-2.5,2.5),rnd(0,2.5)),null)}}}
 }
 
 /* ===== model GLB (folder assets/) ===== */
@@ -280,7 +296,7 @@ function mkAvatar(n){const src=GLB['avatar_ai_'+n];if(!src)return null;const roo
  return{root,legL:l.leg,legR:r.leg,armL:l.arm,armR:r.arm}}
 function swapChar(c){const a=mkAvatar(AVN[c.r.id]||'analyst');if(!a)return;
  while(c.g.children.length)c.g.remove(c.g.children[0]);
- c.g.add(a.root);c.legL=a.legL;c.legR=a.legR;c.armL=a.armL;c.armR=a.armR;c.g.scale.setScalar(1.05)}
+ c.g.add(a.root);if(c.tag)c.g.add(c.tag);c.legL=a.legL;c.legR=a.legR;c.armL=a.armL;c.armR=a.armR;c.g.scale.setScalar(1.05)}
 function dress(r){const g=r.g,y=.14,col=new THREE.Color(r.col).lerp(new THREE.Color(1,1,1),.55);
  if(!GLB.desk_workstation&&!GLB.meeting_table)return;r.furn.forEach(m=>m.visible=false);
  if(r.meet){put('meeting_table',g,0,.2,0,1.3,y);[[-1.1,-1.3,0],[0,-1.3,0],[1.1,-1.3,0],[-1.1,1.7,PI],[0,1.7,PI],[1.1,1.7,PI],[-2.5,.2,PI/2],[2.5,.2,-PI/2]].forEach(([x,z,a])=>put('office_chair',g,x,z,a,1,y));return}
@@ -292,7 +308,7 @@ function dress(r){const g=r.g,y=.14,col=new THREE.Color(r.col).lerp(new THREE.Co
  put('floor_lamp',g,3.4,-3.0,0,1,y)}
 function dressLobby(){if(!GLB.lounge_sofa&&!GLB.reception_desk)return;lobbyOld.forEach(m=>m.visible=false);const S=scene;
  [-1,1].forEach(k=>{put('coffee_table',S,k*12.5,-1,0,1.2);put('lounge_sofa',S,k*15.2,-1,-k*PI/2,1.3);put('lounge_sofa',S,k*12.5,1.9,PI,1.3);put('lounge_sofa',S,k*12.5,-3.9,0,1.3);
-  put('floor_lamp',S,k*9,-8.8);put('floor_lamp',S,k*15,-8.8);put('potted_plant',S,k*15,3.2,0,1.4);put('potted_plant',S,k*15,-6.5,0,1.4)});
+  put('floor_lamp',S,k*9,-5.3);put('floor_lamp',S,k*15,-5.3);put('potted_plant',S,k*15,3.2,0,1.4);put('potted_plant',S,k*15,-5.3,0,1.4)});
  put('reception_desk',S,-4.8,9,0,1.2);put('wall_display',S,5.2,9,0,1.2)}
 
 /* ===== lalu lintas jalan raya (lajur kiri seperti di Indonesia) ===== */
@@ -348,6 +364,19 @@ function traffic(dt){tNext-=dt;if(tNext<=0){tNext=rnd(.8,2.2);if(veh.length<20)s
   if(v.bob)v.g.position.y=-.48+Math.abs(Math.sin(performance.now()/180))*.03;
   if(Math.abs(v.x)>125){scene.remove(v.g);veh.splice(i,1)}}}
 
+/* ===== [P5] cangkang ruang divisi ===== */
+function mkShell(dl,name){const [x0,x1,z0,z1]=dl.box,cx=(x0+x1)/2,cz=(z0+z1)/2,w=x1-x0,col=new THREE.Color(DEPT_COL[dl.id]),wl=col.clone().lerp(new THREE.Color(1,1,1),.82);
+ const f=box(w,.12,z1-z0,col.clone().lerp(new THREE.Color(1,1,1),.9),cx,.03,cz);f.userData.dept=dl.id;picks.push(f);
+ box(.25,WH,z1-z0,wl,x0,WH/2,cz);box(.25,WH,z1-z0,wl,x1,WH/2,cz);
+ [[x0,cx-2],[cx+2,x1]].forEach(([a,b])=>box(b-a,.3,.25,col,(a+b)/2,.15,z1));
+ const p=plate(name,DEPT_COL[dl.id],Math.min(w-1,20),1.5);p.position.set(cx,WH+2.3,z0+.1);scene.add(p)}
+function buildDepts(){DL.forEach(dl=>{const nm=(DEPTS.find(p=>p.departmentId===dl.id)||{}).name||dl.id,[x0,x1,z0,z1]=dl.box,
+  dp=DEP[dl.id]={id:dl.id,name:nm,col:DEPT_COL[dl.id],cx:(x0+x1)/2,cz:(z0+z1)/2,w:x1-x0,d:z1-z0,cells:dl.cells.map(c=>rooms[c[0]])};
+  dp.cells.forEach(r=>{r.dept=dp});
+  if(dl.syn){const r=rooms[dl.id];r.dept=dp;r.txt='Belum dikonfigurasi. Pekerja direncanakan, belum terhubung ke sistem atau data.'}
+  else if(dl.single){const p=plate(nm,dp.col,6.6,1.1);p.position.set(dp.cx,WH+1.9,z0);scene.add(p)}})}
+function focusDept(dp){const s=Math.max(dp.w,dp.d);tg={t:new THREE.Vector3(dp.cx,1,dp.cz),c:new THREE.Vector3(dp.cx,6+s*.55,dp.cz+8+s*.9)}}
+
 /* ===== scene ===== */
 function boot(){
  const host=$('map');
@@ -377,7 +406,8 @@ function boot(){
  for(let i=-10;i<=10;i++)box(3,.02,.35,0xffffff,i*8,-.46,30);
  const car=(x,z,c)=>{box(4.2,.9,1.9,c,x,.15,z);box(2.2,.8,1.7,0xcfe8ff,x-.2,1.0,z);[[-1.4,-.95],[-1.4,.95],[1.4,-.95],[1.4,.95]].forEach(([a,b])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.35,12),M(0x111111));w.rotation.x=PI/2;w.position.set(x+a,-.05,z+b);scene.add(w)})};
  
- SL.forEach(mkRoom);scene.updateMatrixWorld(true);
+ DL.forEach(dl=>{if(!dl.single)mkShell(dl,(DEPTS.find(p=>p.departmentId===dl.id)||{}).name||dl.id)});
+ SL.forEach(mkRoom);scene.updateMatrixWorld(true);buildDepts();
  RL.forEach(r=>{r.front=wp(r,0,DP/2+1.5);r.inside=wp(r,0,1.2);r.spot=wp(r,-1.8,-.95)});
  D.forEach(d=>chars[d.id]=mkChar(rooms[d.id]));
  RL.forEach(r=>{if(!r.meet)draw(r)});
@@ -387,7 +417,10 @@ function boot(){
  rend.domElement.addEventListener('pointerdown',e=>pd=[e.clientX,e.clientY]);
  rend.domElement.addEventListener('pointerup',e=>{if(!pd||Math.hypot(e.clientX-pd[0],e.clientY-pd[1])>6)return;
   const b=rend.domElement.getBoundingClientRect();mp.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);ray.setFromCamera(mp,cam);
-  const h=ray.intersectObjects(picks,false)[0];if(h)openDiv(h.object.userData.id)});
+  const hc=ray.intersectObjects(Object.values(chars).map(c=>c.g),true)[0],h=ray.intersectObjects(picks,false)[0];let aid=null;
+  if(hc){let o=hc.object;while(o&&o.userData.aid===undefined)o=o.parent;if(o)aid=o.userData.aid}
+  if(aid!==null&&(!h||hc.distance<=h.distance+.8))openDiv(aid);
+  else if(h){const u=h.object.userData;if(u.dept&&DEP[u.dept])openDept(u.dept);else openDiv(u.id)}});
  $('reset').onclick=()=>{tg={t:new THREE.Vector3(0,0,-2),c:new THREE.Vector3(14,60,46)}};
  addEventListener('resize',()=>{rend.setSize(host.clientWidth,host.clientHeight);cam.aspect=host.clientWidth/host.clientHeight;cam.updateProjectionMatrix()});
  $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
@@ -631,10 +664,13 @@ function applyBk() {
 }
 function renderLegend() {
   const L = D.slice().sort((a, b) => a.id - b.id);
-  $('legend').innerHTML = `<div style="cursor:default;color:#8fa2cc">${L.length} divisi${BK.err ? ' • ⚠ backend' : ''}</div>` + L.map(d => {
-    const a = ag(d.id), c = a ? (ST_COL[a.state] || '#64748b') : '#64748b';
-    return `<div data-id="${d.id}" title="${esc(a ? (stTxt[a.state] || a.state) : 'belum terhubung backend')}"><b style="background:${d.c}">${d.id}</b><span style="flex:1">${esc(d.name)}</span><i class="ldot" style="background:${c}"></i></div>`;
-  }).join('');
+  $('legend').innerHTML = `<div style="cursor:default;color:#8fa2cc">${DEPTS.length} ruang • ${L.length} pekerja${BK.err ? ' • ⚠ backend' : ''}</div>` + DEPTS.map(dp => {
+    const ws = L.filter(d => deptOfId(d.id) === dp.departmentId);
+    return `<div data-dept="${dp.departmentId}" style="font-weight:800;color:${DEPT_COL[dp.departmentId]}">▣ ${esc(dp.name)}</div>` + (ws.length ? ws.map(d => {
+      const a = ag(d.id), c = a ? (ST_COL[a.state] || '#64748b') : '#64748b';
+      return `<div data-id="${d.id}" style="padding-left:10px" title="${esc(a ? (stTxt[a.state] || a.state) : 'belum terhubung backend')}"><b style="background:${d.c}">${d.id}</b><span style="flex:1">${esc(d.name)}</span><i class="ldot" style="background:${c}"></i></div>`;
+    }).join('') : '<div style="cursor:default;padding-left:10px;color:#8fa2cc">belum dikonfigurasi</div>');
+  }).join('') + '<div data-meet="1" style="font-weight:800;color:#b8c6e6">▣ Ruang Meeting</div>';
 }
 
 /* --- 6) Pemilih divisi di panel chat --- */
@@ -747,7 +783,7 @@ const evs=re=>(BK.s&&BK.s.events||[]).filter(e=>re.test(e.event));
 /* --- 1) Daftarkan Divisi 16 + slot ruangan (kiri atas, baris belakang) --- */
 if(!D.some(d=>d.id===16)){
   D.push({id:16,name:'Automation Worker',c:'#0d9488',ic:'⚙️',m:'24h',g:async()=>{await getBk();return bkText(16)||'Menunggu data backend (isi URL di ⚙ Sumber AI)'}});
-  SL.push([-28,-14,0,16]);
+  /* slot Divisi 16 sudah ada di tata letak departemen IT & Otomasi (P5) */
   AVN[16]='analyst';
   SRC[16]=[['n8n','https://n8n.io'],['YouTube Studio','https://studio.youtube.com']];
   ROLE[16]='Rancang alur upload otomatis (n8n/Worker) dan pantau pipeline konten: ide, proses, siap upload, monitoring. Upload hanya untuk item yang sudah ditinjau manusia.';
@@ -851,6 +887,34 @@ function boothLoop(t){const r=rooms[16];
 const _boot4=boot;boot=function(){_boot4();const r=rooms[16];if(r){buildBooth(r);updateBooth();requestAnimationFrame(boothLoop)}};
 // Model GLB: sembunyikan lemari otomatis (genap) di ruang 16 agar tidak menabrak rak server
 const _dress4=dress;dress=function(r){_dress4(r);if(r.id===16)r.g.children.filter(o=>Math.abs(o.position.x-3.6)<.01&&Math.abs(o.position.z+.3)<.01).forEach(o=>{o.visible=false})};
+
+/* ===== [P5] Navigasi enam ruang divisi: tampilan ruang (semua pekerja), klik karakter = chat ===== */
+let curDept=null,lastDept=null;
+const deptWorkers=dp=>D.filter(d=>deptOfId(d.id)===dp.id).sort((a,b)=>a.id-b.id);
+const setTags=id=>Object.values(chars).forEach(c=>{if(c.tag)c.tag.visible=!!id&&deptOfId(c.r.id)===id});
+function renderRView(){const dp=DEP[curDept];if(!dp)return;const ws=deptWorkers(dp),pl=CFG?CFG.AGENTS.filter(a=>a.id==null&&a.departmentId===dp.id):[];
+  $('rvt').textContent=dp.name;$('rvt').style.color=dp.col;
+  $('rvl').innerHTML=(ws.map(d=>{const a=ag(d.id),st=a?(stTxt[a.state]||a.state):(d.mode==='24h'?'24 jam':'saat dipanggil'),cf=CFG?(CFG.agentByLegacyId(d.id)||{}):{};
+    return `<div class="rvr" data-aid="${d.id}"><b style="background:${d.c}">${d.id}</b><span class="rvn">${esc(d.name)}<small>${esc(cf.roleTitle||'')}</small></span><i class="ldot" style="background:${ST_COL[a&&a.state]||'#64748b'}"></i><em>${esc(st)}</em></div>`}).join('')
+    +pl.map(p=>`<div class="rvr off"><b style="background:#475569">·</b><span class="rvn">${esc(p.name)}<small>belum dikonfigurasi, belum terhubung ke sistem</small></span></div>`).join(''))
+    ||'<div class="dnote" style="padding:10px">Belum dikonfigurasi: pekerja direncanakan dan belum terhubung ke sistem atau data.</div>'}
+function openDept(id){const dp=DEP[id];if(!dp)return;curDept=id;cur=null;if(unsub){unsub();unsub=null}$('chat').classList.remove('open');focusDept(dp);setTags(id);$('rview').classList.add('open');renderRView()}
+function closeRView(){curDept=null;setTags(null);$('rview').classList.remove('open')}
+const _openDiv5=openDiv;openDiv=function(id){const r=rooms[id];if(!r)return;_openDiv5(id);if(!r.meet){lastDept=deptOfId(id);$('rview').classList.remove('open');setTags(null)}};
+const _applyBk5=applyBk;applyBk=function(){_applyBk5();if(curDept)renderRView()};
+const _boot5=boot;boot=function(){_boot5();
+  document.head.appendChild(Object.assign(document.createElement('style'),{textContent:'#rview{position:fixed;z-index:150;top:52px;right:0;bottom:0;width:340px;display:none;flex-direction:column;background:rgba(12,22,46,.94);border-left:1px solid #3a5a9a;backdrop-filter:blur(10px)}#rview.open{display:flex}#rvl{overflow:auto;padding:6px 10px}#rvh{padding:8px 14px;font-size:11px;color:#8fa2cc}.rvr{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid #1c2b52;cursor:pointer;font-size:13px}.rvr:hover{background:#1c2b52}.rvr.off{opacity:.55;cursor:default}.rvr b{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:11px;flex:none;color:#fff}.rvn{flex:1;display:flex;flex-direction:column}.rvn small{color:#8fa2cc;font-size:11px}.rvr em{font-size:10px;color:#9fb2dd;font-style:normal}#rback{background:#26396b;border:1px solid #4a64a8;color:#fff;padding:3px 9px;border-radius:12px;font-size:12px;cursor:pointer}@media(max-width:820px){#rview{top:auto;width:100%;height:55vh;border-left:0;border-top:1px solid #3a5a9a}}'}));
+  $('ui').insertAdjacentHTML('beforeend','<div id="rview"><div class="ch"><span id="rvt">Ruang</span><span><button id="rvx" aria-label="Tutup">✕</button></span></div><div id="rvh">Klik pekerja untuk membuka chat, atau klik karakternya di ruangan</div><div id="rvl"></div></div>');
+  $('rvx').onclick=closeRView;
+  $('rvl').onclick=e=>{const r=e.target.closest('[data-aid]');if(r)openDiv(+r.dataset.aid)};
+  const bk=document.createElement('button');bk.id='rback';bk.title='Kembali ke ruang divisi';bk.textContent='▦ Ruang';bk.onclick=()=>{if(lastDept)openDept(lastDept)};$('mode').before(bk);
+  $('legend').onclick=e=>{const t=e.target.closest('[data-id],[data-dept],[data-meet]');if(!t)return;if(t.dataset.dept)openDept(t.dataset.dept);else if(t.dataset.meet){closeRView();openDiv(0)}else openDiv(+t.dataset.id)};
+  const rs=$('reset').onclick;$('reset').onclick=()=>{rs();closeRView()};
+  $('hint').textContent='Geser: tarik • Putar: klik kanan / 2 jari • Zoom: scroll / cubit • Klik ruang = lihat pekerja • Klik karakter = chat';
+  Object.values(chars).forEach(c=>{c.g.userData.aid=c.r.id;c.tag=label(c.r.name,c.r.col,2.8,.7);c.tag.position.set(0,2.6,0);c.tag.visible=false;c.g.add(c.tag)});
+  const bad=D.filter(d=>!rooms[d.id]||!deptOfId(d.id)||!rooms[d.id].dept).map(d=>d.id),err=CFG?CFG.validateOfficeConfig():[];
+  console.info('[Kantor AI] ruang divisi:',Object.keys(DEP).length,'| pekerja:',D.length,'| tanpa ruang:',bad.length?bad:'tidak ada','| validasi konfigurasi:',err.length?err:'OK');
+  addEventListener('keydown',e=>{if(e.key==='Escape'&&curDept)closeRView()});renderLegend()};
 </script>
 </body>
 </html>
