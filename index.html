@@ -731,6 +731,126 @@ boot = function () {
   const tick = async () => { if (document.hidden || !localStorage.getItem('data_url')) return; await getBk(true); applyBk(); };
   tick(); setInterval(tick, 30000);
 };
+/* ===== [P4] Booth Automation Worker (Divisi 16) + label sumber + monitor live Pipeline & Bot =====
+   TEMPEL di index.html: di dalam <script type="module">, SETELAH blok P3 (paling bawah), SEBELUM /script. */
+
+const ST5=['ide','proses','siap_upload','monitoring','selesai'];
+const ST5L={ide:'IDE',proses:'PROSES',siap_upload:'SIAP UPLOAD',monitoring:'MONITORING',selesai:'SELESAI'};
+const ST5C={ide:'#94a3b8',proses:'#fbbf24',siap_upload:'#60a5fa',monitoring:'#a78bfa',selesai:'#4ade80'};
+const PIPE_DIV=[9,10,11,12,14,16], SRCLBL={5:'Indodax API',6:'Tokocrypto API'};
+const blank5=()=>({ide:0,proses:0,siap_upload:0,monitoring:0,selesai:0});
+const sum5=c=>ST5.reduce((a,k)=>a+c[k],0);
+const prog=c=>{const t=sum5(c);return t?ST5.reduce((a,k,i)=>a+c[k]*i/4,0)/t:0};
+const rp=x=>+x?idr(x):'?';
+const evs=re=>(BK.s&&BK.s.events||[]).filter(e=>re.test(e.event));
+
+/* --- 1) Daftarkan Divisi 16 + slot ruangan (kiri atas, baris belakang) --- */
+if(!D.some(d=>d.id===16)){
+  D.push({id:16,name:'Automation Worker',c:'#0d9488',ic:'⚙️',m:'24h',g:async()=>{await getBk();return bkText(16)||'Menunggu data backend (isi URL di ⚙ Sumber AI)'}});
+  SL.push([-28,-14,0,16]);
+  AVN[16]='analyst';
+  SRC[16]=[['n8n','https://n8n.io'],['YouTube Studio','https://studio.youtube.com']];
+  ROLE[16]='Rancang alur upload otomatis (n8n/Worker) dan pantau pipeline konten: ide, proses, siap upload, monitoring. Upload hanya untuk item yang sudah ditinjau manusia.';
+  $('dfdiv').innerHTML='<option value="">Semua divisi</option>'+D.slice().sort((a,b)=>a.id-b.id).map(d=>`<option value="${d.id}">${d.id}. ${esc(d.name)}</option>`).join('');
+}
+
+/* --- 2) Data pipeline & bot (utamakan s.pipeline / s.bot dari backend; cadangan: parse pesan agen) --- */
+function parsePipe(m){if(!m||!/(Ide|Proses|Monitoring|Selesai) \d+/.test(m))return null;
+  const g=re=>{const x=re.exec(m);return x?+x[1]:0};
+  return{ide:g(/Ide (\d+)/),proses:g(/Proses (\d+)/),siap_upload:g(/(?:Siap upload|Antrean upload) (\d+)/),monitoring:g(/Monitoring (\d+)/),selesai:g(/Selesai (\d+)/)}}
+function pipeFor(id){const s=BK.s;if(!s)return null;
+  if(s.pipeline){const p=id===16?{...s.pipeline.total,current:s.pipeline.next||''}:(s.pipeline.byDiv||{})[id];return p?{...blank5(),...p}:{...blank5(),current:''}}
+  const a=ag(id),c=parsePipe(a&&a.message);if(!c)return null;
+  const nx=/Berikutnya(?: upload)?: ([^\n]+)/.exec(a.message||'');return{...c,current:nx?nx[1]:''}}
+function botData(){const s=BK.s;let b=s&&s.bot||null,base=BK.t;
+  if(!b){const a=ag(6),x=/Bot (\S+) • ([^•\n]+?) • (\d+) mnt lalu/.exec(a&&a.message||'');
+    if(!x)return null;b={mode:x[1],state:x[2].trim(),ageMin:+x[3],staleMin:30};base=msWib(a.lastRun)||BK.t}
+  const age=(+b.ageMin||0)+(Date.now()-base)/6e4,st=+b.staleMin||30;
+  return{...b,age,lvl:b.kill||b.halted?'bad':age<=Math.min(5,st)?'ok':age<=st?'warn':'bad'}}
+function botLines(){const b=botData();
+  if(!b)return BK.s?'🤖 Bot Linux: belum ada heartbeat':'';
+  const L=['🤖 Bot Linux • '+String(b.mode||'?').toUpperCase()+' • '+(b.state||'?')];
+  if(b.kill)L.push('⛔ KILL SWITCH aktif');else if(b.halted)L.push('⏸ Bot HALTED');
+  if(b.pos)L.push('Posisi '+b.pos.side+' '+b.pos.qty+' @ '+rp(b.pos.entry)+(b.pos.sl?' • SL '+rp(b.pos.sl):'')+(b.pos.tp?' • TP '+rp(b.pos.tp):''));
+  else if(b.inPos===false)L.push('Tanpa posisi terbuka');
+  if(b.signal)L.push('Sinyal: '+b.signal);
+  const e=evs(/^(bot_posisi|alert_BOT)$/).find(x=>+x.division===6);
+  if(e)L.push('↳ '+String(e.time).slice(11,16)+' '+String(e.detail).slice(0,60));
+  return L.join('\n')}
+
+/* --- 3) Divisi 5 & 6: sumber data = Indodax / Tokocrypto (CoinGecko dihapus) --- */
+function cryptoText(id){let t=bkText(id)||('Menunggu data '+SRCLBL[id]+' dari backend (isi URL di ⚙ Sumber AI)');
+  const i=t.indexOf(' • Bot ');if(i>=0)t=t.slice(0,i);
+  const a=alertLine(id),b=id===6?botLines():'';return(a?a+'\n':'')+t+(b?'\n'+b:'')}
+[5,6].forEach(id=>{D.find(d=>d.id===id).g=async()=>{await getBk();return cryptoText(id)}});
+const cryptoLabel=id=>{const m=(ag(id)||{}).message||'';return SRCLBL[id]+(!BK.s?' (offline)':/data lama/.test(m)?' (data lama)':(ag(id)||{}).state==='ERROR'?' (error)':'')};
+
+/* --- 4) Gambar ke monitor: label sumber, lencana bot, tampilan pipeline --- */
+const free=r=>!r.lock&&Date.now()>=(r.hold||0)&&!/^(❓|📩|⚙️)/.test(r.txt||'');
+function pipeOn(r){return PIPE_DIV.includes(r.id)&&free(r)&&r.pipeData&&(r.txt===r.pipeTxt||r.txt===feed[r.id])}
+function drawPipeView(r){const x=r.cx,c=r.pipeData,F='Nunito,system-ui,sans-serif',pg=prog(c);
+  x.fillStyle='#07101f';x.fillRect(0,100,1024,436);
+  ST5.forEach((k,i)=>{const X=20+i*200;x.fillStyle=ST5C[k]+'33';x.fillRect(X,120,184,150);x.strokeStyle=ST5C[k];x.lineWidth=c[k]?5:2;x.strokeRect(X,120,184,150);
+    x.textAlign='center';x.textBaseline='middle';x.fillStyle=ST5C[k];x.font='800 24px '+F;x.fillText(ST5L[k],X+92,150);x.fillStyle='#fff';x.font='800 78px '+F;x.fillText(c[k],X+92,222)});
+  x.fillStyle='#14213d';x.fillRect(20,292,984,28);x.fillStyle='#2dd4bf';x.fillRect(20,292,984*pg,28);
+  x.textAlign='left';x.font='600 28px '+F;x.fillStyle='#d8ffe9';
+  x.fillText('Progres '+Math.round(pg*100)+'% • '+sum5(c)+' item',24,350);
+  x.font='600 26px '+F;x.fillStyle='#9fb2dd';
+  if(r.id===16){x.fillText(c.current?'Antre upload: '+c.current:'Tidak ada antrean upload',24,392);
+    evs(/^pipeline_/).slice(0,3).forEach((e,i)=>x.fillText(String(e.time).slice(11,16)+' '+String(e.detail).slice(0,64),24,436+i*34))}
+  else x.fillText(c.current?'Sedang: '+c.current:sum5(c)?'Semua item selesai':'Belum ada item di sheet Board',24,392)}
+function drawBotBadge(r){const b=botData(),x=r.cx;if(!BK.s)return;
+  const col={ok:'#4ade80',warn:'#fbbf24',bad:'#f87171'}[b?b.lvl:'bad'];
+  const t=!b?'BOT: belum ada heartbeat':'BOT '+(b.lvl==='ok'?'ONLINE':b.lvl==='warn'?'TERTUNDA':'OFFLINE')+' • '+(b.age<1?'baru saja':Math.round(b.age)+' mnt');
+  x.font='600 21px Nunito,system-ui,sans-serif';x.textAlign='right';x.textBaseline='middle';x.fillStyle=col;x.fillText('● '+t,850,550)}
+const _draw4=draw;
+draw=function(r){
+  if(SRCLBL[r.id]&&free(r)){r.srcTag=cryptoLabel(r.id);if(/CoinGecko/.test(r.txt))r.txt=String(r.txt).replace(/\n?Sumber: [^\n]*/g,'')}
+  _draw4(r);if(r.meet)return;
+  if(r.id===6)drawBotBadge(r);
+  if(pipeOn(r)){drawPipeView(r);r.srcTag='Pipeline Board • live'}
+  r.tx.needsUpdate=true};
+
+/* --- 5) Terapkan data live ke ruangan (dipanggil setelah tiap pembaruan backend) --- */
+function applyPipe(){
+  PIPE_DIV.forEach(id=>{const r=rooms[id],c=pipeFor(id);if(!r||!c)return;
+    r.pipeData=c;r.pipeTxt=ST5.map(k=>ST5L[k]+' '+c[k]).join(' • ');
+    if(free(r)&&id!==16)r.txt=r.pipeTxt;draw(r)});
+  [5,6].forEach(id=>{const r=rooms[id];if(r&&free(r)){r.txt=cryptoText(id);draw(r)}});
+  updateBooth()}
+const _applyBk4=applyBk;applyBk=function(){_applyBk4();applyPipe()};
+setInterval(async()=>{if(document.hidden||!localStorage.getItem('data_url'))return;await getBk(true);applyBk()},15000);
+setInterval(()=>{const r=rooms[6];if(r)draw(r)},10000); // umur heartbeat bot berjalan tiap 10 dtk
+
+/* --- 6) Booth 3D Divisi 16: rak server berLED, cincin beacon upload, papan monitor pipeline + 5 batang 3D --- */
+function buildBooth(r){
+  const g=r.g,B=(w,h,d,c,x,y,z)=>box(w,h,d,c,x,y,z,g),ML=c=>new THREE.MeshBasicMaterial({color:c});
+  B(.95,2.1,.85,0x111827,3.2,1.2,-.7);B(.08,.5,.08,0x64748b,3.2,2.5,-.7);
+  r.leds=[];for(let i=0;i<6;i++)for(let j=0;j<3;j++){const m=new THREE.Mesh(new THREE.BoxGeometry(.16,.07,.04),ML(0x22c55e));m.position.set(2.9+j*.3,.55+i*.27,-.25);g.add(m);r.leds.push(m)}
+  r.ring=new THREE.Mesh(new THREE.TorusGeometry(.38,.06,8,24),ML(0x2dd4bf));r.ring.position.set(3.2,2.95,-.7);r.ring.rotation.x=PI/2;g.add(r.ring);
+  B(1.3,.1,.7,0x334155,-2,.2,1.7);B(.12,1.3,.12,0x64748b,-2,.85,1.7);B(2.5,1.55,.12,0x0b1220,-2,2,1.7);
+  const cn=cv(1024,620);r.bc=cn.getContext('2d');r.bt=tex(cn);
+  const p=new THREE.Mesh(new THREE.PlaneGeometry(2.36,1.42),new THREE.MeshBasicMaterial({map:r.bt,toneMapped:false}));p.position.set(-2,2,1.77);g.add(p);
+  r.bars=ST5.map((k,i)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(.28,1,.28),new THREE.MeshLambertMaterial({color:ST5C[k]}));m.position.set(-2.4+i*.35,.25,2.5);m.scale.y=.1;g.add(m);return m})}
+function drawBoard(r){const x=r.bc,c=pipeFor(16)||blank5(),b=botData(),F='Nunito,system-ui,sans-serif';if(!x)return;
+  x.fillStyle='#07101f';x.fillRect(0,0,1024,620);x.fillStyle='#0d9488';x.fillRect(0,0,1024,90);
+  x.fillStyle='#fff';x.font='800 44px '+F;x.textAlign='left';x.textBaseline='middle';x.fillText('⚙ PIPELINE KONTEN • LIVE',24,48);
+  ST5.forEach((k,i)=>{const X=20+i*200;x.fillStyle=ST5C[k]+'33';x.fillRect(X,120,184,200);x.strokeStyle=ST5C[k];x.lineWidth=c[k]?5:2;x.strokeRect(X,120,184,200);
+    x.textAlign='center';x.fillStyle=ST5C[k];x.font='800 26px '+F;x.fillText(ST5L[k],X+92,155);x.fillStyle='#fff';x.font='800 96px '+F;x.fillText(c[k],X+92,235)});
+  const pg=prog(c);x.fillStyle='#14213d';x.fillRect(20,350,984,34);x.fillStyle='#2dd4bf';x.fillRect(20,350,984*pg,34);
+  x.textAlign='left';x.font='600 30px '+F;x.fillStyle='#d8ffe9';x.fillText('Progres '+Math.round(pg*100)+'% • '+sum5(c)+' item',24,424);
+  x.font='600 25px '+F;x.fillStyle='#9fb2dd';evs(/^pipeline_/).slice(0,3).forEach((e,i)=>x.fillText(String(e.time).slice(11,16)+' '+String(e.detail).slice(0,62),24,468+i*34));
+  x.fillStyle={ok:'#4ade80',warn:'#fbbf24',bad:'#f87171'}[b?b.lvl:'bad'];x.fillText(b?'🤖 Bot '+String(b.mode||'?').toUpperCase()+' • '+(b.state||'?'):'🤖 Bot: belum ada heartbeat',24,586);
+  r.bt.needsUpdate=true}
+function updateBooth(){const r=rooms[16];if(!r||!r.bars)return;const c=pipeFor(16)||blank5();r.bars.forEach((m,i)=>{m.tgt=.1+Math.min(c[ST5[i]],6)*.28});drawBoard(r)}
+function boothLoop(t){const r=rooms[16];
+  if(r&&r.bars){r.bars.forEach(m=>{m.scale.y+=((m.tgt||.1)-m.scale.y)*.08;m.position.y=.2+m.scale.y/2});
+    const a=ag(16),col=ST_COL[a&&a.state]||'#64748b',k=(t/250)|0;r.ring.rotation.z+=a&&a.state==='RUNNING'?.12:.03;
+    if(k!==r.lt){r.lt=k;r.leds.forEach(m=>m.material.color.set(Math.random()<.65?col:0x1f2937))}}
+  requestAnimationFrame(boothLoop)}
+const _boot4=boot;boot=function(){_boot4();const r=rooms[16];if(r){buildBooth(r);updateBooth();requestAnimationFrame(boothLoop)}};
+// Model GLB: sembunyikan lemari otomatis (genap) di ruang 16 agar tidak menabrak rak server
+const _dress4=dress;dress=function(r){_dress4(r);if(r.id===16)r.g.children.filter(o=>Math.abs(o.position.x-3.6)<.01&&Math.abs(o.position.z+.3)<.01).forEach(o=>{o.visible=false})};
 </script>
 </body>
 </html>
