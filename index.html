@@ -330,7 +330,7 @@ function mkShell(dl,name){const [x0,x1,z0,z1]=dl.box,cx=(x0+x1)/2,cz=(z0+z1)/2,w
 function buildDepts(){DL.forEach(dl=>{const nm=(DEPTS.find(p=>p.departmentId===dl.id)||{}).name||dl.id,[x0,x1,z0,z1]=dl.box,
   dp=DEP[dl.id]={id:dl.id,name:nm,col:DEPT_COL[dl.id],cx:(x0+x1)/2,cz:(z0+z1)/2,w:x1-x0,d:z1-z0,cells:dl.cells.map(c=>rooms[c[0]])};
   dp.cells.forEach(r=>{r.dept=dp});
-  if(dl.shared){const r=rooms[dl.id];r.dept=dp;if(dl.meet)r.txt='Tempat agent berkumpul dan rapat bersama.';else r.txt='Area bersama: loung, kafe, ping pong, catur, arcade, taman.'}
+  if(dl.shared){const r=dl.meet?rooms[0]:null;if(r){r.dept=dp;r.txt='Tempat agent berkumpul dan rapat bersama.'}}
   else if(dl.single){const p=plate(nm,dp.col,6.6,1.1);p.position.set(dp.cx,WH+1.9,z0);scene.add(p)}})}
 function focusDept(dp){const s=Math.max(dp.w,dp.d);tg={t:new THREE.Vector3(dp.cx,1,dp.cz),c:new THREE.Vector3(dp.cx,6+s*.55,dp.cz+8+s*.9)}}
 
@@ -448,7 +448,7 @@ function boot(){
 
  DL.forEach(dl=>{if(!dl.single&&!dl.shared)mkShell(dl,(DEPTS.find(p=>p.departmentId===dl.id)||{}).name||dl.id)});
  // Zona meeting & social_hub selalu dibuat shell
- DL.forEach(dl=>{if(dl.shared)mkShell(dl,dl.name)});
+ DL.forEach(dl=>{if(dl.shared)mkShell(dl,((SHARED||[]).find(s=>s&&s.areaId===dl.id)||{}).name||dl.id)});
  SL.forEach(mkRoom);scene.updateMatrixWorld(true);buildDepts();
  RL.forEach(r=>{r.front=wp(r,0,DP/2+1.5);r.inside=wp(r,0,1.2);r.spot=wp(r,-1.8,-.95)});
  D.forEach(d=>chars[d.id]=mkChar(rooms[d.id]));
@@ -476,7 +476,7 @@ function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.y
 function focus(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw));tg={t:r.g.position.clone().setY(1.5),c:r.g.position.clone().add(f.multiplyScalar(13)).setY(10)}}
 
 /* ===== SLOTS (ruangan fisik) ===== */
-const SL=[[-28,10,0,0]]; // meeting room
+const SL=[[0,-29,0,0]]; // meeting room (di tengah zona meeting_room)
 DL.forEach(dl=>{dl.cells.forEach(([id,x,z])=>SL.push([x,z,0,id,!dl.single,dl.id]));if(dl.syn)SL.push([dl.syn[0],dl.syn[1],0,dl.id,false,dl.id])});
 
 /* ===== agent ===== */
