@@ -42,10 +42,10 @@ const R = (...x) => x.map(t => 'read:' + t);
 export const AGENTS = [
   // --- Divisi 1: Keuangan & Investasi (finance) ---
   A(1, 'Trading Saham', 'finance', 'Analis Trading Saham', 'stock_trading_signal', 'avatar_ai_stock_analyst_v3', 'finance', '24h', 'schedule', 'active', R('google_finance', 'screener_results', 'alert_rules')),
-  A(2, 'Invest Saham', 'finance', 'Analis Investasi Saham', 'stock_investing', 'avatar_ai_stock_analyst_v3', 'finance', '24h', 'schedule', 'active', R('google_finance')),
-  A(3, 'Invest Dividen Saham', 'finance', 'Analis Dividen', 'dividend_investing', 'avatar_ai_finance_v2', 'finance', '24h', 'schedule', 'active', R('google_finance')),
-  A(4, 'Bibit Reksadana', 'finance', 'Analis Reksadana', 'mutual_fund', 'avatar_ai_finance_v2', 'finance', '24h', 'browser_feed', 'partial', []),
-  A(5, 'Bitcoin Indodax', 'finance', 'Spesialis Crypto (Indodax)', 'crypto_indodax', 'avatar_ai_crypto_trader_v3', 'finance', '24h', 'schedule', 'active', R('indodax_public')),
+  A(2, 'Invest Saham', 'finance', 'Analis Investasi Saham', 'stock_investing', 'avatar_ai_stock_analyst_v3', 'finance', '24h', 'schedule', 'active', R('google_finance', 'sheet_portfolio')),
+  A(3, 'Invest Dividen Saham', 'finance', 'Analis Dividen', 'dividend_investing', 'avatar_ai_finance_v2', 'finance', '24h', 'schedule', 'active', R('google_finance', 'sheet_portfolio')),
+  A(4, 'Bibit Reksadana', 'finance', 'Analis Reksadana', 'mutual_fund', 'avatar_ai_finance_v2', 'finance', 'on_demand', 'schedule', 'active', R('sheet_bibit')),
+  A(5, 'Bitcoin Indodax', 'finance', 'Spesialis Crypto (Indodax)', 'crypto_indodax', 'avatar_ai_crypto_trader_v3', 'finance', '24h', 'schedule', 'active', R('indodax_public', 'indodax_account_readonly')),
   A(6, 'Bitcoin Toko Crypto', 'finance', 'Spesialis Crypto (Toko Crypto / Bot Linux)', 'crypto_tokocrypto', 'avatar_ai_crypto_trader_v3', 'finance', '24h', 'schedule', 'active', R('tokocrypto_public', 'bot_status'), { webhookSources: ['bot.py'] }),
   A(7, 'Emas Logam Mulia', 'finance', 'Pemantau Emas', 'gold_watch', 'avatar_ai_finance_v2', 'finance', '24h', 'schedule', 'active', R('logammulia_page')),
   A(8, 'Pencatat Keuangan', 'finance', 'Pencatat Keuangan', 'bookkeeping', 'avatar_ai_ledger_v3', 'finance', 'on_demand', 'schedule', 'partial', R('sheet_ledger')),
@@ -59,7 +59,7 @@ export const AGENTS = [
   // --- Divisi 3: IT & Otomasi (it_automation) ---
   A(11, 'Coding', 'it_automation', 'Engineer Coding', 'coding', 'avatar_ai_it_v2', 'analyst', 'on_demand', 'schedule', 'partial', R('sheet_board')),
   A(15, 'AI Chatbot', 'it_automation', 'Koordinator Chatbot & Routing', 'chatbot_routing', 'avatar_ai_chatbot_v3', 'analyst', 'on_demand', 'schedule', 'active', R('agent_status', 'event_log')),
-  A(16, 'Automation Worker', 'it_automation', 'Pekerja Otomasi Upload & Monitor', 'upload_monitor', 'avatar_ai_content_publisher_v3', 'analyst', '24h', 'schedule', 'active', R('sheet_board', 'pipeline_queue'), { webhookSources: ['n8n:pipeline'] }),
+  A(16, 'Automation Worker', 'it_automation', 'Pekerja Otomasi Upload & Monitor', 'upload_monitor', 'avatar_ai_content_publisher_v3', 'analyst', '24h', 'schedule', 'active', R('sheet_board', 'pipeline_queue', 'youtube_stats'), { webhookSources: ['n8n:pipeline', 'n8n:social_metrics'] }),
 
   // --- Divisi 4: Riset & Intelijen (research_intelligence) ---
   A(13, 'Viral / Trend News', 'research_intelligence', 'Pemantau Tren & Berita', 'trend_radar', 'avatar_ai_trend_scout_v3', 'analyst', '24h', 'schedule', 'active', R('google_trends', 'google_news')),
@@ -82,8 +82,8 @@ export const JOBS = [
   J('S06', 6,  'refresh_tokocrypto',{ everyMinutes: 10 }, 2),
   J('S07', 7,  'refresh_gold',     { everyMinutes: 60 }, 3),
   J('S13', 13, 'refresh_trend',    { everyMinutes: 30 }, 3),
-  J('S01b',1,  'screen_stocks',    { dailyHourWib: 15 }, 2), // screener jam 3 sore WIB
-  J('S17', 1,  'screen_stocks_telegram','{}', { dailyHourWib: 15 }, 1), // kirim telegram jam 3 sore
+  J('S01b',1,  'screen_stocks',    { dailyHourWib: 16 }, 2), // refresh hasil di UI setelah bursa tutup
+  J('S17', 1,  'screen_stocks_telegram', { dailyHourWib: 15 }, 1), // screener + kirim Telegram jam 3 sore WIB
   J('S15a',15, 'healthcheck',      { everyMinutes: 30 }, 1),
   J('S15b',15, 'daily_report',     { dailyHourWib: 17 }, 1),
   J('S08', 8,  'finance_summary',  { everyMinutes: 30 }, 3),
@@ -93,6 +93,13 @@ export const JOBS = [
   J('S12', 12, 'board_summary',    { everyMinutes: 30 }, 3, { division: 12 }),
   J('S14', 14, 'board_summary',    { everyMinutes: 30 }, 3, { division: 14 }),
   J('S16', 16, 'pipeline_summary', { everyMinutes: 15 }, 2),
+  J('S18', 2,  'portfolio_stocks', { everyMinutes: 60 }, 3, { group: 'invest' }),
+  J('S19', 3,  'portfolio_stocks', { everyMinutes: 60 }, 3, { group: 'dividen' }),
+  J('S20', 4,  'portfolio_bibit',  { dailyHourWib: 9 }, 3),
+  J('S21', 5,  'portfolio_crypto', { everyMinutes: 30 }, 2),
+  J('S22', 13, 'trend_to_ideas',   { everyMinutes: 360 }, 3),
+  J('S23', 16, 'social_metrics',   { everyMinutes: 180 }, 3),
+  J('S24', 8,  'portfolio_digest', { dailyHourWib: 17 }, 2),
 ];
 
 export const FIREBASE_PATHS = ['offices/{kode}/messages/{id}', 'offices/{kode}/modes/{id}', 'offices/{kode}/feed/{id}', 'offices/{kode}/runs/{id}'];
