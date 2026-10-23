@@ -306,6 +306,7 @@ function dress(r){const g=r.g,y=.14,col=new THREE.Color(r.col).lerp(new THREE.Co
  put('bookshelf',g,-3.55,.9,PI/2,1.2,y);put('potted_plant',g,3.2,2.6,0,1.2,y);put('potted_plant',g,-3.2,2.8,0,1.2,y);
  if(r.id%2===0)put('storage_cabinet',g,3.6,-.3,-PI/2,1.1,y);
  put('floor_lamp',g,3.4,-3.0,0,1,y)}
+const lobbyOld=[]; /* daftar objek lobi lama yang disembunyikan saat model GLB termuat (sebelumnya tidak dideklarasikan) */
 function dressLobby(){if(!GLB.lounge_sofa&&!GLB.reception_desk)return;lobbyOld.forEach(m=>m.visible=false);const S=scene;
  [-1,1].forEach(k=>{put('coffee_table',S,k*12.5,-1,0,1.2);put('lounge_sofa',S,k*15.2,-1,-k*PI/2,1.3);put('lounge_sofa',S,k*12.5,1.9,PI,1.3);put('lounge_sofa',S,k*12.5,-3.9,0,1.3);
   put('floor_lamp',S,k*9,-5.3);put('floor_lamp',S,k*15,-5.3);put('potted_plant',S,k*15,3.2,0,1.4);put('potted_plant',S,k*15,-5.3,0,1.4)});
@@ -502,7 +503,7 @@ async function demoAnswer(d,text){const t=text.toLowerCase();const G=d.g?await d
  if(t.includes('emas'))return 'Emas logam mulia sering dipakai sebagai pelindung nilai dari inflasi.';
  if(t.includes('resep'))return 'Resep masakan dan minuman siap dibagikan sesuai permintaan Anda.';
  if(t.includes('otomatisasi')||t.includes('automation'))return 'Automation Worker (Divisi 3) memantau pipeline konten dan mengelola upload ke platform sosial.';
- if(t.includes('screener'))return 'Screener saham (Divisi 1) berjalan otomatis setiap hari pukul 17.00 WIB dan hasilnya ditampilkan di UI kantor.';
+ if(t.includes('screener'))return 'Screener saham (Divisi 1) berjalan otomatis pada hari bursa: hasil dikirim ke Telegram pukul 15.00 WIB dan ditampilkan di dashboard UI kantor.';
  if(t.includes('telegram'))return 'Notifikasi Telegram dikirim oleh backend Apps Script saat alert screener atau pergerakan harga terdeteksi.';
  if(t.includes('bot trading')||t.includes('crypto bot'))return 'Bot trading crypto (Toko Crypto) berjalan di server Linux dan mengirim heartbeat/posisi ke backend via webhook.';
  if(t.includes('viral')||t.includes('trend'))return 'Divisi 4 memantau tren viral dan Divisi 2 memproses konten menjadi video/grafis untuk diunggah.';
@@ -525,12 +526,12 @@ async function getAnswer(d,q){const u=localStorage.getItem('ai_url'),inv=d.id<=7
   const ctx=d.id===13?(feed[13]?' Tren terbaru: '+feed[13].replace(/\n/g,' '):''):inv?' Data terbaru di kantor (yang bertanda SIMULASI atau "bukan data real-time" jangan dianggap fakta pasar): '+Object.entries(feed).map(([i,t])=>D.find(x=>x.id==i).name+': '+t.replace(/\n/g,' ')).join(' | ').slice(0,900):'';
   const history=(HIST[d.id]||[]).filter(m=>!/^⚠ AI|^Jawaban dari agent|^Halo! Saya agent/.test(m.text)).slice(-10).map(m=>({role:m.who==='ai'?'model':'user',text:String(m.text).slice(0,700)}));
   if(history.length&&history[history.length-1].role==='user'&&history[history.length-1].text===q.slice(0,700))history.pop();
-  const body=JSON.stringify({system:`Kamu agent divisi "${d.name}" di Kantor AI. ${ROLE[d.id]||''}${inv?' Untuk pertanyaan investasi beri kriteria dan contoh umum, jelaskan risikonya, jangan menjanjikan untung.':''}${ctx} Jawab dalam Bahasa Indonesia, ${d.id===11?'boleh panjang dan sertakan kode':'ringkas (maks 80 kata)'}, tanpa markdown. Perhatikan percakapan sebelumnya dan jawab secara berkesinambungan.`,message:q,history,max:d.id===11?1200:500});
+  const body=JSON.stringify({system:`Kamu agent divisi "${d.name}" di Kantor AI. ${ROLE[d.id]||''}${inv?' Untuk pertanyaan investasi beri kriteria dan contoh umum, jelaskan risikonya, jangan menjanjikan untung.':''}${ctx} Jawab dalam Bahasa Indonesia, ${d.id===11?'boleh panjang dan sertakan kode':'ringkas (maks 80 kata)'}, tanpa markdown. Perhatikan percakapan sebelumnya dan jawab secara berkesinambungan.`,message:q,history,division:d.id,mode:window.__panel?'panel':undefined,max:d.id===11?1200:500});
   for(let i=0;i<2;i++){
    try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body});const j=await r.json();
-    if(j.text)return{t:j.text+(inv?'\n⚠ Bukan nasihat keuangan.':''),s:'AI'};why=j.error||('HTTP '+r.status)}catch(e){why=String(e.message||e)}
+    if(j.text)return{t:j.text+(inv?'\n⚠ Bukan nasihat keuangan.':''),s:'AI'+(j.provider?' · '+j.provider:'')};why=j.error||('HTTP '+r.status)}catch(e){why=String(e.message||e)}
    if(i===0)await sleep(800)}
-  const hint=/location/i.test(why)?' Gemini menolak lokasi server Cloudflare. Di Cloudflare buka Settings > Runtime > Placement lalu pilih Smart.':'';return{t:'⚠ AI belum bisa menjawab ('+why.slice(0,120)+').'+hint+' Silakan kirim ulang beberapa saat lagi.',s:'Gagal: '+why.slice(0,45)}}}
+  const hint=/location/i.test(why)?' Gemini menolak lokasi server Cloudflare. Di Cloudflare buka Settings > Runtime > Placement lalu pilih Smart.':'';return{t:'⚠ AI belum bisa menjawab ('+why.slice(0,120)+').'+hint+' Silakan kirim ulang beberapa saat lagi.',s:'Gagal: '+why.slice(0,45)}}
  return{t:await demoAnswer(d,q),s:'Demo'}}
 async function getImage(q){const u=localStorage.getItem('ai_url');if(!u)return null;
  try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'image',message:q})});const j=await r.json();if(!j.image)return null;
@@ -543,7 +544,7 @@ $('src').onclick=e=>{const k=e.target.dataset,r=cur&&rooms[cur];if(!r)return;
  if(k.paste)navigator.clipboard?.readText().then(t=>{if(!t)return;r.srcTag='Tempel manual';r.hold=Date.now()+90000;send(cur,'ai',t.slice(0,700))}).catch(()=>alert('Izinkan akses clipboard di browser.'))};
 $('cfg').onclick=()=>{$('aiurl').value=localStorage.getItem('ai_url')||'';$('dataurl').value=localStorage.getItem('data_url')||'';$('admintoken').value=localStorage.getItem('admin_token')||'';$('cfgm').classList.remove('hidden')};
 $('cfgx').onclick=()=>$('cfgm').classList.add('hidden');
-$('cfgsave').onclick=()=>{const v=$('aiurl').value.trim();v?localStorage.setItem('ai_url',v):localStorage.removeItem('ai_url');const w=$('dataurl').value.trim();w?localStorage.setItem('data_url',w):localStorage.removeItem('data_url');mk.v=null;const tk=$('admintoken').value.trim();tk?localStorage.setItem('admin_token',tk):localStorage.removeItem('admin_token');$('cfgm').classList.add('hidden');if(cur)renderSrc(cur)};
+$('cfgsave').onclick=()=>{const v=$('aiurl').value.trim();v?localStorage.setItem('ai_url',v):localStorage.removeItem('ai_url');const w=$('dataurl').value.trim();w?localStorage.setItem('data_url',w):localStorage.removeItem('data_url');const tk=$('admintoken').value.trim();tk?localStorage.setItem('admin_token',tk):localStorage.removeItem('admin_token');$('cfgm').classList.add('hidden');if(cur)renderSrc(cur)};
 
 /* ===== dashboard otomatisasi (backend Apps Script) ===== */
 let DS=null,SCR=null,dashT=null;
@@ -645,7 +646,7 @@ function bkText(id){
   if(id===15&&s)return `Sistem: ${s.enabled?'AKTIF':'NONAKTIF'} • antrean ${s.queue.queued} • 24j: ${s.queue.success24h} ok / ${s.queue.failed24h} gagal\nTrigger tiap ${s.tickMinutes} mnt • waktu ${s.usage?s.usage.minutes+'/'+s.usage.budget:'?'} mnt\n${a.message||''}`;
   if(a.state==='BELUM_ADA_TUGAS'||!a.message)return null;
   return (a.state==='ERROR'||a.state==='RETRY'?'⚠ ':'')+a.message;}
-[5,6].forEach(id=>{const d=D.find(x=>x.id===id),old=d.g;d.g=async()=>{await getBk();const t=bkText(id);return t?t+'\nSumber: Backend (CoinGecko dihapus)':old();});});
+[5,6].forEach(id=>{const d=D.find(x=>x.id===id),old=d.g;d.g=async()=>{await getBk();const t=bkText(id);return t?t+'\nSumber: Backend (CoinGecko dihapus)':old();};});
 D.filter(d=>d.g).forEach(d=>{const g0=d.g;d.g=async()=>{const t=await g0();await getBk();const a=alertLine(d.id);return a?a+'\n'+t:t;};});
 const _draw=draw;draw=function(r){
   _draw(r);const a=r.meet?null:ag(r.id);if(!a)return;
@@ -687,7 +688,7 @@ const PIPE_DIV=[9,10,11,12,14,16],SRCLBL={5:'Indodax API',6:'Tokocrypto API'};
 const blank5=()=>({ide:0,proses:0,siap_upload:0,monitoring:0,selesai:0});const sum5=c=>ST5.reduce((a,k)=>a+c[k],0);
 const prog=c=>{const t=sum5(c);return t?ST5.reduce((a,k,i)=>a+c[k]*i/4,0)/t:0};const rp=x=>+x?idr(x):'?';
 const evs=re=>(BK.s&&BK.s.events||[]).filter(e=>re.test(e.event));
-if(!D.some(d=>d.id===16)){D.push({id:16,name:'Automation Worker',c:'#0d9488',ic:'⚙️',m:'24h',g:async()=>{await getBk();return bkText(16)||'Menunggu data backend (isi URL di ⚙ Sumber AI)'}});AVN[16]='analyst';SRC[16]=[['n8n','https://n8n.io'],['YouTube Studio','https://studio.youtube.com']];ROLE[16]='Rancang alur upload otomatis (n8n/Worker) dan pantau pipeline konten: ide, proses, siap upload, monitoring. Upload hanya untuk item yang sudah ditinjau manusia.'};}
+if(!D.some(d=>d.id===16)){D.push({id:16,name:'Automation Worker',c:'#0d9488',ic:'⚙️',m:'24h',g:async()=>{await getBk();return bkText(16)||'Menunggu data backend (isi URL di ⚙ Sumber AI)'}});AVN[16]='analyst';SRC[16]=[['n8n','https://n8n.io'],['YouTube Studio','https://studio.youtube.com']];ROLE[16]='Rancang alur upload otomatis (n8n/Worker) dan pantau pipeline konten: ide, proses, siap upload, monitoring. Upload hanya untuk item yang sudah ditinjau manusia.'};
 function parsePipe(m){if(!m||!/(Ide|Proses|Monitoring|Selesai) \d+/.test(m))return null;const g=re=>{const x=re.exec(m);return x?+x[1]:0};return{ide:g(/Ide (\d+)/),proses:g(/Proses (\d+)/),siap_upload:g(/(?:Siap upload|Antrean upload) (\d+)/),monitoring:g(/Monitoring (\d+)/),selesai:g(/Selesai (\d+)/)};}
 function pipeFor(id){const s=BK.s;if(!s)return null;if(s.pipeline){const p=id===16?{...s.pipeline.total,current:s.pipeline.next||''}:(s.pipeline.byDiv||{})[id];return p?{...blank5(),...p}:{...blank5(),current:''}};const a=ag(id),c=parsePipe(a&&a.message);if(!c)return null;const nx=/Berikutnya(?: upload)?: ([^\n]+)/.exec(a.message||'');return{...c,current:nx?nx[1]:''};}
 function botData(){const s=BK.s;let b=s&&s.bot||null,base=BK.t;if(!b){const a=ag(6),x=/Bot (\S+) • ([^•\n]+?) • (\d+) mnt lalu/.exec(a&&a.message||'');if(!x)return null;b={mode:x[1],state:x[2].trim(),ageMin:+x[3],staleMin:30};base=msWib(a.lastRun)||BK.t}const age=(+b.ageMin||0)+(Date.now()-base)/6e4,st=+b.staleMin||30;return{...b,age,lvl:b.kill||b.halted?'bad':age<=Math.min(5,st)?'ok':age<=st?'warn':'bad'};}
@@ -732,7 +733,7 @@ function updateBooth(){const r=rooms[16];if(!r||!r.bars)return;const c=pipeFor(1
 function boothLoop(t){const r=rooms[16];if(r&&r.bars){r.bars.forEach(m=>{m.scale.y+=((m.tgt||.1)-m.scale.y)*.08;m.position.y=.2+m.scale.y/2;});
   const a=ag(16),col=ST_COL[a&&a.state]||'#64748b',k=(t/250)|0;r.ring.rotation.z+=a&&a.state==='RUNNING'?.12:.03;if(k!==r.lt){r.lt=k;r.leds.forEach(m=>m.material.color.set(Math.random()<.65?col:0x1f2937));}}requestAnimationFrame(boothLoop);}
 const _boot4=boot;boot=function(){_boot4();const r=rooms[16];if(r){buildBooth(r);updateBooth();requestAnimationFrame(boothLoop);}};
-const _dress4=dress;dress=function(r){_dress4(r);if(r.id===16)r.g.children.filter(o=>Math.abs(o.position.x-3.6)<.01&&Math.abs(o.position.z+.3)<.01).forEach(o=>{o.visible=false});};}
+const _dress4=dress;dress=function(r){_dress4(r);if(r.id===16)r.g.children.filter(o=>Math.abs(o.position.x-3.6)<.01&&Math.abs(o.position.z+.3)<.01).forEach(o=>{o.visible=false});};
 
 /* ===== [P5] Navigasi divisi + area bersama ===== */
 let curDept=null,lastDept=null;const deptWorkers=dp=>D.filter(d=>deptOfId(d.id)===dp.id).sort((a,b)=>a.id-b.id);
@@ -745,7 +746,7 @@ function closeRView(){curDept=null;setTags(null);$('rview').classList.remove('op
 const _openDiv5=openDiv;openDiv=function(id){const r=rooms[id];if(!r)return;_openDiv5(id);if(!r.meet){lastDept=deptOfId(id);$('rview').classList.remove('open');setTags(null);}};
 const _applyBk5=applyBk;applyBk=function(){_applyBk5();if(curDept)renderRView();};
 const _boot5=boot;boot=function(){_boot5();
-  document.head.appendChild(Object.assign(document.createElement('style'),{textContent:'#rview{position:fixed;z-index:150;top:52px;right:0;bottom:0;width:340px;display:none;flex-direction:column;background:rgba(12,22,46,.94);border-left:1px solid #3a5a9a;backdrop-filter:blur(10px)}#rview.open{display:flex}#rvl{overflow:auto;padding:6px 10px}#rvh{padding:8px 14px;font-size:11px;color:#8fa2cc}.rvr{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid #1c2b52;cursor:pointer;font-size:13px}.rvr:hover{background:#1c2b52}.rvr.off{opacity:.55;cursor:default}.rvr b{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:11px;flex:none;color:#fff}.rvn{flex:1;display:flex;flex-direction:column}.rvn small{color:#8fa2dd;font-size:11px}.rvr em{font-size:10px;color:#9fb2dd;font-style:normal}#rback{background:#26396b;border:1px solid #4a64a8;color:#fff;padding:3px 9px;border-radius:12px;font-size:12px;cursor:pointer}@media(max-width:820px){#rview{top:auto;width:100%;height:55vh;border-left:0;border-top:1px solid #3a5a9a}}}'));
+  document.head.appendChild(Object.assign(document.createElement('style'),{textContent:'#rview{position:fixed;z-index:150;top:52px;right:0;bottom:0;width:340px;display:none;flex-direction:column;background:rgba(12,22,46,.94);border-left:1px solid #3a5a9a;backdrop-filter:blur(10px)}#rview.open{display:flex}#rvl{overflow:auto;padding:6px 10px}#rvh{padding:8px 14px;font-size:11px;color:#8fa2cc}.rvr{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid #1c2b52;cursor:pointer;font-size:13px}.rvr:hover{background:#1c2b52}.rvr.off{opacity:.55;cursor:default}.rvr b{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:11px;flex:none;color:#fff}.rvn{flex:1;display:flex;flex-direction:column}.rvn small{color:#8fa2dd;font-size:11px}.rvr em{font-size:10px;color:#9fb2dd;font-style:normal}#rback{background:#26396b;border:1px solid #4a64a8;color:#fff;padding:3px 9px;border-radius:12px;font-size:12px;cursor:pointer}@media(max-width:820px){#rview{top:auto;width:100%;height:55vh;border-left:0;border-top:1px solid #3a5a9a}}'}));
   $('ui').insertAdjacentHTML('beforeend','<div id="rview"><div class="ch"><span id="rvt">Ruang</span><span><button id="rvx" aria-label="Tutup">✕</button></span></div><div id="rvh">Klik pekerja untuk membuka chat, atau klik karakternya di ruangan</div><div id="rvl"></div></div>');
   $('rvx').onclick=closeRView;$('rvl').onclick=e=>{const r=e.target.closest('[data-aid]');if(r)openDiv(+r.dataset.aid);};
   const bk=document.createElement('button');bk.id='rback';bk.title='Kembali ke ruang divisi';bk.textContent='▦ Ruang';bk.onclick=()=>{if(lastDept)openDept(lastDept);};$('mode').before(bk);
@@ -756,6 +757,65 @@ const _boot5=boot;boot=function(){_boot5();
   const bad=D.filter(d=>!rooms[d.id]||!deptOfId(d.id)||!rooms[d.id].dept).map(d=>d.id),err=CFG?CFG.validateOfficeConfig():[];
   console.info('[Kantor AI] ruang divisi:',Object.keys(DEP).length,'| pekerja:',D.length,'| tanpa ruang:',bad.length?bad:'tidak ada','| validasi konfigurasi:',err.length?err:'OK');
   addEventListener('keydown',e=>{if(e.key==='Escape'&&curDept)closeRView();});renderLegend();};
+/* ===== [P6] Perintah antar-divisi • portofolio • konten & sosmed ===== */
+let PF=null,pfT=0;
+async function bPf(){const u=bkUrl(),t=localStorage.getItem('admin_token');if(!u||!t)return null;
+ try{const r=await fetch(u,{method:'POST',body:JSON.stringify({action:'portfolio',token:t})}),j=await r.json();return j&&j.ok?j:null}catch(e){return null}}
+const rpi=n=>(n==null||!isFinite(n))?'—':'Rp '+Math.round(n).toLocaleString('id-ID');
+const pc=n=>(n==null||!isFinite(n))?'—':(n>0?'+':'')+n.toFixed(1)+'%';
+const pcCls=n=>n>0?'ok':n<0?'err':'idle';
+const nf=n=>(n==null||!isFinite(n))?'—':Math.round(n).toLocaleString('id-ID');
+function pfHtml(){
+ const f=$('dfdiv').value,sh=ids=>!f||ids.indexOf(+f)>=0,P=(PF&&PF.portfolio)||{};let h='';
+ if(!localStorage.getItem('admin_token')&&sh([2,3,4,5,13,16]))return '<h4>💼 Portofolio & konten</h4><div class="dnote">🔒 Isi token admin di ⚙ Sumber AI untuk melihat portofolio dan statistik konten (nominal tidak ditampilkan di endpoint publik).</div>';
+ if(sh([2,3]))(P.stock||[]).forEach(s=>{const pl=s.nilai-s.modal,pp=s.modal?pl/s.modal*100:null;
+  h+=`<h4>💼 Portofolio saham — ${esc(s.grup)} <small>(${esc(s.t)} WIB)</small></h4><div class="dlist"><div>Nilai <b>${rpi(s.nilai)}</b> • modal ${rpi(s.modal)} • P/L <span class="bdg ${pcCls(pp)}">${pc(pp)}</span> ${rpi(pl)}${s.miss&&s.miss.length?' • ⚠ tanpa harga: '+esc(s.miss.join(', ')):''}</div></div>
+  <table><tr><th>Kode</th><th>Lot</th><th>Avg</th><th>Harga</th><th>Hari ini</th><th>P/L</th></tr>${s.rows.map(r=>`<tr><td><b>${esc(r.k)}</b></td><td>${nf(r.lot)}</td><td>${nf(r.avg)}</td><td>${nf(r.h)}</td><td><span class="bdg ${pcCls(r.chg)}">${pc(r.chg)}</span></td><td><span class="bdg ${pcCls(r.pp)}">${pc(r.pp)}</span> ${rpi(r.pl)}</td></tr>`).join('')}</table>`});
+ const b=P.bibit;
+ if(sh([4])&&b){const pl=b.nilai-b.modal,pp=b.modal?pl/b.modal*100:null;
+  h+=`<h4>🌱 Bibit <small>(${esc(b.t)} WIB)</small></h4><div class="dlist"><div>Nilai <b>${rpi(b.nilai)}</b> • modal ${rpi(b.modal)} • P/L <span class="bdg ${pcCls(pp)}">${pc(pp)}</span> ${rpi(pl)}${b.stale?' • <span class="bdg warn">nilai belum diperbarui</span>':''}</div></div>
+  <table><tr><th>Reksadana</th><th>Jenis</th><th>Modal</th><th>Nilai</th><th>P/L</th><th>Umur data</th></tr>${b.rows.map(r=>`<tr><td>${esc(r.f)}</td><td>${esc(r.j)}</td><td>${rpi(r.m)}</td><td>${rpi(r.v)}</td><td><span class="bdg ${pcCls(r.pp)}">${pc(r.pp)}</span></td><td>${r.age==null?'—':r.age+' hari'}</td></tr>`).join('')}</table>`}
+ const c=P.crypto;
+ if(sh([5])&&c){h+=`<h4>₿ Aset Indodax <small>(${esc(c.t)} WIB • sumber: ${c.via==='API'?'API Indodax (lihat saja)':'sheet manual'})</small></h4><div class="dlist"><div>Total <b>${rpi(c.nilai)}</b>${c.unpriced&&c.unpriced.length?' • ⚠ tanpa harga IDR: '+esc(c.unpriced.join(', ')):''}</div></div>
+  <table><tr><th>Aset</th><th>Jumlah</th><th>Nilai</th><th>P/L</th></tr>${c.rows.map(r=>`<tr><td><b>${esc(r.a)}</b></td><td>${esc(String(r.q))}</td><td>${rpi(r.v)}</td><td>${r.pp==null?'—':`<span class="bdg ${pcCls(r.pp)}">${pc(r.pp)}</span>`}</td></tr>`).join('')}</table>`}
+ const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
+ if(sh([13,16,9])&&(so||pl)){
+  h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
+  if(pl)h+=`<div class="dchips"><span class="chip">Ide ${pl.ide}</span><span class="chip">Proses ${pl.proses}</span><span class="chip ${pl.siap_upload?'ok':''}">Siap upload ${pl.siap_upload}</span><span class="chip">Monitoring ${pl.monitoring}</span><span class="chip">Selesai ${pl.selesai}</span></div>`;
+  if(so&&so.rows&&so.rows.length)h+=`<table><tr><th>Konten</th><th>Platform</th><th>Tayangan</th><th>Suka</th><th>Komentar</th><th>Naik</th></tr>${so.rows.map(r=>`<tr><td><a href="${esc(r.l)}" target="_blank" rel="noopener" style="color:#9fc2ff">${esc(r.i)}</a></td><td>${esc(r.p)}</td><td>${nf(r.v)}</td><td>${nf(r.k)}</td><td>${nf(r.c)}</td><td>${r.dv==null?'—':'+'+nf(r.dv)}</td></tr>`).join('')}</table>`;
+  else h+='<div class="dnote">Belum ada metrik konten. YouTube dibaca otomatis (YOUTUBE_API_KEY); TikTok/Instagram dikirim n8n lewat webhook.</div>';}
+ return h||'';}
+{const _r=renderDash;renderDash=function(){_r();if(PF||!localStorage.getItem('admin_token'))$('dbody').insertAdjacentHTML('beforeend',pfHtml());};}
+{const _l=loadDash;loadDash=async function(){await _l();if(document.hidden||acting||Date.now()-pfT<60000)return;pfT=Date.now();
+  const x=await bPf();if(x){PF=x;const b=$('dbody'),y=b.scrollTop;renderDash();b.scrollTop=y;}};}
+
+/* --- Perintah ke divisi: router AI memilih divisi, lalu tiap divisi menjawab di ruangannya --- */
+const RT_KW=[[/toko ?crypto|tokocrypto|bot (trading|crypto)/i,6],[/indodax|bitcoin|btc|kripto|crypto/i,5],[/dividen/i,3],[/portofolio|portfolio|invest/i,2],[/screener|trading|saham|ihsg/i,1],[/bibit|reksa ?dana/i,4],[/emas|antam|logam mulia/i,7],[/catat|keuangan|pengeluaran|pemasukan/i,8],[/video|reels|shorts|tiktok|capcut/i,9],[/desain|grafis|poster|logo|thumbnail|canva/i,10],[/kode|coding|script|bug|program/i,11],[/produk|jualan|toko online|promo/i,12],[/viral|trend|tren|berita/i,13],[/resep|masak|minuman|kuliner/i,14],[/upload|pipeline|sosmed|monitoring konten/i,16]];
+function kwRoute(t){const ids=[];RT_KW.forEach(([re,id])=>{if(re.test(t)&&!ids.includes(id))ids.push(id)});const d=(ids.length?ids:[15]).slice(0,3);
+ return{divisions:d.map(id=>({id,task:t})),run:/jalankan|refresh|segarkan|update sekarang|cek sekarang/i.test(t)?d.filter(i=>i<=8||i===13||i===16):[],item:null,reply:'Memanggil divisi (pencocokan kata kunci, AI belum terhubung)'}}
+async function routeCmd(t){const u=localStorage.getItem('ai_url');
+ if(u){try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'route',message:t})}),j=await r.json();if(j&&Array.isArray(j.divisions)&&j.divisions.length)return j}catch(e){}}
+ return kwRoute(t)}
+document.head.appendChild(Object.assign(document.createElement('style'),{textContent:'#cmdm{position:fixed;z-index:160;top:60px;right:12px;width:min(380px,94vw);max-height:calc(100vh - 80px);display:flex;flex-direction:column;border-radius:14px;background:rgba(12,22,46,.96);border:1px solid #3a5a9a;backdrop-filter:blur(10px)}#cmdm .cmdb{padding:10px 14px;display:flex;flex-direction:column;gap:8px;overflow:auto}#cmdi{min-height:70px;padding:10px;border-radius:10px;border:1px solid #3a5a9a;background:#0a1226;color:#fff;font:inherit;resize:vertical}#cmdm label{font-size:12px;color:#9fb2dd}#cmdgo{padding:8px 16px;border-radius:10px;border:0;background:#ffc93c;color:#2a1d00;font-weight:700;cursor:pointer}#cmdgo:disabled{opacity:.5}.cmdl{padding:8px 10px;border-radius:10px;background:#16264b;font-size:12px;line-height:1.5}.cmda{margin-top:4px;color:#d8e3ff;white-space:pre-wrap}#cmdm .ch button{background:#26396b;border:1px solid #4a64a8;color:#fff;border-radius:8px;padding:2px 8px;cursor:pointer}'}));
+$('ui').insertAdjacentHTML('beforeend','<div id="cmdm" class="hidden"><div class="ch"><span>🎯 Perintah ke divisi</span><span><button id="cmdx" aria-label="Tutup">✕</button></span></div><div class="cmdb"><textarea id="cmdi" placeholder="Contoh: jalankan screener sekarang • buatkan ide video dari tren hari ini • bagaimana portofolio saham dan Bibit saya?"></textarea><label><input type="checkbox" id="cmdp"> Tanya semua AI (panel), lalu gabungkan jawabannya</label><button id="cmdgo">Kirim ke divisi</button><div id="cmdout"></div></div></div>');
+{const b=document.createElement('button');b.id='cmdb';b.textContent='🎯 Perintah';$('dashb').before(b);b.onclick=()=>{$('cmdm').classList.toggle('hidden');if(!$('cmdm').classList.contains('hidden'))$('cmdi').focus()}}
+$('cmdx').onclick=()=>$('cmdm').classList.add('hidden');
+let cmdBusy=false;
+async function dispatchCmd(){const t=$('cmdi').value.trim();if(!t||cmdBusy)return;cmdBusy=true;$('cmdgo').disabled=true;const out=$('cmdout');out.innerHTML='<div class="cmdl">🎯 Menentukan divisi…</div>';
+ try{
+  const rt=await routeCmd(t),L=(rt.divisions||[]).filter(x=>rooms[x.id]&&!rooms[x.id].meet),tok=localStorage.getItem('admin_token');
+  out.innerHTML=(rt.reply?`<div class="cmdl">${esc(rt.reply)}</div>`:'')+L.map(x=>`<div class="cmdl" id="cmd-${x.id}"><b>${x.id}. ${esc(DNAME(x.id))}</b><br><small>${esc(x.task)}</small><div class="cmda">⏳ menunggu…</div></div>`).join('');
+  const note=m=>out.insertAdjacentHTML('beforeend',`<div class="cmdl"><small>${esc(m)}</small></div>`);
+  if(rt.run&&rt.run.length){if(!tok)note('Menjalankan tugas otomatis butuh token admin (⚙ Sumber AI).');else for(const d of rt.run){try{await callAdmin({action:'run',division:d});note('✔ Tugas '+DNAME(d)+' dijalankan; hasilnya tampil di layar ruangan dan dashboard.')}catch(e){note('⚠ '+DNAME(d)+': '+e.message)}}}
+  if(rt.item){if(!tok)note('Memasukkan item ke Board butuh token admin (⚙ Sumber AI).');else try{await callAdmin({action:'board_add',division:rt.item.division,item:rt.item.judul});note('✔ "'+rt.item.judul+'" masuk Board (status ide).')}catch(e){note('⚠ Board: '+e.message)}}
+  window.__panel=$('cmdp').checked;
+  for(const x of L){const id=x.id,c=chars[id],a=$('cmd-'+id).querySelector('.cmda');a.textContent='⚙️ mengerjakan…';rooms[id].lastQ=x.task;send(id,'user',x.task);
+   c.q=(c.q||Promise.resolve()).then(()=>job(id,x.task));await c.q;a.textContent=rooms[id].last||'(selesai)'}
+ }catch(e){out.innerHTML='<div class="cmdl">⚠ '+esc(e.message||e)+'</div>'}
+ window.__panel=false;cmdBusy=false;$('cmdgo').disabled=false}
+$('cmdgo').onclick=dispatchCmd;
+$('cmdi').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();dispatchCmd()}});
+
 </script>
 </body>
 </html>
