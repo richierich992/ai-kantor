@@ -80,7 +80,7 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 </div>
 <div id="ui" class="hidden">
   <header><div class="brand"><span class="dot"></span>Kantor AI</div>
-    <div class="r"><span id="status">Menghubungkan...</span><button id="auto" class="on">Agent 24 Jam: ON</button><button id="reset">Reset kamera</button><button id="dashb">📊 Dashboard</button><button id="cfg">⚙ Sumber AI</button></div></header>
+    <div class="r"><span id="status">Menghubungkan...</span><button id="auto" class="on">Agent 24 Jam: ON</button><button id="iso">◇ Isometrik</button><button id="reset">Reset kamera</button><button id="dashb">📊 Dashboard</button><button id="cfg">⚙ Sumber AI</button></div></header>
   <div id="map"></div>
   <div id="legend"></div>
   <div id="zone"></div>
@@ -172,8 +172,8 @@ const DL=[
  {id:'it_automation',box:[12,32,-22,-7],cells:[[11,16,-18],[15,26,-18],[16,16,-11]]},
  {id:'research_intelligence',box:[-34,-22,6,14],cells:[[13,-28,10]],single:1},
  {id:'hr_admin',box:[22,34,6,14],cells:[],single:1},
- {id:'meeting_room',box:[-12,12,-34,-24],cells:[],shared:true,meet:true},
- {id:'social_hub',box:[-22,-8,16,24],cells:[],shared:true},
+ {id:'meeting_room',box:[8,20,3,14],cells:[],shared:true,meet:true},
+ {id:'social_hub',box:[-20,-8,3,15],cells:[],shared:true},
 ];
 const DEP={};
 const W=8,DP=7,WH=3.4;
@@ -182,7 +182,7 @@ let app,auth,db,oid,cur=null,autoOn=true,unsub=null,rend,cam,ctl,tg=null;
 const scene=new THREE.Scene(),rooms={},chars={},picks=[],RL=[],zoneMeshes=[];
 
 /* ===== helper 3D ===== */
-const M=c=>new THREE.MeshLambertMaterial({color:c});
+const M=c=>new THREE.MeshLambertMaterial({color:c}); /* material (dulu keliru membuat Mesh tanpa geometri) */
 const box=(w,h,d,c,x,y,z,p)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:c}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;(p||scene).add(m);return m};
 const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
 const tex=c=>{const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t};
@@ -282,10 +282,15 @@ function step(c,dt){
 
 /* ===== model GLB (folder assets/) ===== */
 const GLB={},AVN={1:'finance',2:'finance',3:'finance',4:'finance',5:'finance',6:'finance',7:'finance',8:'finance',9:'creator',10:'creator',12:'creator',14:'creator',11:'analyst',13:'analyst',15:'analyst',16:'analyst'};
+const AVN_OLD={...AVN}; /* cadangan bila file GLB baru belum disalin ke folder assets/ */
+Object.assign(AVN,{1:'stock_analyst_v3',2:'stock_analyst_v3',3:'finance_v2',4:'finance_v2',5:'crypto_trader_v3',6:'crypto_trader_v3',7:'finance_v2',8:'ledger_v3',9:'video_producer_v3',10:'graphic_artist_v3',12:'creator_v2',14:'recipe_chef_v3',11:'it_v2',13:'trend_scout_v3',15:'chatbot_v3',16:'content_publisher_v3'});
 async function loadGLBs(){const L=new GLTFLoader();
- await Promise.all(['avatar_ai_analyst','avatar_ai_creator','avatar_ai_finance','desk_workstation','office_chair','meeting_table','lounge_sofa','potted_plant','storage_cabinet','reception_desk','wall_display','floor_lamp','bookshelf','coffee_table']
+ await Promise.all(['avatar_ai_analyst','avatar_ai_creator','avatar_ai_finance','desk_workstation','office_chair','meeting_table','lounge_sofa','potted_plant','storage_cabinet','reception_desk','wall_display','floor_lamp','bookshelf','coffee_table',
+  'avatar_ai_stock_analyst_v3','avatar_ai_crypto_trader_v3','avatar_ai_ledger_v3','avatar_ai_video_producer_v3','avatar_ai_graphic_artist_v3','avatar_ai_content_publisher_v3','avatar_ai_recipe_chef_v3','avatar_ai_trend_scout_v3','avatar_ai_chatbot_v3','avatar_ai_content_monitor_v3',
+  'avatar_ai_finance_v2','avatar_ai_creator_v2','avatar_ai_it_v2','avatar_ai_research_v2','avatar_ai_hr_v2','avatar_ai_farm_v2','avatar_ai_director_v2',
+  'social_sofa_v3','social_cafe_station_v3','social_arcade_v3','ping_pong_table_v2','chess_table_v2']
   .map(n=>new Promise(res=>L.load('assets/'+n+'.glb',g=>{GLB[n]=g.scene;res()},undefined,()=>res()))));
- RL.forEach(dress);Object.values(chars).forEach(swapChar);dressLobby()}
+ RL.forEach(dress);Object.values(chars).forEach(swapChar);dressLobby();dressHub()}
 function put(n,parent,x,z,yaw=0,sc=1,y=0){const o=GLB[n]&&GLB[n].clone(true);if(!o)return null;o.position.set(x,y,z);o.rotation.y=yaw;o.scale.setScalar(sc);
  o.traverse(m=>{if(m.isMesh)m.castShadow=m.receiveShadow=true});parent.add(o);return o}
 function mkAvatar(n){const src=GLB['avatar_ai_'+n];if(!src)return null;const root=src.clone(true);root.updateMatrixWorld(true);
@@ -294,7 +299,7 @@ function mkAvatar(n){const src=GLB['avatar_ai_'+n];if(!src)return null;const roo
  const side=k=>({leg:piv(grp([k+'_shoe',k+'_sole',k+'_leg',k+'_leg_top',k+'_leg_bottom']),0),arm:piv(grp([k+'_sleeve_upper',k+'_elbow',k+'_sleeve_lower',k+'_hand',k+'_cuff']),.08)});
  const l=side('L'),r=side('R');root.traverse(m=>{if(m.isMesh)m.castShadow=true});
  return{root,legL:l.leg,legR:r.leg,armL:l.arm,armR:r.arm}}
-function swapChar(c){const a=mkAvatar(AVN[c.r.id]||'analyst');if(!a)return;
+function swapChar(c){const a=mkAvatar(AVN[c.r.id]||'analyst')||mkAvatar(AVN_OLD[c.r.id]||'analyst');if(!a)return;
  while(c.g.children.length)c.g.remove(c.g.children[0]);
  c.g.add(a.root);if(c.tag)c.g.add(c.tag);c.legL=a.legL;c.legR=a.legR;c.armL=a.armL;c.armR=a.armR;c.g.scale.setScalar(1.05)}
 function dress(r){const g=r.g,y=.14,col=new THREE.Color(r.col).lerp(new THREE.Color(1,1,1),.55);
@@ -323,7 +328,7 @@ function mkShell(dl,name){const [x0,x1,z0,z1]=dl.box,cx=(x0+x1)/2,cz=(z0+z1)/2,w
  // Pintu masuk di dinding depan z1 (buka lebar)
  box(w*.7,.1,.25,wl,cx,.6,z1-.15);
  // Label 3D melayang di tengah zona (atas dinding depan)
- const lbl=label(name,DEPT_COL[dl.id],Math.min(w-2,22),1.2);lbl.position.set(cx,WH+1.4,d/2+0.9);scene.add(lbl);
+ /* (label melayang dihapus: salah posisi, nama zona sudah ada di papan dinding belakang) */
  // Papel nama di dinding depan
  const p=plate(name,DEPT_COL[dl.id],Math.min(w-1,20),1.3);p.position.set(cx,WH+2.6,z0+.15);scene.add(p);
  return fl}
@@ -335,34 +340,33 @@ function buildDepts(){DL.forEach(dl=>{const nm=(DEPTS.find(p=>p.departmentId===d
 function focusDept(dp){const s=Math.max(dp.w,dp.d);tg={t:new THREE.Vector3(dp.cx,1,dp.cz),c:new THREE.Vector3(dp.cx,6+s*.55,dp.cz+8+s*.9)}}
 
 /* ===== Social Hub furniture (area bersama) ===== */
+const hubOld=[]; /* perabot primitif social hub; disembunyikan bila model GLB tersedia */
+function dressHub(){if(!(GLB.social_sofa_v3||GLB.social_arcade_v3||GLB.ping_pong_table_v2||GLB.chess_table_v2||GLB.social_cafe_station_v3))return;
+ const cx=-14;hubOld.forEach(m=>m.visible=false);
+ put('social_sofa_v3',scene,cx,cx*0+4.2,0,1);put('social_sofa_v3',scene,cx,7.8,PI,1);
+ put('social_cafe_station_v3',scene,-18.6,4.4,0,1);
+ put('ping_pong_table_v2',scene,-17.5,10.5,0,1);put('chess_table_v2',scene,-10.5,10.5,0,1);
+ put('social_arcade_v3',scene,-11.8,14.2,PI,1);put('social_arcade_v3',scene,-9.4,14.2,PI,1)}
 function buildSocialHub(){
- const cx=-15,cz=20; // pusat social_hub box [-22,-8,16,24]
- // Lounge / Café tengah
- put('coffee_table',scene,cx,-1,0,1.2);
- put('lounge_sofa',scene,cx-4,-1,0,1.3);put('lounge_sofa',scene,cx+4,-1,0,1.3);
- put('lounge_sofa',scene,cx-4,3,0,1.3);put('lounge_sofa',scene,cx+4,3,0,1.3);
- put('floor_lamp',scene,cx-6,-4);put('floor_lamp',scene,cx+6,-4);
- put('potted_plant',scene,cx-7,3,0,1.4);put('potted_plant',scene,cx+7,3,0,1.4);
- box(1.2,.5,1.2,0x8b6b4a,cx-2,.3,2);box(1.2,.5,1.2,0x8b6b4a,cx+2,.3,2);
- // Ping Pong Zone (kiri)
- box(2.7,.1,1.5,0x1e3a5f,cx-9,.25,8);
- box(.1,1,.1,0x64748b,cx-10.4,.6,8);box(.1,1,.1,0x64748b,cx-7.6,.6,8);
- box(.08,.3,.08,0xef4444,cx-10,1.4,7.4);box(.08,.3,.08,0xef4444,cx-8,1.4,7.4);
- const ballPP=new THREE.Mesh(new THREE.SphereGeometry(.06,8,6),M(0xfbbf24));ballPP.position.set(cx-9,1.55,7.6);scene.add(ballPP);
- // Chess Corner (kanan)
- box(2.2,.1,1.2,0x5a3c20,cx+8,.25,8);
- box(.1,1,.1,0x64748b,cx+6.6,.6,8);box(.1,1,.1,0x64748b,cx+9.4,.6,8);
- box(.15,.15,.15,0xffffff,cx+7.5,1.3,7.2);box(.15,.15,.15,0x111827,cx+8.5,1.3,7.2);
- // Mini Arcade
- box(1,.2,1.6,0x111827,cx+9,.3,14);
- box(.8,.8,.1,0x0f172a,cx+9,1.1,14.3);
- box(.05,.3,.05,0xfbbf24,cx+9.4,1.3,14.1);box(.05,.3,.05,0xef4444,cx+8.6,1.3,14.1);
- // Taman / Walking Path
- for(let i=-2;i<=2;i++){box(.5,2,.5,0x6b4a2b,cx+i*2,1,22);const tn=new THREE.Mesh(new THREE.ConeGeometry(2,5,8),M(0x2f7a43));tn.position.set(cx+i*2,4.5,22);scene.add(tn)}
- box(.4,.4,.4,0x22c55e,cx-3,.2,24);box(.4,.4,.4,0x22c55e,cx+3,.2,24);
- // Community Board
- const cb=cv(512,256);const cbx=cb.getContext('2d');cbx.fillStyle='#0b1220';cbx.fillRect(0,0,512,256);cbx.fillStyle='#4ade80';cbx.font='bold 40px Nunito';cbx.textAlign='center';cbx.fillText('COMMUNITY BOARD',256,80);cbx.fillStyle='#b8c6e6';cbx.font='28px Nunito';cbx.fillText('Data belum terhubung',256,150);cbx.fillText('Silakan konfigurasi backend',256,190);
- const cbm=new THREE.Mesh(new THREE.PlaneGeometry(5,2.5),new THREE.MeshBasicMaterial({map:tex(cb),transparent:true}));cbm.position.set(cx,WH+1,23);cbm.rotation.y=-0.2;scene.add(cbm);}
+ /* Zona social_hub: x -20..-8, z 3..15 (di dalam plaza). Semua koordinat memakai pusat zona, tanpa model GLB agar selalu tampil. */
+ const cx=-14,Z=(c,r,x,z,h)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,14),M(c));m.position.set(x,h/2,z);m.castShadow=true;scene.add(m);return m};
+ // Lounge / Kafe (sofa diganti GLB bila ada; meja tengah tetap)
+ box(1.8,.5,1.8,0x8b6b4a,cx,.25,6);hubOld.push(box(2.8,.55,.9,0x3b82f6,cx,.28,4.2),box(2.8,.9,.25,0x2563eb,cx,.6,3.7),box(2.8,.55,.9,0x3b82f6,cx,.28,7.8),box(.9,.55,2.2,0x60a5fa,cx-2.4,.28,6),box(.9,.55,2.2,0x60a5fa,cx+2.4,.28,6));
+ box(.4,.5,.4,0xffffff,cx-.4,.75,5.8);box(.4,.5,.4,0xfbbf24,cx+.4,.75,6.2);
+ // Ping pong
+ const px=-17.5,pz=10.5;hubOld.push(box(2.7,.12,1.5,0x1e3a5f,px,.8,pz),box(.04,.3,1.5,0xffffff,px,.97,pz));[[-1.2,-.6],[1.2,-.6],[-1.2,.6],[1.2,.6]].forEach(([a,b])=>hubOld.push(box(.1,.8,.1,0x64748b,px+a,.4,pz+b)));
+ const bp=new THREE.Mesh(new THREE.SphereGeometry(.06,8,6),M(0xfbbf24));bp.position.set(px+.6,.9,pz);scene.add(bp);
+ // Catur
+ const sx=-10.5,sz=10.5;hubOld.push(box(1.4,.1,1.4,0x5a3c20,sx,.8,sz),box(.12,.8,.12,0x64748b,sx,.4,sz),box(1.2,.04,1.2,0xd6c4a2,sx,.87,sz));
+ Z(0x475569,.28,sx-1.2,sz,.5);Z(0x475569,.28,sx+1.2,sz,.5);[[-.3,-.2],[.3,.2],[-.1,.3]].forEach(([a,b],i)=>hubOld.push(box(.15,.3,.15,i%2?0xffffff:0x111827,sx+a,1.05,sz+b)));
+ // Mini arcade
+ [-11.8,-9.4].forEach((x,i)=>hubOld.push(box(1,1.8,.8,0x111827,x,.9,14.2),box(.8,.55,.06,[0x0ea5e9,0xf43f5e][i],x,1.4,13.78),box(.7,.12,.5,0x334155,x,.95,13.9)));
+ // Taman mini
+ [[-19,14],[-17.4,14.4]].forEach(([x,z])=>{box(.3,1,.3,0x6b4a2b,x,.5,z);const c=new THREE.Mesh(new THREE.ConeGeometry(1,2.4,8),M(0x2f7a43));c.position.set(x,2.2,z);scene.add(c)});
+ // Community board (dinding belakang zona)
+ const cb=cv(512,256),cbx=cb.getContext('2d');cbx.fillStyle='#0b1220';cbx.fillRect(0,0,512,256);cbx.fillStyle='#4ade80';cbx.font='bold 40px Nunito';cbx.textAlign='center';cbx.fillText('COMMUNITY BOARD',256,80);cbx.fillStyle='#b8c6e6';cbx.font='28px Nunito';cbx.fillText('Data belum terhubung',256,150);cbx.fillText('Silakan konfigurasi backend',256,190);
+ const cbm=new THREE.Mesh(new THREE.PlaneGeometry(4.4,2.2),new THREE.MeshBasicMaterial({map:tex(cb),transparent:true}));cbm.position.set(cx,2.9,3.35);scene.add(cbm);
+}
 
 /* ===== lalu lintas jalan raya ===== */
 const GC={},MC={},TC={},CARC=[0x1d4ed8,0xdc2626,0xf8fafc,0x111827,0xf59e0b,0x16a34a,0x7c3aed,0x94a3b8,0xea580c];
@@ -476,7 +480,7 @@ function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.y
 function focus(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw));tg={t:r.g.position.clone().setY(1.5),c:r.g.position.clone().add(f.multiplyScalar(13)).setY(10)}}
 
 /* ===== SLOTS (ruangan fisik) ===== */
-const SL=[[0,-29,0,0]]; // meeting room (di tengah zona meeting_room)
+const SL=[[14,8,0,0]]; // ruang meeting (di dalam plaza, zona meeting_room)
 DL.forEach(dl=>{dl.cells.forEach(([id,x,z])=>SL.push([x,z,0,id,!dl.single,dl.id]));if(dl.syn)SL.push([dl.syn[0],dl.syn[1],0,dl.id,false,dl.id])});
 
 /* ===== agent ===== */
@@ -757,6 +761,10 @@ const _boot5=boot;boot=function(){_boot5();
   const bad=D.filter(d=>!rooms[d.id]||!deptOfId(d.id)||!rooms[d.id].dept).map(d=>d.id),err=CFG?CFG.validateOfficeConfig():[];
   console.info('[Kantor AI] ruang divisi:',Object.keys(DEP).length,'| pekerja:',D.length,'| tanpa ruang:',bad.length?bad:'tidak ada','| validasi konfigurasi:',err.length?err:'OK');
   addEventListener('keydown',e=>{if(e.key==='Escape'&&curDept)closeRView();});renderLegend();};
+/* ===== Tampilan isometrik: sudut diagonal dengan lensa sempit (mirip gaya diorama) ===== */
+{const rs=$('reset').onclick;
+ $('iso').onclick=()=>{cam.fov=24;cam.updateProjectionMatrix();tg={t:new THREE.Vector3(0,0,2),c:new THREE.Vector3(78,70,84)}};
+ $('reset').onclick=()=>{cam.fov=45;cam.updateProjectionMatrix();rs()};}
 /* ===== [P6] Perintah antar-divisi • portofolio • konten & sosmed ===== */
 let PF=null,pfT=0;
 async function bPf(){const u=bkUrl(),t=localStorage.getItem('admin_token');if(!u||!t)return null;
