@@ -658,7 +658,7 @@ function renderDash(){const s=DS;if(!s)return;
  const tasks=s.tasks.filter(t=>okd(t.division)&&okt(t.created)&&okp(t.priority)).map(t=>`<div><span class="bdg ${stCls[t.status]||'idle'}">${esc(t.status)}</span> ${esc(t.created)} • ${esc(DNAME(t.division))} • ${esc(t.type)} • P${t.priority}${t.attempts>1?' • percobaan '+t.attempts:''}<br><small>${esc(t.error||t.summary||'')}</small>${t.status==='QUEUED'&&tok?` <button data-a="cancel" data-t="${esc(t.id)}">batal</button>`:''}</div>`).join('')||'<div>—</div>';
  const evs=s.events.filter(e=>(e.division?okd(e.division):!f)&&okt(e.time)).map(e=>`<div><span class="bdg ${e.level==='ERROR'?'err':e.level==='WARN'?'warn':e.level==='AUDIT'?'run':'idle'}">${esc(e.level)}</span> ${esc(e.time)}${e.division?' • '+esc(DNAME(e.division)):''} • ${esc(e.event)}<br><small>${esc(e.detail)}</small></div>`).join('')||'<div>—</div>';
  const sc=SCR,nfd=x=>Math.round(+x).toLocaleString('id-ID');
- const scrHtml=(f&&+f!==1)?'':sc?`<h4>Screener Trading Saham</h4><div class="dlist"><div>Data per ${esc(sc.tanggal)} • diproses ${esc(sc.t)} WIB • <b>${sc.lolos.length} lolos</b> dari ${sc.dievaluasi} saham${sc.dilewati&&sc.dilewati.length?' • tanpa data: '+esc(sc.dilewati.join(', ')):''}</div><div><small>Aturan aktif: ${sc.rules.map(r=>esc(r.id+': '+r.text)).join(' • ')}</small></div></div><table><tr><th>Kode</th><th>Harga</th><th>Nilai (Rp miliar)</th><th>Volume / MA20</th><th>CMF20</th></tr>${sc.lolos.map(x=>`<tr><td>${esc(x.kode)}</td><td>${nfd(x.harga)}</td><td>${(x.nilai/1e9).toFixed(1)}</td><td>${x.volma20?(x.vol/x.volma20).toFixed(2)+'x':'—'}</td><td>${(+x.cmf).toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="5">Tidak ada saham yang lolos pada data ini</td></tr>'}</table>`:'<h4>Screener Trading Saham</h4><div class="dnote">Belum ada hasil. Berjalan otomatis tiap hari 17.00 WIB, atau tekan ▶ pada baris Trading Saham.</div>';
+ const scrHtml=(f&&+f!==1)?'':sc?`<h4>Screener Trading Saham</h4><div class="dlist"><div>Data per ${esc(sc.tanggal)} • diproses ${esc(sc.t)} WIB • <b>${sc.lolos.length} lolos</b> dari ${sc.dievaluasi} saham${sc.dilewati&&sc.dilewati.length?' • tanpa data: '+esc(sc.dilewati.join(', ')):''}</div><div><small>Aturan aktif: ${sc.rules.map(r=>esc(r.id+': '+r.text)).join(' • ')}</small></div></div><table><tr><th>Kode</th><th>Harga</th><th>Nilai (Rp miliar)</th><th>Volume / MA20</th><th>CMF20</th><th>Area beli</th><th>Stop loss</th><th>Take profit</th></tr>${sc.lolos.map(x=>`<tr><td>${esc(x.kode)}</td><td>${nfd(x.harga)}</td><td>${(x.nilai/1e9).toFixed(1)}</td><td>${x.volma20?(x.vol/x.volma20).toFixed(2)+'x':'—'}</td><td>${(+x.cmf).toFixed(2)}</td><td>${+x.sl>0?nfd(x.buyLo)+(x.buyLo!==x.buyHi?' – '+nfd(x.buyHi):''):'—'}</td><td>${+x.sl>0?nfd(x.sl)+' ('+((x.sl/x.harga-1)*100).toFixed(1)+'%)':'—'}</td><td>${+x.sl>0?nfd(x.tp1)+' – '+nfd(x.tp2):'—'}</td></tr>`).join('')||'<tr><td colspan="8">Tidak ada saham yang lolos pada data ini</td></tr>'}</table><div class="dnote">Level dihitung otomatis (ATR 14 hari, low 5 hari, high 20 hari); alat bantu, bukan rekomendasi.</div>`:'<h4>Screener Trading Saham</h4><div class="dnote">Belum ada hasil. Berjalan otomatis hari bursa pukul 15.00 WIB (dikirim ke Telegram), atau tekan ▶ pada baris Trading Saham.</div>';
  $('dbody').innerHTML=`<div class="dchips"><span class="chip ${s.enabled?'ok':'bad'}">Otomatisasi: ${s.enabled?'AKTIF':'NONAKTIF'}</span>
    <span class="chip ${trig?'ok':'bad'}">Scheduler: ${trig?'tiap '+s.tickMinutes+' menit':'trigger belum terpasang atau dobel ('+s.triggers.tick+')'}</span>
    <span class="chip">Antrean ${s.queue.queued} • Berjalan ${s.queue.running}</span><span class="chip ok">Sukses 24j: ${s.queue.success24h}</span><span class="chip ${s.queue.failed24h?'bad':''}">Gagal 24j: ${s.queue.failed24h}</span>
@@ -916,6 +916,16 @@ async function dispatchCmd(){const t=$('cmdi').value.trim();if(!t||cmdBusy)retur
 $('cmdgo').onclick=dispatchCmd;
 $('cmdi').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();dispatchCmd()}});
 
+
+/* ===== Layar ruang Trading Saham: hasil screener + area beli / stop loss / take profit ===== */
+{const d1=D.find(x=>x.id===1),old=d1.g;let sc={t:0,v:null};
+ const scrLive=async()=>{if(sc.v&&Date.now()-sc.t<120000)return sc.v;const u=bkUrl();if(!u)return null;
+  try{const r=await fetch(u+(u.includes('?')?'&':'?')+'action=screener&_='+Date.now()),j=await r.json();sc={t:Date.now(),v:(j&&j.screener)||null}}catch(e){}return sc.v};
+ d1.g=async()=>{const s=await scrLive();if(!s)return old?await old():'Screener belum ada hasil';
+  const n=x=>Math.round(+x).toLocaleString('id-ID'),L=['Screener '+s.tanggal+' • '+s.lolos.length+'/'+s.dievaluasi+' lolos'];
+  s.lolos.slice(0,3).forEach(x=>{L.push(x.kode+' '+n(x.harga)+(+x.sl>0?' • Beli '+n(x.buyLo)+(x.buyLo!==x.buyHi?'–'+n(x.buyHi):''):''));if(+x.sl>0)L.push('   SL '+n(x.sl)+' • TP '+n(x.tp1)+'–'+n(x.tp2))});
+  if(!s.lolos.length)L.push('Tidak ada saham yang lolos');if(s.lolos.length>3)L.push('+'+(s.lolos.length-3)+' lainnya (lihat Dashboard)');
+  const al=alertLine(1);return (al?al+'\n':'')+L.join('\n')+'\nSumber: ScreenResults'}}
 </script>
 </body>
 </html>
