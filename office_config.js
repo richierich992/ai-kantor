@@ -71,7 +71,7 @@ export const AGENTS = [
 
 // Job backend = salinan SCHED_DEFAULT di Code.gs (scheduleId, division, taskType).
 const J = (scheduleId, id, taskType, trigger, priority, params = {}) => ({
-  jobId: 'job_' + taskType + (params.group ? '_' + params.group : params.division ? '_d' + params.division : '') + (scheduleId === 'S01b' ? '_daily' : scheduleId === 'S15b' ? '_daily' : ''),
+  jobId: 'job_' + taskType + (params.group ? '_' + params.group : params.division ? '_d' + params.division : '') + (scheduleId === 'S01b' ? '_daily' : scheduleId === 'S15b' ? '_daily' : scheduleId === 'S25' ? '_final' : scheduleId === 'S27' ? '_midday' : ''),
   scheduleId, division: id, agentId: AGENTS.find(a => a.id === id).agentId, taskType, trigger, priority, params,
 });
 export const JOBS = [
@@ -100,6 +100,9 @@ export const JOBS = [
   J('S22', 13, 'trend_to_ideas',   { everyMinutes: 360 }, 3),
   J('S23', 16, 'social_metrics',   { everyMinutes: 180 }, 3),
   J('S24', 8,  'portfolio_digest', { dailyHourWib: 17 }, 2),
+  J('S25', 1,  'screen_stocks_telegram', { dailyHourWib: 16 }, 1), // pesan FINAL setelah bursa tutup
+  J('S26', 1,  'universe_scan', { dailyHourWib: 9 }, 1),  // pindai semua saham saat bursa buka -> ScreenUniverse
+  J('S27', 1,  'universe_scan', { dailyHourWib: 13 }, 1), // hitung ulang siang hari
 ];
 
 export const FIREBASE_PATHS = ['offices/{kode}/messages/{id}', 'offices/{kode}/modes/{id}', 'offices/{kode}/feed/{id}', 'offices/{kode}/runs/{id}'];
