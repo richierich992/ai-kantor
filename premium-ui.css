@@ -426,3 +426,5 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(max-width:820px){#living-clock{display:none}}
 
 /* Phase 9 — small character activity cues are rendered in the 3D scene. */
+
+/* Phase 10 — scene-native facial/gesture polish; no extra DOM overlay. */
