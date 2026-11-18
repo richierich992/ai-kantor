@@ -64,3 +64,12 @@
 - Integrasi dilakukan setelah `buildHall()` dan melalui render loop yang sudah ada. Fungsi `roam()`, slot `STN`, `go()`, model furniture GLB, serta rute karakter tidak diganti.
 - Efek memakai geometri/material sederhana dan satu update pass per frame; perlu pemeriksaan FPS pada perangkat nyata.
 - Belum ada render browser atau uji interaksi end-to-end; PR tetap draft sampai preview visual dan regresi fungsi ditinjau.
+
+
+## Phase 5 — QA & performance hardening
+- Loader manifest dibatasi ke 22 file GLB yang benar-benar ada di folder `assets/`; asset furnitur lama yang tidak tersedia tidak lagi diminta dan fallback procedural tetap dipakai.
+- Profil perangkat adaptif: antialias dan pixel ratio lebih rendah pada layar kecil/perangkat dengan 4 core atau kurang; shadow map diturunkan dari 4096 ke 1024 pada profil tersebut dan 2048 pada profil normal.
+- Kepadatan traffic dekoratif dikurangi (7/9 unit pada profil rendah, 12/16 pada profil normal) dan render loop berhenti menggambar saat tab tersembunyi.
+- Lampu titik per stasiun Social Hub dan per partisi divisi dihapus untuk mengurangi jumlah dynamic lights; ambience tetap melalui emissive/LED, ring, dan pad.
+- Emblem profesi sekarang menghormati depth test agar tidak menembus dinding/objek.
+- Pemeriksaan dilakukan statis terhadap file, asset, integrasi, dan konfigurasi. Browser render, FPS perangkat nyata, serta end-to-end login/chat/Firebase/Apps Script belum dapat diverifikasi dari audit repository.
