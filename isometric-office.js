@@ -43,7 +43,7 @@ function roundedSlab(T,parent,w,d,h,r,material,x,y,z){
  shape.lineTo(-w/2,-d/2+r);shape.absarc(-w/2+r,-d/2+r,r,Math.PI,Math.PI*1.5,false);
  const geo=new T.ExtrudeGeometry(shape,{depth:h,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:Math.min(r*.22,h*.22),bevelThickness:Math.min(r*.22,h*.22),curveSegments:5});
  geo.rotateX(-Math.PI/2);const mesh=new T.Mesh(geo,material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh
-}(T){const c=document.createElement('canvas');c.width=c.height=512;const q=c.getContext('2d');q.fillStyle='#e5e9e8';q.fillRect(0,0,512,512);for(let y=0;y<8;y++)for(let x=0;x<8;x++){q.fillStyle=(x+y)%2?'#e9eeed':'#dfe6e5';q.fillRect(x*64+2,y*64+2,60,60);q.strokeStyle='#bcc8c8';q.strokeRect(x*64+1,y*64+1,62,62)}const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(8,4);return t}
+
 function glassZone(T,scene,z){
  const [a,b,c,d]=z.box,w=b-a,depth=d-c,cx=(a+b)/2,cz=(c+d)/2,h=3.25,style=styles[z.id]||styles.finance;
  const frame=mat(T,0x334a55,{metalness:.58,roughness:.34}),glass=new T.MeshPhysicalMaterial({color:0xb9d5e2,transparent:true,opacity:.17,roughness:.16,metalness:.08,side:T.DoubleSide,depthWrite:false});
