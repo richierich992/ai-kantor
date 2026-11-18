@@ -115,7 +115,7 @@ function glassZone(T,scene,z){
  const [a,b,c,d]=z.box,w=b-a,depth=d-c,cx=(a+b)/2,cz=(c+d)/2,h=3.25,style=styles[z.id]||styles.finance;
  const frame=mat(T,0x52717e,{metalness:.42,roughness:.3}),glass=new T.MeshPhysicalMaterial({color:0xc5e4ee,transparent:true,opacity:.23,roughness:.2,metalness:.12,clearcoat:.28,clearcoatRoughness:.22,side:T.DoubleSide,depthWrite:false,forceSinglePass:true});
  const accent=mat(T,style[0],{emissive:style[0],emissiveIntensity:.2,roughness:.35});
- const carpetMat=mat(T,style[1],{roughness:.82});
+ const carpetMat=mat(T,style[1],{roughness:.84,emissive:style[1],emissiveIntensity:.055});
  const carpet=new T.Mesh(new T.PlaneGeometry(w-.3,depth-.3),carpetMat);carpet.rotation.x=-Math.PI/2;carpet.position.set(cx,.052,cz);carpet.receiveShadow=true;scene.add(carpet);
  // Thin inset border gives each department pod its own finished floor treatment.
  const floorEdge=mat(T,style[0],{emissive:style[0],emissiveIntensity:.11,metalness:.22,roughness:.48});
@@ -124,6 +124,12 @@ function glassZone(T,scene,z){
  bx(T,scene,w,.08,.14,cx,.08,c,frame,false);bx(T,scene,w,.08,.14,cx,.08,d,frame,false);
  bx(T,scene,.14,.08,depth,a,.08,cz,frame,false);bx(T,scene,.14,.08,depth,b,.08,cz,frame,false);
  const back=bx(T,scene,w,h,.055,cx,h/2,c,glass,false);back.renderOrder=2;
+ // Warm low-height architectural backdrop and fine vertical slats create a finished team wall.
+ const feature=mat(T,0x385765,{metalness:.28,roughness:.62}),slat=mat(T,0x9b7959,{roughness:.58});
+ bx(T,scene,w*.58,1.18,.09,cx,.62,c+.12,feature,false);
+ const slatCount=Math.max(8,Math.floor(w*.58/0.42));
+ for(let i=0;i<slatCount;i++){const x=cx-w*.58/2+.16+i*((w*.58-.32)/Math.max(1,slatCount-1));bx(T,scene,.035,1.02,.035,x,.62,c+.19,slat,false)}
+ bx(T,scene,w*.58,.045,.055,cx,1.25,c+.19,mat(T,style[0],{emissive:style[0],emissiveIntensity:.28}),false);
  [a,b].forEach(x=>{const side=bx(T,scene,.055,h,depth,x,h/2,cz,glass,false);side.renderOrder=2});
  const gap=Math.min(3.2,w-1),seg=(w-gap)/2;
  [a+seg/2,b-seg/2].forEach(x=>{const panel=bx(T,scene,seg,h,.055,x,h/2,d,glass,false);panel.renderOrder=2});
@@ -183,6 +189,7 @@ function workstation(T,r,m){
  // Keep fine equipment details out of the shadow map; only the desk slab casts a shadow.
  group.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false}});
  const desktop=group.children.find(o=>o.geometry?.type==="ExtrudeGeometry");if(desktop)desktop.castShadow=true;
+ group.scale.setScalar(1.12);
  r.spot=g.localToWorld(new T.Vector3(0,0,2.35));r.inside=g.localToWorld(new T.Vector3(0,0,2.5));r.front=g.localToWorld(new T.Vector3(0,0,3.6));r.row=g.position.z<-17?'A':'B';r.isometricWorkstation=true
 }
 function createOfficeExtras(T,scene,m){
@@ -243,7 +250,7 @@ export function enhanceIsometricOffice({THREE,scene,rooms,characters,zones=[],zo
  if(scene.userData.isometricOfficeRebuild)return scene.userData.isometricOfficeRebuild;
  const woodMap=woodGrain(THREE),fabricMap=fabricWeave(THREE),keysMap=keyboardTexture(THREE);
  const m={wood:mat(THREE,0xffffff,{map:woodMap,roughness:.48,metalness:.04}),metal:mat(THREE,0x58666c,{metalness:.62,roughness:.32}),frame:mat(THREE,0x273a43,{metalness:.5,roughness:.34}),seat:mat(THREE,0xffffff,{map:fabricMap,roughness:.91}),pillow:mat(THREE,0x8aa0ad,{map:fabricMap,roughness:.94}),keyboard:mat(THREE,0xffffff,{map:keysMap,roughness:.8}),keysMap,mouse:mat(THREE,0x303a40),tower:mat(THREE,0x35454c),lightDesk:mat(THREE,0xe5ebe9,{roughness:.32,metalness:.12}),accent:mat(THREE,0x65c6cf,{emissive:0x1d5863,emissiveIntensity:.22,roughness:.32})};
- const baseMat=mat(THREE,0x253d49,{metalness:.42,roughness:.4}),floorMat=mat(THREE,0xffffff,{map:tile(THREE),roughness:.56,metalness:.025});
+ const baseMat=mat(THREE,0x314a55,{metalness:.3,roughness:.46}),floorMat=mat(THREE,0xffffff,{map:tile(THREE),roughness:.82,metalness:.01,emissive:0x3c4942,emissiveIntensity:.055});
  bx(THREE,scene,88,.72,47,0,-.43,-4.5,baseMat);
  roundedSlab(THREE,scene,87.1,46.1,.12,.72,mat(THREE,0x435a62,{metalness:.35,roughness:.38}),0,-.055,-4.5);
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(84,43),floorMat);floor.rotation.x=-Math.PI/2;floor.position.set(0,.012,-4.5);floor.receiveShadow=true;scene.add(floor);
