@@ -41,3 +41,8 @@
 - Layout desktop memberi ruang dominan ke scene 3D; panel tidak menutupi bagian utama secara berlebihan.
 - Layout mobile tidak membuat header melebar keluar layar; panel menggunakan drawer bawah dan tabel dashboard dapat digeser horizontal.
 - Tidak ada API key, token, atau kredensial baru yang ditambahkan ke repository.
+
+
+### Catatan visual Phase 2
+- Kanopi dan pintu kaca baru menggantikan billboard, parapet putih, dan portal lama agar fasad depan tidak tampak bertumpuk.
+- Default camera menggunakan sudut diorama yang lebih lebar; kontrol reset dan isometrik mempertahankan interaksi kamera yang sudah ada.
