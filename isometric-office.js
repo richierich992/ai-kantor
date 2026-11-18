@@ -43,6 +43,7 @@ function roundedSlab(T,parent,w,d,h,r,material,x,y,z){
  shape.lineTo(-w/2,-d/2+r);shape.absarc(-w/2+r,-d/2+r,r,Math.PI,Math.PI*1.5,false);
  const geo=new T.ExtrudeGeometry(shape,{depth:h,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:Math.min(r*.22,h*.22),bevelThickness:Math.min(r*.22,h*.22),curveSegments:5});
  geo.rotateX(-Math.PI/2);const mesh=new T.Mesh(geo,material);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh
+}
 
 function glassZone(T,scene,z){
  const [a,b,c,d]=z.box,w=b-a,depth=d-c,cx=(a+b)/2,cz=(c+d)/2,h=3.25,style=styles[z.id]||styles.finance;
