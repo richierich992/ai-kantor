@@ -69,7 +69,11 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 .bdg.ok{background:#14532d;color:#bbf7d0}.bdg.err{background:#7f1d1d;color:#fecaca}.bdg.warn{background:#78350f;color:#fde68a}.bdg.run{background:#1e3a8a;color:#bfdbfe}.bdg.idle{background:#334155;color:#cbd5e1}
 @media(max-width:820px){#legend,#hint,#zone{display:none}#chat{top:auto;width:100%;height:55vh;border-left:0;border-top:1px solid #3a5a9a}.r span{display:none}}
 </style>
-<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+<link rel="stylesheet" href="./premium-ui.css?v=1">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+
+
+</script>
 </head>
 <body>
 <div id="login">
@@ -100,6 +104,14 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 
 <script type="module">
 import * as THREE from 'three';
+import { enhanceOfficeWorld } from './premium-world.js';
+import { decoratePremiumCharacter, animatePremiumCharacter } from './premium-character.js';
+import { enhanceSocialHub, updateSocialHub, animateSocialCharacter } from './premium-social.js';
+import { createCharacterSocialLife } from './premium-social-life.js';
+import { createPremiumPolish } from './premium-polish.js';
+import { createIntegrationDiagnostics } from './premium-integration.js';
+import { createLivingOffice, chooseIdleStation } from './premium-living-office.js';
+import { enhancePremiumExperience } from './premium-experience.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -177,6 +189,7 @@ const DEP={};
 const W=8,DP=7,WH=3.4;
 
 let app,auth,db,oid,cur=null,autoOn=true,unsub=null,rend,cam,ctl,tg=null;
+let livingOffice = null;
 const scene=new THREE.Scene(),rooms={},chars={},picks=[],RL=[],zoneMeshes=[];
 
 /* ===== helper 3D ===== */
@@ -285,7 +298,7 @@ function roam(c,dt){
   const away=Object.values(chars).filter(x=>x.slot).length;
   const free=STN.reduce((a,s)=>a.concat(s.slots.filter(sl=>!sl.occ)),[]);
   if(!free.length||away>=Math.ceil(D.length*.55)){c.wait=10;return}
-  const sl=pick(free);sl.occ=c;c.slot=sl;
+  const sl=chooseIdleStation(c,free)||pick(free);sl.occ=c;c.slot=sl;
   go(c,sl,V3(sl.x,0,sl.z),sl.face);
   c.done=()=>{c.yoff=(sl.sit?-.34:0)+sl.dy;c.act=sl.act;c.work=false;if(sl.route.length){c.stroll=sl.route;c.si=0}};
   c.wait=rnd(20,45);
@@ -305,7 +318,7 @@ function step(c,dt){
  else if(c.face!=null)turn(c,c.face,dt*8);
  const A=c.act,fast=!mvg&&(A==='run'||A==='lift'||A==='swing'||A==='shoot');
  c.t+=dt*(mvg||fast?9:1);const s=mvg?Math.sin(c.t)*.7:0,ty=!mvg&&(c.work||A==='type');
- c.legL.rotation.x=A==='run'&&!mvg?Math.sin(c.t)*.8:s;c.legR.rotation.x=A==='run'&&!mvg?-Math.sin(c.t)*.8:-s;
+ if(c.legL)c.legL.rotation.x=A==='run'&&!mvg?Math.sin(c.t)*.8:s;if(c.legR)c.legR.rotation.x=A==='run'&&!mvg?-Math.sin(c.t)*.8:-s;
  let aL=Math.sin(c.t)*.04,aR=-Math.sin(c.t)*.04;
  if(mvg){aL=-s;aR=s}
  else if(A==='swing'){aL=-.9+Math.sin(c.t*.9)*.5;aR=-.9+Math.cos(c.t*.9)*.5}
@@ -315,7 +328,7 @@ function step(c,dt){
  else if(A==='read'){aL=aR=-1.0+Math.sin(c.t*.8)*.04}
  else if(A==='stretch'){aL=aR=-2.7+Math.sin(c.t*.6)*.25}
  else if(ty){aL=-1.2+Math.sin(c.t*14)*.12;aR=-1.2+Math.cos(c.t*14)*.12}
- c.armL.rotation.x=aL;c.armR.rotation.x=aR;
+ if(c.armL)c.armL.rotation.x=aL;if(c.armR)c.armR.rotation.x=aR;
  c.g.position.y=.14+(c.yoff||0)+(mvg?Math.abs(Math.sin(c.t))*.1:0);
  roam(c,dt);
 }
@@ -324,19 +337,23 @@ function step(c,dt){
 const GLB={},AVN={1:'finance',2:'finance',3:'finance',4:'finance',5:'finance',6:'finance',7:'finance',8:'finance',9:'creator',10:'creator',12:'creator',14:'creator',11:'analyst',13:'analyst',15:'analyst',16:'analyst'};
 const AVN_OLD={...AVN}; /* cadangan bila file GLB baru belum disalin ke folder assets/ */
 Object.assign(AVN,{1:'stock_analyst_v3',2:'stock_analyst_v3',3:'finance_v2',4:'finance_v2',5:'crypto_trader_v3',6:'crypto_trader_v3',7:'finance_v2',8:'ledger_v3',9:'video_producer_v3',10:'graphic_artist_v3',12:'creator_v2',14:'recipe_chef_v3',11:'it_v2',13:'trend_scout_v3',15:'chatbot_v3',16:'content_publisher_v3'});
-function fixMat(root){root.traverse(o=>{if(!o.isMesh)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m&&m.isMeshStandardMaterial){m.metalness=0;m.roughness=Math.max(.75,m.roughness||0)}})})}
+function fixMat(root){root.traverse(o=>{if(!o.isMesh)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m&&m.isMeshStandardMaterial){m.metalness=Math.min(.28,Math.max(0,m.metalness||0));m.roughness=Math.min(.82,Math.max(.46,m.roughness||.58))}})})}
 async function loadGLBs(){const L=new GLTFLoader();
- await Promise.all(['avatar_ai_analyst','avatar_ai_creator','avatar_ai_finance','desk_workstation','office_chair','meeting_table','lounge_sofa','potted_plant','storage_cabinet','reception_desk','wall_display','floor_lamp','bookshelf','coffee_table',
-  'avatar_ai_stock_analyst_v3','avatar_ai_crypto_trader_v3','avatar_ai_ledger_v3','avatar_ai_video_producer_v3','avatar_ai_graphic_artist_v3','avatar_ai_content_publisher_v3','avatar_ai_recipe_chef_v3','avatar_ai_trend_scout_v3','avatar_ai_chatbot_v3','avatar_ai_content_monitor_v3',
-  'avatar_ai_finance_v2','avatar_ai_creator_v2','avatar_ai_it_v2','avatar_ai_research_v2','avatar_ai_hr_v2','avatar_ai_farm_v2','avatar_ai_director_v2',
-  'social_sofa_v3','social_cafe_station_v3','social_arcade_v3','ping_pong_table_v2','chess_table_v2']
+ await Promise.all([
+  /* Only files present in /assets are requested; furniture without GLB keeps its procedural fallback. */
+  'avatar_ai_chatbot_v3','avatar_ai_content_monitor_v3','avatar_ai_content_publisher_v3',
+  'avatar_ai_creator_v2','avatar_ai_crypto_trader_v3','avatar_ai_director_v2','avatar_ai_farm_v2',
+  'avatar_ai_finance_v2','avatar_ai_graphic_artist_v3','avatar_ai_hr_v2','avatar_ai_it_v2',
+  'avatar_ai_ledger_v3','avatar_ai_recipe_chef_v3','avatar_ai_research_v2',
+  'avatar_ai_stock_analyst_v3','avatar_ai_trend_scout_v3','avatar_ai_video_producer_v3',
+  'chess_table_v2','ping_pong_table_v2','social_arcade_v3','social_cafe_station_v3','social_sofa_v3']
   .map(n=>new Promise(res=>L.load('assets/'+n+'.glb',g=>{fixMat(g.scene);GLB[n]=g.scene;res()},undefined,()=>res()))));
  RL.forEach(dress);Object.values(chars).forEach(swapChar);dressLobby();dressHub()}
 function put(n,parent,x,z,yaw=0,sc=1,y=0){const o=GLB[n]&&GLB[n].clone(true);if(!o)return null;o.position.set(x,y,z);o.rotation.y=yaw;o.scale.setScalar(sc);
  o.traverse(m=>{if(m.isMesh)m.castShadow=m.receiveShadow=true});parent.add(o);return o}
 function mkAvatar(n){const src=GLB['avatar_ai_'+n];if(!src)return null;const root=src.clone(true);root.updateMatrixWorld(true);
  const grp=a=>a.map(k=>root.getObjectByName(k)).filter(Boolean);
- const piv=(ms,dy)=>{const b=new THREE.Box3();ms.forEach(m=>b.expandByObject(m));const p=new THREE.Group();p.position.set((b.min.x+b.max.x)/2,b.max.y-dy,(b.min.z+b.max.z)/2);root.add(p);p.updateMatrixWorld(true);ms.forEach(m=>p.attach(m));return p};
+ const piv=(ms,dy)=>{if(!ms.length)return null;const b=new THREE.Box3();ms.forEach(m=>b.expandByObject(m));if(b.isEmpty())return null;const p=new THREE.Group();p.position.set((b.min.x+b.max.x)/2,b.max.y-dy,(b.min.z+b.max.z)/2);root.add(p);p.updateMatrixWorld(true);ms.forEach(m=>p.attach(m));return p};
  const side=k=>({leg:piv(grp([k+'_shoe',k+'_sole',k+'_leg',k+'_leg_top',k+'_leg_bottom']),0),arm:piv(grp([k+'_sleeve_upper',k+'_elbow',k+'_sleeve_lower',k+'_hand',k+'_cuff']),.08)});
  const l=side('L'),r=side('R');root.traverse(m=>{if(m.isMesh)m.castShadow=true});
  return{root,legL:l.leg,legR:r.leg,armL:l.arm,armR:r.arm}}
@@ -508,8 +525,8 @@ function spawn(x0){let r=Math.random()*VT.reduce((a,b)=>a+b[1],0),t=VT[0];for(co
  const z=cart?(dir>0?25.6:36.4):curb?(dir>0?26.9:35.1):(dir>0?28.3:33.7)+rnd(-.3,.3),base=rnd(t[2][0],t[2][1]);
  g.position.set(x,-.48,z);g.rotation.y=dir>0?0:PI;scene.add(g);
  veh.push({g,L,kind,dir,key,x,len,base,sp:x0!==undefined?base:0,bob:/bakso|sate|es/.test(kind)})}
-function initTraffic(){for(let i=0;i<16;i++)spawn(rnd(-105,105))}
-function traffic(dt){tNext-=dt;if(tNext<=0){tNext=rnd(.8,2.2);if(veh.length<20)spawn()}
+function initTraffic(){for(let i=0;i<(PREMIUM_LOW_POWER?7:12);i++)spawn(rnd(-105,105))}
+function traffic(dt){tNext-=dt;if(tNext<=0){tNext=rnd(.8,2.2);if(veh.length<(PREMIUM_LOW_POWER?9:16))spawn()}
  for(let i=veh.length-1;i>=0;i--){const v=veh[i];let lim=v.base;
   for(const o of veh){if(o===v||o.key!==v.key)continue;const d=(o.x-v.x)*v.dir;if(d>0){const gap=d-(o.len+v.len)/2;if(gap<9)lim=Math.min(lim,gap<2.5?0:o.sp*.9)}}
   v.sp+=(lim-v.sp)*Math.min(1,dt*(lim<v.sp?3:.8));v.x+=v.dir*v.sp*dt;v.g.position.x=v.x;
@@ -518,12 +535,14 @@ function traffic(dt){tNext-=dt;if(tNext<=0){tNext=rnd(.8,2.2);if(veh.length<20)s
   if(Math.abs(v.x)>125){scene.remove(v.g);veh.splice(i,1)}}}
 
 /* ===== scene ===== */
+const PREMIUM_LOW_POWER = (window.matchMedia && window.matchMedia('(max-width: 820px)').matches) || ((navigator.hardwareConcurrency || 8) <= 4);
+const premiumPixelRatio = () => Math.min(window.devicePixelRatio || 1, PREMIUM_LOW_POWER ? 1.2 : 1.6);
 function boot(){
  const host=$('map');
- rend=new THREE.WebGLRenderer({antialias:true});rend.setPixelRatio(Math.min(devicePixelRatio,2));rend.shadowMap.enabled=true;rend.shadowMap.type=THREE.PCFSoftShadowMap;rend.toneMapping=THREE.ACESFilmicToneMapping;rend.toneMappingExposure=1.05;rend.setSize(host.clientWidth,host.clientHeight);host.appendChild(rend.domElement);
+ rend=new THREE.WebGLRenderer({antialias:!PREMIUM_LOW_POWER,powerPreference:'default'});rend.setPixelRatio(premiumPixelRatio());rend.shadowMap.enabled=true;rend.shadowMap.type=THREE.PCFSoftShadowMap;rend.toneMapping=THREE.ACESFilmicToneMapping;rend.toneMappingExposure=1.05;rend.setSize(host.clientWidth,host.clientHeight);host.appendChild(rend.domElement);
  {const c=cv(8,256),x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#6fb4ec');g.addColorStop(.6,'#cfe8f7');g.addColorStop(1,'#eaf6ee');x.fillStyle=g;x.fillRect(0,0,8,256);scene.background=tex(c)}scene.fog=new THREE.Fog(0xbfe3f5,190,400);
  cam=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,.5,400);cam.position.set(3,60,48);
- scene.add(new THREE.HemisphereLight(0xffffff,0x6a8f6a,1.1));const sun=new THREE.DirectionalLight(0xfff3dc,1.5);sun.position.set(36,80,40);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);const sh=sun.shadow.camera;sh.left=-60;sh.right=60;sh.top=46;sh.bottom=-46;sh.near=10;sh.far=200;sun.shadow.bias=-.0005;scene.add(sun);
+ scene.add(new THREE.HemisphereLight(0xffffff,0x6a8f6a,1.1));const sun=new THREE.DirectionalLight(0xfff3dc,1.5);sun.position.set(36,80,40);sun.castShadow=true;sun.shadow.mapSize.set(PREMIUM_LOW_POWER?1024:2048,PREMIUM_LOW_POWER?1024:2048);const sh=sun.shadow.camera;sh.left=-60;sh.right=60;sh.top=46;sh.bottom=-46;sh.near=10;sh.far=200;sun.shadow.bias=-.0005;scene.add(sun);
  ctl=new OrbitControls(cam,rend.domElement);ctl.target.set(0,0,-3);ctl.enableDamping=true;ctl.maxPolarAngle=1.42;ctl.minDistance=6;ctl.maxDistance=210;
  ctl.mouseButtons={LEFT:THREE.MOUSE.PAN,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};ctl.touches={ONE:THREE.TOUCH.PAN,TWO:THREE.TOUCH.DOLLY_ROTATE};
  ctl.addEventListener('start',()=>tg=null);
@@ -549,7 +568,7 @@ function boot(){
  RL.forEach(r=>{r.front=wp(r,0,DP/2+1.5);r.inside=wp(r,0,1.2);r.spot=wp(r,-1.8,-.95);r.row=r.meet?undefined:(r.g.position.z<-17?'A':'B')});
  D.forEach(d=>chars[d.id]=mkChar(rooms[d.id]));
  RL.forEach(r=>{if(!r.meet)draw(r)});
- buildHall();loadGLBs();initTraffic();
+ buildHall();enhanceSocialHub(THREE,scene,STN);loadGLBs();initTraffic();
 
  const ray=new THREE.Raycaster(),mp=new THREE.Vector2();let pd;
  rend.domElement.addEventListener('pointerdown',e=>pd=[e.clientX,e.clientY]);
@@ -557,16 +576,24 @@ function boot(){
   const b=rend.domElement.getBoundingClientRect();mp.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);ray.setFromCamera(mp,cam);
   const hc=ray.intersectObjects(Object.values(chars).map(c=>c.g),true)[0],h=ray.intersectObjects(picks,false)[0];let aid=null;
   if(hc){let o=hc.object;while(o&&o.userData.aid===undefined)o=o.parent;if(o)aid=o.userData.aid}
-  if(aid!==null&&(!h||hc.distance<=h.distance+.8))openDiv(aid);
-  else if(h){const u=h.object.userData;if(u.zone){$('zone').textContent='📍 Zona: '+u.zoneName;$('zone').style.display='block';setTimeout(()=>{$('zone').style.display='none'},3000)}
-   if(u.dept&&DEP[u.dept])openDept(u.dept);else openDiv(u.id)}});
+  if(aid!==null&&(!h||hc.distance<=h.distance+.8)){
+    if(premiumPolish)premiumPolish.select(aid);
+    openDiv(aid);
+  }else{
+    if(premiumPolish)premiumPolish.select(null);
+    if(h){
+      const u=h.object.userData;
+      if(u.zone){$('zone').textContent='📍 Zona: '+u.zoneName;$('zone').style.display='block';setTimeout(()=>{$('zone').style.display='none'},3000)}
+      if(u.dept&&DEP[u.dept])openDept(u.dept);else openDiv(u.id);
+    }
+  }});
  $('reset').onclick=()=>{tg={t:new THREE.Vector3(0,0,-3),c:new THREE.Vector3(3,60,48)}};
- addEventListener('resize',()=>{rend.setSize(host.clientWidth,host.clientHeight);cam.aspect=host.clientWidth/host.clientHeight;cam.updateProjectionMatrix()});
+ addEventListener('resize',()=>{rend.setPixelRatio(premiumPixelRatio());rend.setSize(host.clientWidth,host.clientHeight);cam.aspect=host.clientWidth/host.clientHeight;cam.updateProjectionMatrix()});
  $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
- (function loop(){const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);
-  if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam);requestAnimationFrame(loop)})();
+ (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
+  if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam)})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
 function focus(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw));tg={t:r.g.position.clone().setY(1.5),c:r.g.position.clone().add(f.multiplyScalar(13)).setY(10)}}
@@ -926,6 +953,202 @@ $('cmdi').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.prev
   s.lolos.slice(0,3).forEach(x=>{L.push(x.kode+' '+n(x.harga)+(+x.sl>0?' • Beli '+n(x.buyLo)+(x.buyLo!==x.buyHi?'–'+n(x.buyHi):''):''));if(+x.sl>0)L.push('   SL '+n(x.sl)+' • TP '+n(x.tp1)+'–'+n(x.tp2))});
   if(!s.lolos.length)L.push('Tidak ada saham yang lolos');if(s.lolos.length>3)L.push('+'+(s.lolos.length-3)+' lainnya (lihat Dashboard)');
   const al=alertLine(1);return (al?al+'\n':'')+L.join('\n')+'\nSumber: ScreenResults'}}
+
+
+/* ===== Premium Office World — Phase 2 =====
+ * Keep the existing Three.js scene and event handlers. Add the new architectural
+ * layer only after the original boot sequence has created the scene and controls.
+ */
+let premiumWorldApplied = false;
+const bootBeforePremiumWorld = boot;
+boot = function() {
+  bootBeforePremiumWorld();
+  if (premiumWorldApplied || !cam || !ctl) return;
+  premiumWorldApplied = true;
+
+  const zoneSpecs = DL.map(dl => ({
+    id: dl.id,
+    box: dl.box.slice(),
+    name: (DEPTS.find(d => d.departmentId === dl.id) || {}).name || dl.id
+  }));
+  enhanceOfficeWorld({
+    THREE,
+    scene,
+    camera: cam,
+    controls: ctl,
+    zones: zoneSpecs
+  });
+
+  /* Phase 7 — ambient world detailing and camera presets.
+     Camera changes reuse the existing tg interpolation in the render loop. */
+  let premiumCameraDock = null;
+  const applyCameraPreset = (preset) => {
+    const portraitView = cam.aspect < 0.85;
+    const presets = {
+      overview: {
+        fov: portraitView ? 58 : 46,
+        target: [0, 1, -5],
+        camera: portraitView ? [24, 78, 112] : [36, 48, 66]
+      },
+      cinematic: {
+        fov: portraitView ? 68 : 52,
+        target: [0, 1.5, -3],
+        camera: portraitView ? [0, 96, 172] : [0, 30, 95]
+      },
+      social: {
+        fov: portraitView ? 68 : 54,
+        target: [-4, 1, 8],
+        camera: portraitView ? [-5, 96, 168] : [-5, 44, 88]
+      }
+    };
+    const view = presets[preset] || presets.overview;
+    cam.fov = view.fov;
+    cam.updateProjectionMatrix();
+    tg = {
+      t: new THREE.Vector3(...view.target),
+      c: new THREE.Vector3(...view.camera)
+    };
+    $('iso').textContent = '◇ Isometrik';
+    $('iso').dataset.premiumIso = '0';
+    if (premiumCameraDock) premiumCameraDock.setActive(preset);
+    return true;
+  };
+
+  const premiumExperience = enhancePremiumExperience({
+    THREE,
+    scene,
+    zones: zoneSpecs,
+    onPreset: applyCameraPreset
+  });
+  premiumCameraDock = premiumExperience.cameraDock;
+
+  /* Preserve the existing reset behaviour (including closing a division panel),
+     but restore the new premium default camera composition. */
+  const resetBeforePremium = $('reset').onclick;
+  $('reset').onclick = () => {
+    if (typeof resetBeforePremium === 'function') resetBeforePremium();
+    applyCameraPreset('overview');
+  };
+
+  /* A deliberate diorama angle with enough field of view to retain the whole
+     building, rather than the very long-lens crop of the previous preset. */
+  $('iso').onclick = () => {
+    const enabled = $('iso').dataset.premiumIso !== '1';
+    $('iso').dataset.premiumIso = enabled ? '1' : '0';
+    const portraitView = cam.aspect < 0.85;
+    cam.fov = enabled ? (portraitView ? 44 : 35) : (portraitView ? 58 : 46);
+    cam.updateProjectionMatrix();
+    tg = enabled
+      ? {
+          t: new THREE.Vector3(0, 1, -5),
+          c: portraitView ? new THREE.Vector3(12, 94, 116) : new THREE.Vector3(82, 78, 88)
+        }
+      : {
+          t: new THREE.Vector3(0, 1, -5),
+          c: portraitView ? new THREE.Vector3(24, 78, 112) : new THREE.Vector3(36, 48, 66)
+        };
+    if (premiumCameraDock) premiumCameraDock.setActive('');
+    $('iso').textContent = enabled ? '◇ Isometrik: ON' : '◇ Isometrik';
+  };
+};
+
+
+
+/* ===== Phase 3 — Premium Agent Characters =====
+ * Decorate the original profession-specific GLB after its normal swap.
+ * The secondary motion layer only adds subtle pose polish; movement, pathing,
+ * social activity slots and Firebase/AI workflows remain owned by original code.
+ */
+const swapCharBeforePremium = swapChar;
+swapChar = function(character) {
+  swapCharBeforePremium(character);
+  decoratePremiumCharacter(character, THREE);
+};
+
+const stepBeforePremium = step;
+step = function(character, dt) {
+  stepBeforePremium(character, dt);
+  animatePremiumCharacter(character, dt, THREE);
+};
+
+
+
+/* ===== Phase 4 — Premium Social Hub =====
+ * Existing buildHall(), STN slots, roam(), and character path logic remain intact.
+ * The new module decorates the stations after creation and animates ambience
+ * inside the existing render loop.
+ */
+const stepBeforeSocial = step;
+step = function(character, dt) {
+  stepBeforeSocial(character, dt);
+  animateSocialCharacter(character, dt);
+};
+
+/* ===== Phase 8 — Living Office =====
+ * Add backend-backed workstation telemetry and ambience after all existing
+ * scene boot wrappers have completed. The original data and command paths stay intact.
+ */
+const bootBeforeLivingOffice = boot;
+boot = function() {
+  bootBeforeLivingOffice();
+  livingOffice = createLivingOffice({
+    THREE,
+    scene,
+    rooms,
+    characters: chars,
+    pathOut,
+    pathIn,
+    nearestGap: nearGap,
+    hallZ: HALL_Z,
+    makeVector: V3,
+    getBackendAgent: id => ag(id),
+    backendReady: () => !!BK.s
+  });
+  window.__livingOfficeQA = livingOffice ? {
+    get monitorCount() { return livingOffice.monitorCount; },
+    get currentPeriod() { return livingOffice.currentPeriod; },
+    get meetingSequence() { return livingOffice.meetingSequence; },
+    runMeeting: (ids, topic) => livingOffice.runMeeting(ids, topic)
+  } : null;
+};
+
+/* A multi-division command starts with a physical briefing. The agents then
+   return to their desks before the existing job() and Apps Script flows run. */
+const routeCmdBeforeLivingOffice = routeCmd;
+routeCmd = async function(commandText) {
+  const result = await routeCmdBeforeLivingOffice(commandText);
+  const ids = [...new Set((result.divisions || []).map(item => Number(item.id)))]
+    .filter(id => chars[id] && rooms[id] && id !== 0);
+  if (livingOffice && ids.length > 1) {
+    const briefing = await livingOffice.runMeeting(ids, commandText);
+    if (briefing && briefing.message) {
+      result.reply = [result.reply, briefing.message].filter(Boolean).join(" • ");
+    }
+  }
+  return result;
+};
+
+/* ===== Phase 9 — Character Intelligence & Social Life ===== */
+let integrationDiagnostics = null;
+let premiumPolish = null;
+let characterSocialLife = null;
+const bootBeforeCharacterSocialLife = boot;
+boot = function() {
+  bootBeforeCharacterSocialLife();
+  characterSocialLife = createCharacterSocialLife({ THREE, characters: chars });
+  window.__characterSocialQA = characterSocialLife ? characterSocialLife.diagnostics() : null;
+  premiumPolish = createPremiumPolish({ THREE, characters: chars });
+  window.__premiumPolishQA = premiumPolish ? premiumPolish.diagnostics() : null;
+  integrationDiagnostics = createIntegrationDiagnostics({
+    firebaseReady: () => !!auth?.currentUser && !!db,
+    aiProxyConfigured: () => !!localStorage.getItem('ai_url'),
+    appsScriptConfigured: () => !!(window.google?.script?.run),
+    agentIds: D.map(agent => agent.id)
+  });
+  window.__integrationHealthQA = integrationDiagnostics.snapshot();
+
+};
+
 </script>
 </body>
 </html>
