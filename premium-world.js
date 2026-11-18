@@ -232,6 +232,84 @@ export function enhanceOfficeWorld({ THREE, scene, camera, controls, zones = [] 
     }
   });
 
+  /* Phase 6 — visual QA refinements.
+     Large ground planes should not receive the directional-light shadow frustum:
+     this avoids broad diagonal shadow artifacts across the diorama floor. */
+  const groundMesh = scene.children.find(object => {
+    const p = object.geometry && object.geometry.parameters;
+    return object.isMesh && p && p.width === 420 && p.depth === 300;
+  });
+  if (groundMesh) {
+    if (groundMesh.material && groundMesh.material.color) {
+      groundMesh.material = groundMesh.material.clone();
+      groundMesh.material.color.setHex(0x61766c);
+    }
+    groundMesh.receiveShadow = false;
+    groundMesh.castShadow = false;
+  }
+
+  const officeFloor = scene.children.find(object => {
+    const p = object.geometry && object.geometry.parameters;
+    return object.isMesh && object.geometry.type === 'PlaneGeometry' &&
+      p && p.width === 84 && p.height === 43;
+  });
+  if (officeFloor) {
+    officeFloor.receiveShadow = false;
+    officeFloor.castShadow = false;
+  }
+
+  /* Widen the shadow camera for the smaller architectural objects that still
+     benefit from contact shadows, avoiding a hard edge at the old frustum. */
+  scene.traverse(object => {
+    if (!object.isDirectionalLight || !object.castShadow || !object.shadow) return;
+    const shadowCamera = object.shadow.camera;
+    shadowCamera.left = -92;
+    shadowCamera.right = 92;
+    shadowCamera.top = 82;
+    shadowCamera.bottom = -82;
+    shadowCamera.near = 1;
+    shadowCamera.far = 240;
+    object.shadow.bias = -0.00025;
+    object.shadow.normalBias = 0.025;
+    shadowCamera.updateProjectionMatrix();
+  });
+
+  /* Upgrade the original sharp cone trees to layered low-poly canopies. */
+  const canopyGeometry = new THREE.IcosahedronGeometry(1.45, 1);
+  const canopyMaterials = [
+    makeMat(0x286b58, { roughness: 0.92 }),
+    makeMat(0x347b63, { roughness: 0.92 }),
+    makeMat(0x43866a, { roughness: 0.92 })
+  ];
+  const oldTreeCones = [];
+  scene.traverse(object => {
+    const p = object.geometry && object.geometry.parameters;
+    if (object.isMesh && object.geometry.type === 'ConeGeometry' &&
+        p && Math.abs((p.radius || 0) - 2.2) < 0.01 &&
+        Math.abs((p.height || 0) - 5) < 0.01) oldTreeCones.push(object);
+  });
+  oldTreeCones.forEach((oldCone, index) => {
+    oldCone.visible = false;
+    const x = oldCone.position.x;
+    const z = oldCone.position.z;
+    const crown = new THREE.Group();
+    crown.position.set(x, 0, z);
+    const levels = [
+      { y: 3.35, scale: [1.05, 0.92, 1.05], offset: [0, 0, 0] },
+      { y: 4.25, scale: [0.88, 0.9, 0.88], offset: [0.12, 0, -0.06] },
+      { y: 5.05, scale: [0.68, 0.78, 0.68], offset: [-0.08, 0, 0.08] }
+    ];
+    levels.forEach((level, i) => {
+      const leaves = new THREE.Mesh(canopyGeometry, canopyMaterials[(index + i) % canopyMaterials.length]);
+      leaves.position.set(level.offset[0], level.y, level.offset[2]);
+      leaves.scale.set(...level.scale);
+      leaves.castShadow = false;
+      leaves.receiveShadow = false;
+      crown.add(leaves);
+    });
+    scene.add(crown);
+  });
+
   /* Refined twilight sky for the diorama; ground and office meshes remain unchanged. */
   const sky = document.createElement('canvas');
   sky.width = 8;
@@ -254,10 +332,15 @@ export function enhanceOfficeWorld({ THREE, scene, camera, controls, zones = [] 
   }
 
   /* Framing centres the building while leaving the side HUD readable. */
-  camera.fov = 42;
-  camera.position.set(0, 76, 59);
+  const portraitView = camera.aspect < 0.85;
+  camera.fov = portraitView ? 58 : 46;
+  camera.position.set(
+    portraitView ? 42 : 36,
+    portraitView ? 105 : 48,
+    portraitView ? 150 : 66
+  );
   camera.updateProjectionMatrix();
-  controls.target.set(0, 0, -5);
+  controls.target.set(0, 1, -5);
   controls.minDistance = 7;
   controls.maxDistance = 185;
   controls.maxPolarAngle = 1.38;
