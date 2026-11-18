@@ -47,7 +47,7 @@ function roundedSlab(T,parent,w,d,h,r,material,x,y,z){
 
 function glassZone(T,scene,z){
  const [a,b,c,d]=z.box,w=b-a,depth=d-c,cx=(a+b)/2,cz=(c+d)/2,h=3.25,style=styles[z.id]||styles.finance;
- const frame=mat(T,0x52717e,{metalness:.42,roughness:.3}),glass=new T.MeshPhysicalMaterial({color:0xc5e4ee,transparent:true,opacity:.23,roughness:.12,metalness:.035,transmission:.12,thickness:.35,ior:1.42,side:T.DoubleSide,depthWrite:false});
+ const frame=mat(T,0x52717e,{metalness:.42,roughness:.3}),glass=new T.MeshPhysicalMaterial({color:0xc5e4ee,transparent:true,opacity:.23,roughness:.2,metalness:.12,clearcoat:.28,clearcoatRoughness:.22,side:T.DoubleSide,depthWrite:false,forceSinglePass:true});
  const accent=mat(T,style[0],{emissive:style[0],emissiveIntensity:.2,roughness:.35});
  const carpetMat=mat(T,style[1],{roughness:.82});
  const carpet=new T.Mesh(new T.PlaneGeometry(w-.3,depth-.3),carpetMat);carpet.rotation.x=-Math.PI/2;carpet.position.set(cx,.052,cz);carpet.receiveShadow=true;scene.add(carpet);
@@ -123,7 +123,7 @@ function createOfficeExtras(T,scene,m){
  });
  roundedSlab(T,portal,13.05,.78,.56,.18,portalFrame,0,3.9,0);
  bx(T,portal,11.7,.055,.1,0,3.61,.43,portalAccent,false);
- const doorGlass=new T.MeshPhysicalMaterial({color:0xc5e9f2,transparent:true,opacity:.24,roughness:.1,metalness:.03,transmission:.15,side:T.DoubleSide,depthWrite:false});
+ const doorGlass=new T.MeshPhysicalMaterial({color:0xc5e9f2,transparent:true,opacity:.24,roughness:.2,metalness:.1,clearcoat:.3,clearcoatRoughness:.2,side:T.DoubleSide,depthWrite:false,forceSinglePass:true});
  [-1.45,1.45].forEach(x=>{const panel=bx(T,portal,2.78,3.35,.055,x,1.92,0,doorGlass,false);panel.renderOrder=3;bx(T,portal,.06,3.42,.11,x,1.92,.08,portalFrame,false)});
  bx(T,portal,.1,3.42,.14,0,1.92,.08,portalFrame,false);
  sign(T,portal,"KANTOR AI","INTELLIGENCE • CREATIVITY • AUTOMATION",0x64d1da,0,4.02,.48,8.8);
