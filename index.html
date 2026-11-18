@@ -104,6 +104,7 @@ import * as THREE from 'three';
 import { enhanceOfficeWorld } from './premium-world.js';
 import { decoratePremiumCharacter, animatePremiumCharacter } from './premium-character.js';
 import { enhanceSocialHub, updateSocialHub, animateSocialCharacter } from './premium-social.js';
+import { enhancePremiumExperience } from './premium-experience.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -962,22 +963,55 @@ boot = function() {
     zones: zoneSpecs
   });
 
+  /* Phase 7 — ambient world detailing and camera presets.
+     Camera changes reuse the existing tg interpolation in the render loop. */
+  let premiumCameraDock = null;
+  const applyCameraPreset = (preset) => {
+    const portraitView = cam.aspect < 0.85;
+    const presets = {
+      overview: {
+        fov: portraitView ? 58 : 46,
+        target: [0, 1, -5],
+        camera: portraitView ? [42, 105, 150] : [36, 48, 66]
+      },
+      cinematic: {
+        fov: portraitView ? 68 : 52,
+        target: [0, 1.5, -3],
+        camera: portraitView ? [0, 114, 218] : [0, 30, 95]
+      },
+      social: {
+        fov: portraitView ? 68 : 54,
+        target: [-4, 1, 8],
+        camera: portraitView ? [-5, 112, 220] : [-5, 44, 88]
+      }
+    };
+    const view = presets[preset] || presets.overview;
+    cam.fov = view.fov;
+    cam.updateProjectionMatrix();
+    tg = {
+      t: new THREE.Vector3(...view.target),
+      c: new THREE.Vector3(...view.camera)
+    };
+    $('iso').textContent = '◇ Isometrik';
+    $('iso').dataset.premiumIso = '0';
+    if (premiumCameraDock) premiumCameraDock.setActive(preset);
+    return true;
+  };
+
+  const premiumExperience = enhancePremiumExperience({
+    THREE,
+    scene,
+    zones: zoneSpecs,
+    onPreset: applyCameraPreset
+  });
+  premiumCameraDock = premiumExperience.cameraDock;
+
   /* Preserve the existing reset behaviour (including closing a division panel),
      but restore the new premium default camera composition. */
   const resetBeforePremium = $('reset').onclick;
   $('reset').onclick = () => {
     if (typeof resetBeforePremium === 'function') resetBeforePremium();
-    const portraitView = cam.aspect < 0.85;
-    cam.fov = portraitView ? 58 : 46;
-    cam.updateProjectionMatrix();
-    tg = {
-      t: new THREE.Vector3(0, 1, -5),
-      c: portraitView
-        ? new THREE.Vector3(42, 105, 150)
-        : new THREE.Vector3(36, 48, 66)
-    };
-    $('iso').textContent = '◇ Isometrik';
-    $('iso').dataset.premiumIso = '0';
+    applyCameraPreset('overview');
   };
 
   /* A deliberate diorama angle with enough field of view to retain the whole
@@ -997,6 +1031,7 @@ boot = function() {
           t: new THREE.Vector3(0, 1, -5),
           c: portraitView ? new THREE.Vector3(42, 105, 150) : new THREE.Vector3(36, 48, 66)
         };
+    if (premiumCameraDock) premiumCameraDock.setActive('');
     $('iso').textContent = enabled ? '◇ Isometrik: ON' : '◇ Isometrik';
   };
 };
