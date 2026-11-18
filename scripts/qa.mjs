@@ -13,7 +13,8 @@ const html = read("index.html");
 const modules = [
   "premium-world.js",
   "premium-character.js",
-  "premium-social.js"
+  "premium-social.js",
+  "premium-experience.js"
 ];
 
 for (const file of modules) {
@@ -56,7 +57,8 @@ const requiredHooks = [
   "animatePremiumCharacter",
   "enhanceSocialHub",
   "updateSocialHub",
-  "animateSocialCharacter"
+  "animateSocialCharacter",
+  "enhancePremiumExperience"
 ];
 for (const hook of requiredHooks) {
   if (!html.includes(hook)) fail(`Missing integration hook: ${hook}`);
@@ -65,7 +67,8 @@ if (requiredHooks.every(hook => html.includes(hook))) ok("Premium phase integrat
 
 if (!html.includes("if(document.hidden)")) fail("Hidden-tab render pause missing");
 if (!html.includes("PREMIUM_LOW_POWER")) fail("Adaptive low-power profile missing");
+if (!html.includes("data-preset=\\"cinematic\\"") && !html.includes("applyCameraPreset")) fail("Premium camera presets are not wired");
 if (html.includes("sun.shadow.mapSize.set(4096,4096)")) fail("Legacy 4096 shadow map still enabled");
 if (!html.includes("PREMIUM_LOW_POWER?1024:2048")) fail("Adaptive shadow resolution missing");
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Kantor AI Phase 5 QA checks passed.");
+console.log("Kantor AI Premium Makeover QA checks passed.");
