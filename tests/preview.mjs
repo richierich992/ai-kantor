@@ -94,6 +94,12 @@ async function openPreview(viewport, label) {
   check(!!polish && polish.characterCount >= 10, label + ": premium character polish initializes");
   const integration = await page.evaluate(() => window.__integrationHealthQA);
   check(!!integration && integration.readOnly === true && integration.agentCount >= 10 && ["ready","partially-configured","not-configured"].includes(integration.status), label + ": read-only integration diagnostics initialize");
+  const mockupOffice = await page.evaluate(() => window.__mockupOfficeQA);
+  check(!!mockupOffice && mockupOffice.theme === "approved-isometric-open-office" &&
+    mockupOffice.workstationCount >= 15 && mockupOffice.glassDivisionCount === 5 &&
+    mockupOffice.meetingRoomReady && mockupOffice.receptionReady && mockupOffice.pantryReady &&
+    mockupOffice.collaborationTableCount === 4,
+    label + ": approved isometric office, 5 glass divisions, workstations and shared rooms initialize");
 
 
 
