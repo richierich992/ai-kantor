@@ -18,7 +18,7 @@ function workstation(T,r,m){const g=r.g,group=new T.Group();group.name="mockup-w
  const telemetry=g.children.find(o=>o.userData?.phase8Monitor);if(telemetry){telemetry.visible=true;telemetry.position.set(.72,1.46,-1.1);telemetry.rotation.set(0,0,0);telemetry.scale.set(1,1,1);telemetry.renderOrder=5}
  bx(T,group,.85,.06,.28,-.48,1,-.18,m.keyboard);bx(T,group,.22,.06,.26,.55,1,-.18,m.mouse);bx(T,group,.3,.38,.26,-1.12,1.13,-.34,m.tower);
  bx(T,group,.9,.14,.86,0,.78,1,m.seat);bx(T,group,.85,.85,.14,0,1.22,1.35,m.seat);bx(T,group,.1,.38,.1,0,.32,1,m.metal);
- r.spot=g.localToWorld(new T.Vector3(0,0,1.55));r.inside=g.localToWorld(new T.Vector3(0,0,1.72));r.front=g.localToWorld(new T.Vector3(0,0,3.35));r.row=g.position.z<-17?'A':'B';r.isometricWorkstation=true}
+ r.spot=g.localToWorld(new T.Vector3(0,0,2.35));r.inside=g.localToWorld(new T.Vector3(0,0,2.5));r.front=g.localToWorld(new T.Vector3(0,0,3.6));r.row=g.position.z<-17?'A':'B';r.isometricWorkstation=true}
 function createOfficeExtras(T,scene,m){
  const reception=new T.Group();reception.name="mockup-reception";reception.position.set(0,0,14.7);scene.add(reception);bx(T,reception,5.5,.95,1.45,0,.55,0,m.frame);bx(T,reception,5.8,.14,1.58,0,1.08,0,m.lightDesk);bx(T,reception,4.6,.06,.08,0,.55,.75,m.accent);sign(T,reception,"RECEPTION","WELCOME TO KANTOR AI",0x62cbd0,0,2.35,-.4,5.6);
  const pantry=new T.Group();pantry.name="mockup-pantry";pantry.position.set(31,0,12.5);scene.add(pantry);bx(T,pantry,4.8,.95,1.15,0,.55,0,m.frame);bx(T,pantry,5.1,.14,1.3,0,1.08,0,m.lightDesk);[-1.4,0,1.4].forEach(x=>{cyl(T,pantry,.12,.8,x,.4,1,m.metal);cyl(T,pantry,.35,.12,x,.85,1,m.seat)});sign(T,pantry,"PANTRY","COFFEE • BREAK • REFRESH",0xd59e62,0,2.45,-.65,4.9);
