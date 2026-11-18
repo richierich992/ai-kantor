@@ -101,6 +101,7 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 
 <script type="module">
 import * as THREE from 'three';
+import { enhanceOfficeWorld } from './premium-world.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -927,6 +928,61 @@ $('cmdi').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.prev
   s.lolos.slice(0,3).forEach(x=>{L.push(x.kode+' '+n(x.harga)+(+x.sl>0?' • Beli '+n(x.buyLo)+(x.buyLo!==x.buyHi?'–'+n(x.buyHi):''):''));if(+x.sl>0)L.push('   SL '+n(x.sl)+' • TP '+n(x.tp1)+'–'+n(x.tp2))});
   if(!s.lolos.length)L.push('Tidak ada saham yang lolos');if(s.lolos.length>3)L.push('+'+(s.lolos.length-3)+' lainnya (lihat Dashboard)');
   const al=alertLine(1);return (al?al+'\n':'')+L.join('\n')+'\nSumber: ScreenResults'}}
+
+
+/* ===== Premium Office World — Phase 2 =====
+ * Keep the existing Three.js scene and event handlers. Add the new architectural
+ * layer only after the original boot sequence has created the scene and controls.
+ */
+let premiumWorldApplied = false;
+const bootBeforePremiumWorld = boot;
+boot = function() {
+  bootBeforePremiumWorld();
+  if (premiumWorldApplied || !cam || !ctl) return;
+  premiumWorldApplied = true;
+
+  const zoneSpecs = DL.map(dl => ({
+    id: dl.id,
+    box: dl.box.slice(),
+    name: (DEPTS.find(d => d.departmentId === dl.id) || {}).name || dl.id
+  }));
+  enhanceOfficeWorld({
+    THREE,
+    scene,
+    camera: cam,
+    controls: ctl,
+    zones: zoneSpecs
+  });
+
+  /* Preserve the existing reset behaviour (including closing a division panel),
+     but restore the new premium default camera composition. */
+  const resetBeforePremium = $('reset').onclick;
+  $('reset').onclick = () => {
+    if (typeof resetBeforePremium === 'function') resetBeforePremium();
+    cam.fov = 42;
+    cam.updateProjectionMatrix();
+    tg = {
+      t: new THREE.Vector3(0, 0, -5),
+      c: new THREE.Vector3(0, 76, 59)
+    };
+    $('iso').textContent = '◇ Isometrik';
+    $('iso').dataset.premiumIso = '0';
+  };
+
+  /* A deliberate diorama angle with enough field of view to retain the whole
+     building, rather than the very long-lens crop of the previous preset. */
+  $('iso').onclick = () => {
+    const enabled = $('iso').dataset.premiumIso !== '1';
+    $('iso').dataset.premiumIso = enabled ? '1' : '0';
+    cam.fov = enabled ? 35 : 42;
+    cam.updateProjectionMatrix();
+    tg = enabled
+      ? { t: new THREE.Vector3(0, 0, -5), c: new THREE.Vector3(82, 78, 88) }
+      : { t: new THREE.Vector3(0, 0, -5), c: new THREE.Vector3(0, 76, 59) };
+    $('iso').textContent = enabled ? '◇ Isometrik: ON' : '◇ Isometrik';
+  };
+};
+
 </script>
 </body>
 </html>
