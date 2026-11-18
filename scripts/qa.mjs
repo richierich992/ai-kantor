@@ -41,7 +41,7 @@ else {
   else ok("Inline application module syntax");
 }
 
-const manifestMatch = html.match(/async function loadGLBs\(\)[\s\S]*?await Promise\.all\(\[([\s\S]*?)\]\.map\(n=>/);
+const manifestMatch = html.match(/async function loadGLBs\(\)[\s\S]*?await Promise\.all\(\[([\s\S]*?)\]\s*\.map\(n=>/);
 if (!manifestMatch) fail("GLB loader manifest not found");
 else {
   const names = [...manifestMatch[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
