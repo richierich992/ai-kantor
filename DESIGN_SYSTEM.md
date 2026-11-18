@@ -75,3 +75,11 @@
 - Pemeriksaan dilakukan statis terhadap file, asset, integrasi, dan konfigurasi. Browser render, FPS perangkat nyata, serta end-to-end login/chat/Firebase/Apps Script belum dapat diverifikasi dari audit repository.
 
 - GitHub Actions static QA pada commit `65a7f2534c07a95957d71e8a1998f6663d89fe9f` berhasil: Node syntax checks, import hooks, asset manifest, dan profil performa lulus. Browser/device regression masih menunggu.
+
+
+## Phase 7 — Premium Game Experience
+- Added `premium-experience.js` as a decorative layer for ground/office floor materials, divisional threshold accents, perimeter trim and entrance bollard lighting.
+- Added compact camera presets: Overview, Cinematic and Social Hub. Camera motion uses the existing `tg` interpolation and OrbitControls rather than replacing the camera system.
+- Camera dock hides while chat or modal panels are open and adapts to mobile width.
+- Existing room hit targets, agent IDs, movement paths, Social Hub slots, Firebase paths, AI routing and Apps Script payloads remain owned by the original application.
+- Browser preview now checks visibility and activation of all three camera presets on desktop and mobile.
