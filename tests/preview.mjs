@@ -92,7 +92,9 @@ async function openPreview(viewport, label) {
   check(!!socialLife && socialLife.characterCount >= 10 && socialLife.bubbleCount >= 10, label + ": character social cues initialize");
   const polish = await page.evaluate(() => window.__premiumPolishQA);
   check(!!polish && polish.characterCount >= 10, label + ": premium character polish initializes");
-  const campus = await page.evaluate(() => window.__premiumCampusQA);\n  check(!!campus && campus.departmentPodCount >= 4 && campus.centralCoreReady && campus.receptionReady, label + ": premium campus core, department pods and reception initialize");\n  const integration = await page.evaluate(() => window.__integrationHealthQA);
+  const campus = await page.evaluate(() => window.__premiumCampusQA);
+  check(!!campus && campus.departmentPodCount >= 4 && campus.centralCoreReady && campus.receptionReady, label + ": premium campus core, department pods and reception initialize");
+  const integration = await page.evaluate(() => window.__integrationHealthQA);
   check(!!integration && integration.readOnly === true && integration.agentCount >= 10 && ["ready","partially-configured","not-configured"].includes(integration.status), label + ": read-only integration diagnostics initialize");
 
 
