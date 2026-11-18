@@ -112,6 +112,7 @@ import { createPremiumPolish } from './premium-polish.js';
 import { createIntegrationDiagnostics } from './premium-integration.js';
 import { createLivingOffice, chooseIdleStation } from './premium-living-office.js';
 import { enhancePremiumExperience } from './premium-experience.js';
+import { enhanceIsometricOffice, updateIsometricOffice } from './isometric-office.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -592,7 +593,7 @@ function boot(){
  $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
- (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
+ (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);updateIsometricOffice(scene,dt);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
   if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam)})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
@@ -707,6 +708,24 @@ $('dbody').onclick=async e=>{const b=e.target.closest('button[data-a]');if(!b||b
 
 /* ===== chat ===== */
 function modeLbl(){const d=D.find(x=>x.id===cur);if(d)$('mode').textContent=d.mode==='24h'?'🟢 Agent 24 jam':'⚪ Saat dipanggil'}
+/* Approved mockup visual rebuild — preserve all backend and agent routes. */
+let mockupOffice = null;
+const bootBeforeMockupOffice = boot;
+boot = function() {
+  bootBeforeMockupOffice();
+  if (mockupOffice || !cam || !ctl) return;
+  mockupOffice = enhanceIsometricOffice({
+    THREE, scene, rooms, characters,
+    zones: DL.map(dl => ({
+      id: dl.id, box: dl.box.slice(),
+      name: (DEPTS.find(d => d.departmentId === dl.id) || {}).name || dl.id
+    })),
+    zoneMeshes, camera: cam, controls: ctl,
+    setTarget: value => { tg = value; }
+  });
+  window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
+};
+
 function openDiv(id){const r=rooms[id];focus(r);if(!r||r.meet)return;cur=id;$('ct').textContent=`${r.ic} ${r.name}`;$('ct').style.color=r.col;$('chat').classList.add('open');modeLbl();renderSrc(id);
  if(unsub)unsub();
  unsub=onValue(query(ref(db,`offices/${oid}/messages/${id}`),limitToLast(30)),s=>{const v=s.val(),a=[];if(v)Object.values(v).forEach(m=>a.push(m));a.sort((x,y)=>(x.t||0)-(y.t||0));HIST[id]=a;
