@@ -39,7 +39,7 @@ export function enhanceIsometricOffice({THREE,scene,rooms,characters,zones=[],zo
   if(!o.isMesh||!p)return;
   const bg=o.geometry.type==="BoxGeometry",pg=o.geometry.type==="PlaneGeometry";
   if(bg&&((p.width===420&&p.depth===300)||(p.width===88&&p.height===.7&&p.depth===47)))o.visible=false;
-  if(pg&&((p.width===16&&p.height===8)||(p.width===280&&p.height===12)||(p.width===84&&p.height===43)))o.visible=false;
+  if(pg&&((p.width===16&&p.height===8)||(p.width===280&&p.height===12)||((p.width===84&&p.height===43)&&o!==floor)))o.visible=false;
   if(o.geometry.type==="ConeGeometry"&&p.height===5&&p.radius===2.2)o.visible=false;
   if(bg&&p.width===3&&p.depth===.35&&Math.abs(o.position.z-31)<.5)o.visible=false;
   const oldPerimeter=bg&&p.height===3&&((p.width===84&&p.depth===.3&&Math.abs(o.position.z+26)<.3)||(p.width===.3&&p.depth===43&&Math.abs(Math.abs(o.position.x)-42)<.3));
