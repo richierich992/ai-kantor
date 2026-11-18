@@ -1108,7 +1108,7 @@ const routeCmdBeforeLivingOffice = routeCmd;
 routeCmd = async function(commandText) {
   const result = await routeCmdBeforeLivingOffice(commandText);
   const ids = [...new Set((result.divisions || []).map(item => Number(item.id)))]
-    .filter(id => characters[id] && rooms[id] && id !== 0);
+    .filter(id => chars[id] && rooms[id] && id !== 0);
   if (livingOffice && ids.length > 1) {
     const briefing = await livingOffice.runMeeting(ids, commandText);
     if (briefing && briefing.message) {
