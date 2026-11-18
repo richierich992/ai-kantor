@@ -55,3 +55,12 @@
 - Hook dekorasi berjalan setelah `swapChar` lama; hook animasi berjalan setelah `step` lama. Jalur pergerakan, roam, slot Social Hub, dan gerakan dasar tetap dimiliki kode lama.
 - Bounds model dikonversi ke koordinat lokal sebelum emblem/ring diposisikan agar cocok dengan transform karakter.
 - Belum ada render browser, validasi visual pada semua 16 GLB, atau uji FPS perangkat; perlu preview sebelum merge.
+
+
+## Status implementasi Phase 4 — Social Hub
+- Modul `premium-social.js` memperkaya stasiun yang sudah ada: café, lounge, reading corner, ping-pong, chess, garden, community board, arcade, dan fitness.
+- Penambahan meliputi signage zona, pad dan ring lantai, lampu aktivitas, indikator slot terisi, bola ping-pong animasi, serta uap café.
+- Animasi gestur ringan ditambahkan untuk aktivitas chat, swing, type, dan read pada slot sosial.
+- Integrasi dilakukan setelah `buildHall()` dan melalui render loop yang sudah ada. Fungsi `roam()`, slot `STN`, `go()`, model furniture GLB, serta rute karakter tidak diganti.
+- Efek memakai geometri/material sederhana dan satu update pass per frame; perlu pemeriksaan FPS pada perangkat nyata.
+- Belum ada render browser atau uji interaksi end-to-end; PR tetap draft sampai preview visual dan regresi fungsi ditinjau.
