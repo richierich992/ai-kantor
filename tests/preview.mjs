@@ -84,6 +84,14 @@ async function openPreview(viewport, label) {
 
   const canvasBox = await page.locator("#map canvas").boundingBox();
   check(!!canvasBox && canvasBox.width >= viewport.width * 0.7 && canvasBox.height > viewport.height * 0.45, label + ": 3D canvas has usable dimensions");
+  const cameraDock = page.locator("#camera-dock");
+  check(await cameraDock.isVisible(), label + ": premium camera dock is visible");
+  await cameraDock.locator('[data-preset="cinematic"]').click();
+  check(await cameraDock.locator('[data-preset="cinematic"]').getAttribute("aria-pressed") === "true", label + ": cinematic camera preset activates");
+  await cameraDock.locator('[data-preset="social"]').click();
+  check(await cameraDock.locator('[data-preset="social"]').getAttribute("aria-pressed") === "true", label + ": Social Hub camera preset activates");
+  await cameraDock.locator('[data-preset="overview"]').click();
+  check(await cameraDock.locator('[data-preset="overview"]').getAttribute("aria-pressed") === "true", label + ": overview camera preset restores");
   report.viewports[label] = {
     viewport: viewport,
     canvas: canvasBox,
