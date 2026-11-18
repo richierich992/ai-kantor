@@ -35,6 +35,18 @@ for (const file of modules) {
 }
 ok("Premium modules imported by index.html");
 
+const importMapMatch = html.match(/<script type="importmap">([\\s\\S]*?)<\\/script>/i);
+if (!importMapMatch) fail("Import map script not found");
+else {
+  try {
+    const importMap = JSON.parse(importMapMatch[1]);
+    if (!importMap.imports || !importMap.imports.three) fail("Three.js import map is incomplete");
+    else ok("Import map JSON is valid");
+  } catch (error) {
+    fail("Import map JSON is invalid: " + error.message);
+  }
+}
+
 const moduleMatch = html.match(/<script type="module">([\s\S]*?)<\/script>/i);
 if (!moduleMatch) fail("Main module script not found in index.html");
 else {
@@ -84,4 +96,4 @@ if (!html.includes('data-preset="cinematic"') && !html.includes("applyCameraPres
 if (html.includes("sun.shadow.mapSize.set(4096,4096)")) fail("Legacy 4096 shadow map still enabled");
 if (!html.includes("PREMIUM_LOW_POWER?1024:2048")) fail("Adaptive shadow resolution missing");
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Kantor AI Phase 11 Integration Diagnostics QA checks passed.");
+console.log("Kantor AI Phase 12 Release QA checks passed.");
