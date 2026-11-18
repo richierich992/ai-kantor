@@ -83,3 +83,12 @@
 - Camera dock hides while chat or modal panels are open and adapts to mobile width.
 - Existing room hit targets, agent IDs, movement paths, Social Hub slots, Firebase paths, AI routing and Apps Script payloads remain owned by the original application.
 - Browser preview now checks visibility and activation of all three camera presets on desktop and mobile.
+
+
+## Phase 8 — Living Office
+- Added `premium-living-office.js` for role-weighted Social Hub destination selection, backend-backed workstation telemetry, coordinated multi-division meeting choreography, meeting-room holographic visuals, and Jakarta-time ambience.
+- Idle station preferences are role-aware (finance, content, technology, research) while retaining the existing free-slot occupancy and roam scheduler.
+- Workstation monitor displays show the latest Apps Script agent state/message/run time and 24-hour success/failure counts. When the backend is not configured, the screens explicitly show that telemetry is unavailable rather than inventing activity.
+- Multi-division Command Center routing attempts a physical briefing: selected available agents walk to the existing meeting room, animate discussion, then return to their own desks before existing jobs are dispatched. If an agent is already busy, briefing is skipped and the original task routing continues.
+- Ambient sky/fill/entrance/social lighting follows real Jakarta time (dawn, day, golden hour, night). This changes only visual ambience and does not schedule or trigger backend work.
+- Existing Firebase paths, agent identities, AI proxy payloads, Apps Script calls, task queue, and Telegram/backend scheduler are not changed.
