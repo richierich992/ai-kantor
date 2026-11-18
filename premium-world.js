@@ -333,11 +333,12 @@ export function enhanceOfficeWorld({ THREE, scene, camera, controls, zones = [] 
 
   /* Framing centres the building while leaving the side HUD readable. */
   const portraitView = camera.aspect < 0.85;
-  camera.fov = portraitView ? 52 : 42;
+  camera.fov = portraitView ? 50 : 40;
+  camera.zoom = portraitView ? 1.28 : 1.08;
   camera.position.set(
-    portraitView ? 25 : 29,
-    portraitView ? 72 : 40,
-    portraitView ? 98 : 54
+    portraitView ? 16 : 27,
+    portraitView ? 65 : 38,
+    portraitView ? 88 : 51
   );
   camera.updateProjectionMatrix();
   controls.target.set(0, 1, -5);
