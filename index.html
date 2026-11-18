@@ -73,6 +73,24 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
 
 
+/* Approved mockup visual rebuild — execute after all legacy visual and ambience layers. */
+let mockupOffice = null;
+const bootBeforeMockupOffice = boot;
+boot = function() {
+  bootBeforeMockupOffice();
+  if (mockupOffice || !cam || !ctl) return;
+  mockupOffice = enhanceIsometricOffice({
+    THREE, scene, rooms, characters,
+    zones: DL.map(dl => ({
+      id: dl.id, box: dl.box.slice(),
+      name: (DEPTS.find(d => d.departmentId === dl.id) || {}).name || dl.id
+    })),
+    zoneMeshes, camera: cam, controls: ctl,
+    setTarget: value => { tg = value; }
+  });
+  window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
+};
+
 </script>
 </head>
 <body>
@@ -708,24 +726,6 @@ $('dbody').onclick=async e=>{const b=e.target.closest('button[data-a]');if(!b||b
 
 /* ===== chat ===== */
 function modeLbl(){const d=D.find(x=>x.id===cur);if(d)$('mode').textContent=d.mode==='24h'?'🟢 Agent 24 jam':'⚪ Saat dipanggil'}
-/* Approved mockup visual rebuild — preserve all backend and agent routes. */
-let mockupOffice = null;
-const bootBeforeMockupOffice = boot;
-boot = function() {
-  bootBeforeMockupOffice();
-  if (mockupOffice || !cam || !ctl) return;
-  mockupOffice = enhanceIsometricOffice({
-    THREE, scene, rooms, characters,
-    zones: DL.map(dl => ({
-      id: dl.id, box: dl.box.slice(),
-      name: (DEPTS.find(d => d.departmentId === dl.id) || {}).name || dl.id
-    })),
-    zoneMeshes, camera: cam, controls: ctl,
-    setTarget: value => { tg = value; }
-  });
-  window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
-};
-
 function openDiv(id){const r=rooms[id];focus(r);if(!r||r.meet)return;cur=id;$('ct').textContent=`${r.ic} ${r.name}`;$('ct').style.color=r.col;$('chat').classList.add('open');modeLbl();renderSrc(id);
  if(unsub)unsub();
  unsub=onValue(query(ref(db,`offices/${oid}/messages/${id}`),limitToLast(30)),s=>{const v=s.val(),a=[];if(v)Object.values(v).forEach(m=>a.push(m));a.sort((x,y)=>(x.t||0)-(y.t||0));HIST[id]=a;
