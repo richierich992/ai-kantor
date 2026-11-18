@@ -11,10 +11,11 @@ function glassZone(T,scene,z){const [a,b,c,d]=z.box,w=b-a,depth=d-c,cx=(a+b)/2,c
  const gap=Math.min(3.2,w-1),seg=(w-gap)/2;[a+seg/2,b-seg/2].forEach(x=>{const p=bx(T,scene,seg,h,.06,x,h/2,d,glass,false);p.renderOrder=2});
  [[a,c],[b,c],[a,d],[b,d]].forEach(([x,z])=>bx(T,scene,.11,h+.06,.12,x,h/2,z,frame,false));bx(T,scene,w,.12,.14,cx,h+.03,c,frame,false);bx(T,scene,w,.12,.14,cx,h+.03,d,frame,false);bx(T,scene,w-.2,.05,.09,cx,.14,d-.04,mat(T,style[0],{emissive:style[0],emissiveIntensity:.12}),false);const count=Math.max(1,Math.floor(depth/5));for(let i=1;i<count;i++){const z=c+depth/count*i;bx(T,scene,.07,h,.1,a+.03,h/2,z,frame,false);bx(T,scene,.07,h,.1,b-.03,h/2,z,frame,false)}
  sign(T,scene,style[2],"GLASS TEAM WORKSPACE",style[0],cx,3,d+.05,Math.min(6.2,Math.max(3.8,w*.3)));return carpet}
-function workstation(T,r,m){const g=r.g,group=new T.Group();group.name="mockup-workstation-"+r.id;g.userData.isMockupFurniture=true;g.position.set(0,0,0);g.add; r.g.add(group);
+function workstation(T,r,m){const g=r.g,group=new T.Group();group.name="mockup-workstation-"+r.id;g.userData.isMockupFurniture=true;group.position.set(0,0,0);r.g.add(group);
  bx(T,group,3.1,.14,1.5,0,.88,-.45,m.wood);[-1.4,1.4].forEach(x=>[-1,.05].forEach(z=>bx(T,group,.09,.78,.09,x,.4,z,m.metal)));
  bx(T,group,1.48,1,.12,-.48,1.55,-1.1,m.frame);if(r.screenMesh)r.screenMesh.visible=false;
- const telemetry=g.children.find(o=>o.userData?.phase8Monitor);if(telemetry){telemetry.visible=true;telemetry.position.set(.72,1.46,-1.1);telemetry.rotation.set(0,0,0);telemetry.scale.set(1,1,1);telemetry.renderOrder=5}else{const s=new T.Mesh(new T.PlaneGeometry(1.35,.78),new T.MeshBasicMaterial({map:r.tx,toneMapped:false}));s.position.set(-.48,1.55,-1.04);group.add(s)}
+ const mainScreen=new T.Mesh(new T.PlaneGeometry(1.35,.78),new T.MeshBasicMaterial({map:r.tx,toneMapped:false,side:T.DoubleSide}));mainScreen.position.set(-.48,1.55,-1.025);mainScreen.renderOrder=5;group.add(mainScreen);
+ const telemetry=g.children.find(o=>o.userData?.phase8Monitor);if(telemetry){telemetry.visible=true;telemetry.position.set(.72,1.46,-1.1);telemetry.rotation.set(0,0,0);telemetry.scale.set(1,1,1);telemetry.renderOrder=5}
  bx(T,group,.85,.06,.28,-.48,1,-.18,m.keyboard);bx(T,group,.22,.06,.26,.55,1,-.18,m.mouse);bx(T,group,.3,.38,.26,-1.12,1.13,-.34,m.tower);
  bx(T,group,.9,.14,.86,0,.78,1,m.seat);bx(T,group,.85,.85,.14,0,1.22,1.35,m.seat);bx(T,group,.1,.38,.1,0,.32,1,m.metal);
  r.spot=g.localToWorld(new T.Vector3(0,0,1.55));r.inside=g.localToWorld(new T.Vector3(0,0,1.72));r.front=g.localToWorld(new T.Vector3(0,0,3.35));r.row=g.position.z<-17?'A':'B';r.isometricWorkstation=true}
@@ -30,22 +31,34 @@ export function enhanceIsometricOffice({THREE,scene,rooms,characters,zones=[],zo
  if(scene.userData.isometricOfficeRebuild)return scene.userData.isometricOfficeRebuild;
  const m={wood:mat(THREE,0x9a7550),metal:mat(THREE,0x3d5057,{metalness:.55}),frame:mat(THREE,0x273a43,{metalness:.5}),seat:mat(THREE,0x47677b),keyboard:mat(THREE,0x25343a),mouse:mat(THREE,0x303a40),tower:mat(THREE,0x35454c),lightDesk:mat(THREE,0xe5ebe9),accent:mat(THREE,0x65c6cf)};
  const floorMat=mat(THREE,0xffffff,{map:tile(),roughness:.9});bx(THREE,scene,88,.55,47,0,-.32,-4.5,mat(THREE,0x46535a));const floor=new THREE.Mesh(new THREE.PlaneGeometry(84,43),floorMat);floor.rotation.x=-Math.PI/2;floor.position.set(0,-.02,-4.5);floor.receiveShadow=true;scene.add(floor);
- // Hide legacy oversized outdoor road, poster, trees and old tiled floor from the former campus scene.
+ // Retire the old campus/yard render layers, preserving characters, rooms and Social Hub props.
+ if(scene.userData.premiumWorldPhase2Root)scene.userData.premiumWorldPhase2Root.visible=false;
+ if(scene.userData.premiumExperiencePhase7?.decorRoot)scene.userData.premiumExperiencePhase7.decorRoot.visible=false;
  scene.traverse(o=>{
   const p=o.geometry?.parameters;
   if(!o.isMesh||!p)return;
-  if(o.geometry.type==="BoxGeometry"&&p.width===420&&p.depth===300)o.visible=false;
-  if(o.geometry.type==="PlaneGeometry"&&((p.width===16&&p.height===8)||(p.width===280&&p.height===12)||(p.width===84&&p.height===43)))o.visible=false;
+  const bg=o.geometry.type==="BoxGeometry",pg=o.geometry.type==="PlaneGeometry";
+  if(bg&&((p.width===420&&p.depth===300)||(p.width===88&&p.height===.7&&p.depth===47)))o.visible=false;
+  if(pg&&((p.width===16&&p.height===8)||(p.width===280&&p.height===12)||(p.width===84&&p.height===43)))o.visible=false;
   if(o.geometry.type==="ConeGeometry"&&p.height===5&&p.radius===2.2)o.visible=false;
-  if(o.geometry.type==="BoxGeometry"&&p.width===3&&p.depth===.35&&Math.abs(o.position.z-31)<.5)o.visible=false;
+  if(bg&&p.width===3&&p.depth===.35&&Math.abs(o.position.z-31)<.5)o.visible=false;
+  const oldPerimeter=bg&&p.height===3&&((p.width===84&&p.depth===.3&&Math.abs(o.position.z+26)<.3)||(p.width===.3&&p.depth===43&&Math.abs(Math.abs(o.position.x)-42)<.3));
+  const oldLowWall=bg&&Math.abs(p.height-1)<.02&&Math.abs(p.depth-.5)<.02&&Math.abs(o.position.y-.5)<.12&&Math.abs(o.position.z-17)<.2&&Math.abs(p.width-36.6)<.1;
+  const oldGatePost=bg&&Math.abs(p.width-.6)<.1&&Math.abs(p.height-4)<.1&&Math.abs(p.depth-.6)<.1&&Math.abs(Math.abs(o.position.x)-5.4)<.2&&Math.abs(o.position.z-17)<.2;
+  const oldGateBeam=bg&&Math.abs(p.width-11.4)<.1&&Math.abs(p.height-.6)<.1&&Math.abs(p.depth-.6)<.1&&Math.abs(o.position.y-4.2)<.2&&Math.abs(o.position.z-17)<.2;
+  const oldTreeTrunk=bg&&p.width===.5&&p.height===2&&p.depth===.5&&o.position.y===1&&(Math.abs(o.position.x)>44||Math.abs(o.position.z)>19);
+  const oldZoneSide=bg&&Math.abs(o.position.y-.6)<.02&&p.width===.25&&Math.abs(p.height-1.1)<.02;
+  const oldZoneRail=bg&&Math.abs(o.position.y-.6)<.02&&Math.abs(p.height-.1)<.02&&Math.abs(p.depth-.25)<.02;
+  const oldZonePlaque=bg&&Math.abs(o.position.y-6)<.05&&Math.abs(p.height-1.3)<.02&&Math.abs(p.depth-.25)<.02;
+  if(oldPerimeter||oldLowWall||oldGatePost||oldGateBeam||oldTreeTrunk||oldZoneSide||oldZoneRail||oldZonePlaque)o.visible=false;
  });
  const frame=mat(THREE,0x41535d,{metalness:.5}),glass=new THREE.MeshPhysicalMaterial({color:0xb3cbd7,transparent:true,opacity:.15,roughness:.18,side:THREE.DoubleSide,depthWrite:false});bx(THREE,scene,84,.5,.18,0,.25,-26,mat(THREE,0x46565d));const rear=bx(THREE,scene,83,3.1,.055,0,2,-25.87,glass,false);rear.renderOrder=2;for(let i=0;i<=14;i++)bx(THREE,scene,.09,3.25,.13,-41.2+i*5.88,2,-25.82,frame,false);
  [-42,42].forEach(x=>{bx(THREE,scene,.2,.5,43,x,.25,-4.5,mat(THREE,0x46565d));const p=bx(THREE,scene,.055,3,42,x,2,-4.5,glass,false);p.renderOrder=2;for(let i=0;i<=7;i++)bx(THREE,scene,.13,3.2,.08,x,2,-25.5+i*6,frame,false)});
  zones.forEach(z=>glassZone(THREE,scene,z));zoneMeshes.forEach(m=>{if(m)m.visible=false});
  Object.values(rooms).forEach(r=>{if(!r||r.meet||typeof r.id!=="number")return;const tele=r.g.children.find(o=>o.userData?.phase8Monitor);r.g.children.forEach(o=>{o.visible=o===tele});if(tele)tele.visible=false;workstation(THREE,r,m);const c=characters?.[r.id];if(c?.g){c.g.position.copy(r.spot);c.g.rotation.y=r.yaw+Math.PI;c.loc=r;c.path=[];c.done=null;c.face=r.yaw+Math.PI;c.busy=false}});
- const meeting=rooms[0];if(meeting?.g){meeting.g.children.forEach(o=>o.visible=false);meeting.g.scale.setScalar(1.12);bx(THREE,meeting.g,7,.06,6,0,.05,0,mat(THREE,0xe6ebe9));bx(THREE,meeting.g,5.5,.16,2.1,0,.82,-.4,m.wood);for(let i=0;i<3;i++){const x=-1.8+i*1.8;bx(THREE,meeting.g,.65,.6,.65,x,.4,-2,m.seat);bx(THREE,meeting.g,.65,.6,.65,x,.4,1.6,m.seat)}sign(THREE,meeting.g,"MEETING ROOM","CROSS-DIVISION BRIEFING",0x55afc4,0,3,-3.2,5.5)}
+ const meeting=rooms[0];if(meeting?.g){const liveVisuals=meeting.g.children.filter(o=>o.geometry?.type==="TorusGeometry"||(o.geometry?.type==="PlaneGeometry"&&o.geometry.parameters?.width===4.2&&o.geometry.parameters?.height===1.4));meeting.g.children.forEach(o=>{o.visible=liveVisuals.includes(o)});meeting.g.scale.setScalar(1.12);bx(THREE,meeting.g,7,.06,6,0,.05,0,mat(THREE,0xe6ebe9));bx(THREE,meeting.g,5.5,.16,2.1,0,.82,-.4,m.wood);for(let i=0;i<3;i++){const x=-1.8+i*1.8;bx(THREE,meeting.g,.65,.6,.65,x,.4,-2,m.seat);bx(THREE,meeting.g,.65,.6,.65,x,.4,1.6,m.seat)}if(!liveVisuals.some(o=>o.geometry?.type==="PlaneGeometry"))sign(THREE,meeting.g,"MEETING ROOM","CROSS-DIVISION BRIEFING",0x55afc4,0,3,-3.2,5.5)}
  const extras=createOfficeExtras(THREE,scene,m);scene.background=new THREE.Color(0xb6c7cc);if(scene.fog){scene.fog.color.set(0xc6d4d5);scene.fog.near=150;scene.fog.far=310}
- const portrait=window.innerWidth/Math.max(1,window.innerHeight)<.85,target=new THREE.Vector3(0,1,-4.5),pos=portrait?new THREE.Vector3(24,86,112):new THREE.Vector3(49,61,59);if(camera){camera.fov=portrait?55:43;camera.position.copy(pos);camera.updateProjectionMatrix()}if(controls){controls.target.copy(target);controls.update()}if(setTarget)setTarget({t:target.clone(),c:pos.clone()});
+ const portrait=window.innerWidth/Math.max(1,window.innerHeight)<.85,target=new THREE.Vector3(0,1,-4.5),pos=portrait?new THREE.Vector3(15,84,116):new THREE.Vector3(49,61,59);if(camera){camera.fov=portrait?68:43;camera.position.copy(pos);camera.updateProjectionMatrix()}if(controls){controls.target.copy(target);controls.update()}if(setTarget)setTarget({t:target.clone(),c:pos.clone()});
  const result={floor,pods:zones.length,meeting,reception:extras.reception,pantry:extras.pantry,tables:extras.tables,workstations:Object.keys(rooms).filter(id=>!rooms[id]?.meet&&typeof rooms[id]?.id==='number').length,diagnostics:()=>({theme:"approved-isometric-open-office",workstationCount:Object.keys(rooms).filter(id=>!rooms[id]?.meet&&typeof rooms[id]?.id==='number').length,glassDivisionCount:zones.length,meetingRoomReady:!!meeting,receptionReady:true,pantryReady:true,collaborationTableCount:extras.tables.length})};scene.userData.isometricOfficeRebuild=result;return result
 }
 export function updateIsometricOffice(scene,dt){const r=scene?.userData?.isometricOfficeRebuild;if(!r)return;r.elapsed=(r.elapsed||0)+Math.min(.05,Math.max(0,dt||0))}
