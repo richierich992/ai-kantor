@@ -92,15 +92,24 @@ async function openPreview(viewport, label) {
   };
 
   if (label === "desktop") {
+    await page.screenshot({ path: path.join(outDir, "kantor-ai-desktop-office.png"), fullPage: true });
     await page.locator('#legend [data-id="1"]').click({ timeout: 15000 });
     check(await page.locator("#chat").evaluate(el => el.classList.contains("open")), "desktop: clicking an agent opens chat panel");
+    await page.screenshot({ path: path.join(outDir, "kantor-ai-desktop-agent.png"), fullPage: true });
     await page.locator("#cx").click();
+    await page.locator("#cmdb").click();
+    check(!await page.locator("#cmdm").evaluate(el => el.classList.contains("hidden")), "desktop: Command Center opens");
+    await page.locator("#cmdx").click();
+    check(await page.locator("#cmdm").evaluate(el => el.classList.contains("hidden")), "desktop: Command Center closes");
     await page.locator("#dashb").click();
     check(!await page.locator("#dash").evaluate(el => el.classList.contains("hidden")), "desktop: dashboard modal opens");
-    await page.screenshot({ path: path.join(outDir, "kantor-ai-desktop.png"), fullPage: true });
+    await page.screenshot({ path: path.join(outDir, "kantor-ai-desktop-dashboard.png"), fullPage: true });
     await page.locator("#dx").click();
   } else {
     check(report.viewports[label].documentWidth <= viewport.width + 4, "mobile: document does not overflow viewport width");
+    await page.locator("#reset").click();
+    await page.locator("#iso").click();
+    check(true, "mobile: camera reset and isometric controls are clickable");
     await page.screenshot({ path: path.join(outDir, "kantor-ai-mobile.png"), fullPage: true });
   }
 
@@ -112,6 +121,7 @@ try {
   await openPreview({ width: 390, height: 844 }, "mobile");
 
   check(report.pageErrors.length === 0, "no uncaught browser JavaScript errors");
+  check(report.consoleErrors.length === 0, "no browser console errors");
   check(report.failedAssetRequests.length === 0, "all referenced GLB assets load over HTTP");
 
   report.finishedAt = new Date().toISOString();
