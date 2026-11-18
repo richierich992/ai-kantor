@@ -109,6 +109,7 @@ import { decoratePremiumCharacter, animatePremiumCharacter } from './premium-cha
 import { enhanceSocialHub, updateSocialHub, animateSocialCharacter } from './premium-social.js';
 import { createCharacterSocialLife } from './premium-social-life.js';
 import { createPremiumPolish } from './premium-polish.js';
+import { createIntegrationDiagnostics } from './premium-integration.js';
 import { createLivingOffice, chooseIdleStation } from './premium-living-office.js';
 import { enhancePremiumExperience } from './premium-experience.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -583,7 +584,7 @@ function boot(){
  $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
- (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
+ (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);if(integrationDiagnostics&&Math.floor(clk.elapsedTime)%15===0)window.__integrationHealthQA=integrationDiagnostics.snapshot();
   if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam)})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
@@ -1120,6 +1121,7 @@ routeCmd = async function(commandText) {
 };
 
 /* ===== Phase 9 — Character Intelligence & Social Life ===== */
+let integrationDiagnostics = null;
 let premiumPolish = null;
 let characterSocialLife = null;
 const bootBeforeCharacterSocialLife = boot;
@@ -1129,6 +1131,14 @@ boot = function() {
   window.__characterSocialQA = characterSocialLife ? characterSocialLife.diagnostics() : null;
   premiumPolish = createPremiumPolish({ THREE, characters: chars });
   window.__premiumPolishQA = premiumPolish ? premiumPolish.diagnostics() : null;
+  integrationDiagnostics = createIntegrationDiagnostics({
+    firebaseReady: () => !!auth?.currentUser && !!db,
+    aiProxyConfigured: () => !!localStorage.getItem('ai_url'),
+    appsScriptConfigured: () => !!(window.google?.script?.run),
+    agentIds: D.map(agent => agent.id)
+  });
+  window.__integrationHealthQA = integrationDiagnostics.snapshot();
+
 };
 
 </script>
