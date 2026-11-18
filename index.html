@@ -73,24 +73,6 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
 
 
-/* Approved mockup visual rebuild — execute after all legacy visual and ambience layers. */
-let mockupOffice = null;
-const bootBeforeMockupOffice = boot;
-boot = function() {
-  bootBeforeMockupOffice();
-  if (mockupOffice || !cam || !ctl) return;
-  mockupOffice = enhanceIsometricOffice({
-    THREE, scene, rooms, characters,
-    zones: DL.map(dl => ({
-      id: dl.id, box: dl.box.slice(),
-      name: (DEPTS.find(d => d.departmentId === dl.id) || {}).name || dl.id
-    })),
-    zoneMeshes, camera: cam, controls: ctl,
-    setTarget: value => { tg = value; }
-  });
-  window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
-};
-
 </script>
 </head>
 <body>
@@ -1166,6 +1148,24 @@ boot = function() {
   });
   window.__integrationHealthQA = integrationDiagnostics.snapshot();
 
+};
+
+/* Approved mockup visual rebuild — execute after all legacy visual and ambience layers. */
+let mockupOffice = null;
+const bootBeforeMockupOffice = boot;
+boot = function() {
+  bootBeforeMockupOffice();
+  if (mockupOffice || !cam || !ctl) return;
+  mockupOffice = enhanceIsometricOffice({
+    THREE, scene, rooms, characters,
+    zones: DL.map(dl => ({
+      id: dl.id, box: dl.box.slice(),
+      name: (DEPTS.find(d => d.departmentId === dl.id) || {}).name || dl.id
+    })),
+    zoneMeshes, camera: cam, controls: ctl,
+    setTarget: value => { tg = value; }
+  });
+  window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
 };
 
 </script>
