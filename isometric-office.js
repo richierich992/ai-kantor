@@ -232,7 +232,34 @@ function createOfficeExtras(T,scene,m){
  roundedSlab(T,scene,11.2,2.9,.055,.4,mat(T,0xdce9e8,{roughness:.68}),0,.025,12.45);
  [-5.35,5.35].forEach(x=>{cyl(T,portal,.18,.5,x,.25,1.25,m.metal);cyl(T,portal,.22,.07,x,.52,1.25,portalAccent)});
  const pantry=new T.Group();pantry.name="mockup-pantry";pantry.position.set(31,0,12.5);scene.add(pantry);bx(T,pantry,4.8,.95,1.15,0,.55,0,m.frame);bx(T,pantry,5.1,.14,1.3,0,1.08,0,m.lightDesk);[-1.4,0,1.4].forEach(x=>{cyl(T,pantry,.12,.8,x,.4,1,m.metal);cyl(T,pantry,.35,.12,x,.85,1,m.seat)});sign(T,pantry,"PANTRY","COFFEE • BREAK • REFRESH",0xd59e62,0,2.45,-.65,4.9);
- const tables=[];[[-8,2],[5,2],[-8,9],[5,9]].forEach(([x,z],i)=>{const g=new T.Group();g.name="mockup-collab-table-"+i;g.position.set(x,0,z);scene.add(g);bx(T,g,3.8,.14,1.8,0,.85,0,m.wood);[-1.7,1.7].forEach(dx=>[-.7,.7].forEach(dz=>bx(T,g,.1,.8,.1,dx,.4,dz,m.metal)));[-1,1].forEach(s=>bx(T,g,.8,.85,.8,s*2.4,.4,0,m.seat));tables.push(g)});
+ const tables=[];[[-8,2],[5,2],[-8,9],[5,9]].forEach(([x,z],i)=>{
+  const g=new T.Group();g.name="mockup-collab-table-"+i;g.position.set(x,0,z);scene.add(g);
+  roundedSlab(T,g,4.1,1.9,.18,.2,m.wood,0,.88,0);
+  bx(T,g,3.75,.1,.1,0,.76,.82,m.frame);bx(T,g,3.55,.04,.04,0,.7,.88,m.accent,false);
+  [-1.82,1.82].forEach(dx=>[-.72,.72].forEach(dz=>bx(T,g,.09,.78,.09,dx,.39,dz,m.metal)));
+  // Two-sided collaborative display with a lit status rail.
+  bx(T,g,1.22,.78,.09,0,1.38,-.55,m.frame,false);
+  const display=document.createElement('canvas');display.width=512;display.height=300;const dc=display.getContext('2d');
+  const dg=dc.createLinearGradient(0,0,512,300);dg.addColorStop(0,'#102a3b');dg.addColorStop(1,'#1a4858');dc.fillStyle=dg;dc.fillRect(0,0,512,300);
+  dc.fillStyle='#65c6cf';dc.fillRect(20,20,472,8);dc.font='800 27px system-ui';dc.fillStyle='#f4fbff';dc.fillText('TEAM COLLABORATION',24,72);
+  dc.font='600 19px system-ui';dc.fillStyle='#a9c5d0';dc.fillText('SHARED IDEAS  •  LIVE NOTES',24,108);
+  for(let k=0;k<4;k++){dc.fillStyle='rgba(220,242,248,.13)';dc.beginPath();dc.roundRect(24+k*116,148,100,92,9);dc.fill();dc.fillStyle='#65c6cf';dc.fillRect(38+k*116,170,70,5);dc.fillStyle='#e4f2f5';dc.fillRect(38+k*116,190,52,4);dc.fillRect(38+k*116,204,62,4)}
+  const dt=new T.CanvasTexture(display);dt.colorSpace=T.SRGBColorSpace;dt.anisotropy=4;
+  const screen=new T.Mesh(new T.PlaneGeometry(1.12,.66),new T.MeshBasicMaterial({map:dt,toneMapped:false,side:T.DoubleSide}));screen.position.set(0,1.4,-.492);g.add(screen);
+  const rail=mat(T,0x65c6cf,{emissive:0x226a79,emissiveIntensity:.45});bx(T,g,.82,.035,.025,0,1.03,-.48,rail,false);
+  // Upholstered, four-sided collaboration chairs with metal legs.
+  for(const side of [-1,1])for(const offset of [-.92,.92]){
+   const cx=offset,cz=side*1.55;
+   const cushion=new T.Mesh(new T.SphereGeometry(.48,12,10),m.seat);cushion.scale.set(1,.23,.9);cushion.position.set(cx,.62,cz);g.add(cushion);
+   const back=new T.Mesh(new T.SphereGeometry(.43,12,10),m.seat);back.scale.set(.94,.9,.2);back.position.set(cx,.98,cz+side*.27);g.add(back);
+   cyl(T,g,.045,.55,cx,.3,cz,m.metal);
+   for(let leg=0;leg<4;leg++){const a=leg*Math.PI/2;cyl(T,g,.028,.25,cx+Math.cos(a)*.2,.13,cz+Math.sin(a)*.2,m.metal)}
+  }
+  // Coffee mugs and small tabletop plant complete the shared table setup.
+  for(let cup=0;cup<2;cup++){cyl(T,g,.095,.16,-1.45+cup*2.9,1.01,.55,m.lightDesk);const coffee=cyl(T,g,.072,.012,-1.45+cup*2.9,1.1,.55,mat(T,0x593e2e));}
+  const planter=cyl(T,g,.16,.18,1.5,1.0,-.35,mat(T,0x9b8066));const sprout=new T.Mesh(new T.IcosahedronGeometry(.18,1),mat(T,0x5d9b6e));sprout.position.set(1.5,1.2,-.35);g.add(sprout);
+  tables.push(g)
+ });
  const greenery=mat(T,0x4a956a),leafLight=mat(T,0x68ad78),pot=mat(T,0x75665a),potRim=mat(T,0xb8aa94);
  [[-10,-24],[12,-24],[-10,-8],[13,-8],[7,12],[-10,12]].forEach(([x,z],index)=>{
   const scale=index%2?.9:1;
