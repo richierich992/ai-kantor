@@ -93,7 +93,7 @@ function makeCampusGrassTexture(THREE) {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(42, 30);
+  texture.repeat.set(5.5, 4.0);
   texture.anisotropy = 4;
   return texture;
 }
@@ -455,9 +455,47 @@ export function enhancePremiumCampus({ THREE, scene, zones = [] }) {
     }
   });
 
+  // Remove duplicate legacy floating plaques; the new architectural facade signs replace them.
+  scene.traverse(object => {
+    const p = object.geometry && object.geometry.parameters;
+    if (!object.isMesh || !p || object.geometry.type !== "BoxGeometry") return;
+    const oldRoomPlaque = Math.abs((p.height || 0) - 1.05) < 0.02 &&
+      Math.abs((p.depth || 0) - 0.25) < 0.02 &&
+      Math.abs(object.position.y - 3.95) < 0.08;
+    const oldDepartmentPlaque = Math.abs((p.height || 0) - 1.3) < 0.02 &&
+      Math.abs((p.depth || 0) - 0.25) < 0.02 &&
+      Math.abs(object.position.y - 6.0) < 0.08;
+    if (oldRoomPlaque || oldDepartmentPlaque) object.visible = false;
+  });
+
   const pods = (zones || []).map((zone, index) => createDepartmentPod(THREE, root, zone, index)).filter(Boolean);
   const command = createCentralCore(THREE, root);
+  command.core.scale.setScalar(0.78);
   const reception = createReception(THREE, root);
+
+  // A pale stone arrival path links the reception and the command atrium.
+  const pathBase = material(THREE, 0xd4e0e2, { roughness: 0.72, metalness: 0.06 });
+  const pathTrim = material(THREE, 0x61cfe0, {
+    emissive: 0x23889a, emissiveIntensity: 0.24, roughness: 0.45, metalness: 0.28
+  });
+  const arrivalPath = new THREE.Group();
+  arrivalPath.name = "campus-arrival-path";
+  root.add(arrivalPath);
+  const path = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.055, 7.2), pathBase);
+  path.position.set(0, 0.055, 11.25);
+  path.receiveShadow = true;
+  arrivalPath.add(path);
+  [-2.75, 2.75].forEach(x => {
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.022, 7.05), pathTrim);
+    strip.position.set(x, 0.094, 11.25);
+    arrivalPath.add(strip);
+  });
+  for (let i = 0; i < 5; i++) {
+    const seam = new THREE.Mesh(new THREE.BoxGeometry(5.55, 0.012, 0.035),
+      material(THREE, 0xb8cbd0, { roughness: 0.8 }));
+    seam.position.set(0, 0.091, 8.5 + i * 1.35);
+    arrivalPath.add(seam);
+  }
 
   // Lightweight landscaped edge planters give the diorama a finished site boundary.
   const planter = material(THREE, 0x294858, { metalness: 0.5, roughness: 0.55 });
