@@ -729,6 +729,7 @@ $('go').onclick=async()=>{
   $('status').textContent='Online • '+cr.user.uid.slice(0,6);
   $('login').classList.add('hidden');$('ui').classList.remove('hidden');
   boot();
+  applyMockupOffice();
   onValue(ref(db,`offices/${oid}/modes`),s=>{const v=s.val()||{};
    D.forEach(d=>{const m=v[d.id]||d.m||'cmd';if(m!==d.mode){d.mode=m;applyMode(d)}});modeLbl()});
   D.forEach(d=>onValue(query(ref(db,`offices/${oid}/messages/${d.id}`),limitToLast(1)),s=>{
@@ -1150,12 +1151,11 @@ boot = function() {
 
 };
 
-/* Approved mockup visual rebuild — execute after all legacy visual and ambience layers. */
+/* Approved mockup visual rebuild — called explicitly after the legacy boot has finished. */
 let mockupOffice = null;
-const bootBeforeMockupOffice = boot;
-boot = function() {
-  bootBeforeMockupOffice();
-  if (mockupOffice || !cam || !ctl) return;
+function applyMockupOffice() {
+  if (mockupOffice) return mockupOffice;
+  if (!cam || !ctl) throw new Error("Kamera kantor belum siap untuk rebuild isometrik.");
   mockupOffice = enhanceIsometricOffice({
     THREE, scene, rooms, characters,
     zones: DL.map(dl => ({
@@ -1166,7 +1166,14 @@ boot = function() {
     setTarget: value => { tg = value; }
   });
   window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
-};
+  window.__mockupOfficeBootQA = {
+    applied: true,
+    cameraReady: !!cam,
+    controlsReady: !!ctl,
+    sceneReady: !!scene.userData.isometricOfficeRebuild
+  };
+  return mockupOffice;
+}
 
 </script>
 </body>
