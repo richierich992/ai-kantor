@@ -30,6 +30,15 @@ export function enhanceIsometricOffice({THREE,scene,rooms,characters,zones=[],zo
  if(scene.userData.isometricOfficeRebuild)return scene.userData.isometricOfficeRebuild;
  const m={wood:mat(THREE,0x9a7550),metal:mat(THREE,0x3d5057,{metalness:.55}),frame:mat(THREE,0x273a43,{metalness:.5}),seat:mat(THREE,0x47677b),keyboard:mat(THREE,0x25343a),mouse:mat(THREE,0x303a40),tower:mat(THREE,0x35454c),lightDesk:mat(THREE,0xe5ebe9),accent:mat(THREE,0x65c6cf)};
  const floorMat=mat(THREE,0xffffff,{map:tile(),roughness:.9});bx(THREE,scene,88,.55,47,0,-.32,-4.5,mat(THREE,0x46535a));const floor=new THREE.Mesh(new THREE.PlaneGeometry(84,43),floorMat);floor.rotation.x=-Math.PI/2;floor.position.set(0,-.02,-4.5);floor.receiveShadow=true;scene.add(floor);
+ // Hide legacy oversized outdoor road, poster, trees and old tiled floor from the former campus scene.
+ scene.traverse(o=>{
+  const p=o.geometry?.parameters;
+  if(!o.isMesh||!p)return;
+  if(o.geometry.type==="BoxGeometry"&&p.width===420&&p.depth===300)o.visible=false;
+  if(o.geometry.type==="PlaneGeometry"&&((p.width===16&&p.height===8)||(p.width===280&&p.height===12)||(p.width===84&&p.height===43)))o.visible=false;
+  if(o.geometry.type==="ConeGeometry"&&p.height===5&&p.radius===2.2)o.visible=false;
+  if(o.geometry.type==="BoxGeometry"&&p.width===3&&p.depth===.35&&Math.abs(o.position.z-31)<.5)o.visible=false;
+ });
  const frame=mat(THREE,0x41535d,{metalness:.5}),glass=new THREE.MeshPhysicalMaterial({color:0xb3cbd7,transparent:true,opacity:.15,roughness:.18,side:THREE.DoubleSide,depthWrite:false});bx(THREE,scene,84,.5,.18,0,.25,-26,mat(THREE,0x46565d));const rear=bx(THREE,scene,83,3.1,.055,0,2,-25.87,glass,false);rear.renderOrder=2;for(let i=0;i<=14;i++)bx(THREE,scene,.09,3.25,.13,-41.2+i*5.88,2,-25.82,frame,false);
  [-42,42].forEach(x=>{bx(THREE,scene,.2,.5,43,x,.25,-4.5,mat(THREE,0x46565d));const p=bx(THREE,scene,.055,3,42,x,2,-4.5,glass,false);p.renderOrder=2;for(let i=0;i<=7;i++)bx(THREE,scene,.13,3.2,.08,x,2,-25.5+i*6,frame,false)});
  zones.forEach(z=>glassZone(THREE,scene,z));zoneMeshes.forEach(m=>{if(m)m.visible=false});
