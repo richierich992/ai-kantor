@@ -106,3 +106,10 @@
 - Facial controls are discovered by semantic morph-target names and are skipped safely for models without matching rigs; no GLB assets are assumed to contain specific facial channels.
 - The layer is render-loop driven, respects current character work/social/meeting state, and does not alter navigation or task state.
 - Added browser preview assertions for module initialization on desktop and mobile.
+
+
+## Phase 11 — AI Office Integration & Operational Diagnostics
+- Added `premium-integration.js`, a read-only health snapshot for existing Firebase auth/database, AI proxy URL configuration, and Apps Script bridge availability.
+- Diagnostics never make network probes, mutate Firebase, invoke Apps Script, expose credentials, or claim a service is online solely because it is configured.
+- The existing application remains the owner of login, AI proxy requests, backend agent state, Apps Script operations, task queue, and Telegram scheduler.
+- Browser preview now checks that the integration diagnostics layer initializes and reports the existing agent count.
