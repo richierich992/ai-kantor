@@ -46,3 +46,12 @@
 ### Catatan visual Phase 2
 - Kanopi dan pintu kaca baru menggantikan billboard, parapet putih, dan portal lama agar fasad depan tidak tampak bertumpuk.
 - Default camera menggunakan sudut diorama yang lebih lebar; kontrol reset dan isometrik mempertahankan interaksi kamera yang sudah ada.
+
+
+## Status implementasi Phase 3 — karakter AI
+- Modul `premium-character.js` menambahkan emblem profesi, ring status di kaki karakter, dan secondary motion untuk idle/kerja/aktivitas sosial.
+- GLB profesi yang sudah dipetakan oleh aplikasi tetap menjadi model utama; tidak ada penggantian model atau perubahan agent ID.
+- Material GLB dibuat sedikit lebih seimbang agar tidak terlalu kusam, dan pivot anggota tubuh yang tidak tersedia kini diabaikan dengan aman.
+- Hook dekorasi berjalan setelah `swapChar` lama; hook animasi berjalan setelah `step` lama. Jalur pergerakan, roam, slot Social Hub, dan gerakan dasar tetap dimiliki kode lama.
+- Bounds model dikonversi ke koordinat lokal sebelum emblem/ring diposisikan agar cocok dengan transform karakter.
+- Belum ada render browser, validasi visual pada semua 16 GLB, atau uji FPS perangkat; perlu preview sebelum merge.
