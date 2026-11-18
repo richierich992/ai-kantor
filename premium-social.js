@@ -303,8 +303,7 @@ export function updateSocialHub(scene, dt, elapsedSeconds) {
     const pulse = 0.5 + 0.5 * Math.sin(t * 1.35 + item.phase);
     item.ring.material.opacity = occupied ? 0.58 + 0.16 * pulse : 0.31 + 0.08 * pulse;
     item.pad.material.opacity = occupied ? 0.085 : 0.045;
-    item.point.intensity = item.point.userData.base || 0.38;
-    item.point.intensity *= occupied ? 1.45 : 0.88 + 0.16 * pulse;
+    item.point.intensity = (occupied ? 0.55 : 0.38) * (0.92 + 0.08 * pulse);
     item.ring.rotation.z += step * 0.06;
   });
 
