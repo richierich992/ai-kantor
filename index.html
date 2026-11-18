@@ -70,7 +70,52 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 @media(max-width:820px){#legend,#hint,#zone{display:none}#chat{top:auto;width:100%;height:55vh;border-left:0;border-top:1px solid #3a5a9a}.r span{display:none}}
 </style>
 <link rel="stylesheet" href="./premium-ui.css?v=1">
-<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+/* ===== Phase 8 — Living Office =====
+ * Add backend-backed workstation telemetry and ambience after all existing
+ * scene boot wrappers have completed. The original data and command paths stay intact.
+ */
+const bootBeforeLivingOffice = boot;
+boot = function() {
+  bootBeforeLivingOffice();
+  livingOffice = createLivingOffice({
+    THREE,
+    scene,
+    rooms,
+    characters: chars,
+    pathOut,
+    pathIn,
+    nearestGap: nearGap,
+    hallZ: HALL_Z,
+    makeVector: V3,
+    getBackendAgent: id => ag(id),
+    backendReady: () => !!BK.s
+  });
+  window.__livingOfficeQA = livingOffice ? {
+    get monitorCount() { return livingOffice.monitorCount; },
+    get currentPeriod() { return livingOffice.currentPeriod; },
+    get meetingSequence() { return livingOffice.meetingSequence; },
+    runMeeting: (ids, topic) => livingOffice.runMeeting(ids, topic)
+  } : null;
+};
+
+/* A multi-division command starts with a physical briefing. The agents then
+   return to their desks before the existing job() and Apps Script flows run. */
+const routeCmdBeforeLivingOffice = routeCmd;
+routeCmd = async function(commandText) {
+  const result = await routeCmdBeforeLivingOffice(commandText);
+  const ids = [...new Set((result.divisions || []).map(item => Number(item.id)))]
+    .filter(id => characters[id] && rooms[id] && id !== 0);
+  if (livingOffice && ids.length > 1) {
+    const briefing = await livingOffice.runMeeting(ids, commandText);
+    if (briefing && briefing.message) {
+      result.reply = [result.reply, briefing.message].filter(Boolean).join(" • ");
+    }
+  }
+  return result;
+};
+
+</script>
 </head>
 <body>
 <div id="login">
@@ -104,6 +149,7 @@ import * as THREE from 'three';
 import { enhanceOfficeWorld } from './premium-world.js';
 import { decoratePremiumCharacter, animatePremiumCharacter } from './premium-character.js';
 import { enhanceSocialHub, updateSocialHub, animateSocialCharacter } from './premium-social.js';
+import { createLivingOffice, chooseIdleStation } from './premium-living-office.js';
 import { enhancePremiumExperience } from './premium-experience.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
@@ -182,6 +228,7 @@ const DEP={};
 const W=8,DP=7,WH=3.4;
 
 let app,auth,db,oid,cur=null,autoOn=true,unsub=null,rend,cam,ctl,tg=null;
+let livingOffice = null;
 const scene=new THREE.Scene(),rooms={},chars={},picks=[],RL=[],zoneMeshes=[];
 
 /* ===== helper 3D ===== */
@@ -290,7 +337,7 @@ function roam(c,dt){
   const away=Object.values(chars).filter(x=>x.slot).length;
   const free=STN.reduce((a,s)=>a.concat(s.slots.filter(sl=>!sl.occ)),[]);
   if(!free.length||away>=Math.ceil(D.length*.55)){c.wait=10;return}
-  const sl=pick(free);sl.occ=c;c.slot=sl;
+  const sl=chooseIdleStation(c,free)||pick(free);sl.occ=c;c.slot=sl;
   go(c,sl,V3(sl.x,0,sl.z),sl.face);
   c.done=()=>{c.yoff=(sl.sit?-.34:0)+sl.dy;c.act=sl.act;c.work=false;if(sl.route.length){c.stroll=sl.route;c.si=0}};
   c.wait=rnd(20,45);
@@ -576,7 +623,7 @@ function boot(){
  $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
- (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);
+ (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);
   if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam)})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
