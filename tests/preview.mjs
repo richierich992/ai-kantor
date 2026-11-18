@@ -134,6 +134,8 @@ async function openPreview(viewport, label) {
     await page.locator("#reset").click();
     await page.locator("#iso").click();
     check(true, "mobile: camera reset and isometric controls are clickable");
+    await page.locator("#reset").click();
+    check(await page.locator('[data-preset="overview"]').getAttribute("aria-pressed") === "true", "mobile: overview restored for final screenshot");
     await page.screenshot({ path: path.join(outDir, "kantor-ai-mobile.png"), fullPage: true });
   }
 
