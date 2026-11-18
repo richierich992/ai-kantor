@@ -991,7 +991,7 @@ boot = function() {
       overview: {
         fov: portraitView ? 67 : 43,
         target: [0, 1, -4.5],
-        camera: portraitView ? [52, 62, -4.5] : [55, 69, 66]
+        camera: portraitView ? [52, 62, -4.5] : [50, 64, 60]
       },
       cinematic: {
         fov: portraitView ? 68 : 50,
@@ -1048,7 +1048,7 @@ boot = function() {
         }
       : {
           t: new THREE.Vector3(0, 1, -4.5),
-          c: portraitView ? new THREE.Vector3(52, 62, -4.5) : new THREE.Vector3(55, 69, 66)
+          c: portraitView ? new THREE.Vector3(52, 62, -4.5) : new THREE.Vector3(50, 64, 60)
         };
     if (premiumCameraDock) premiumCameraDock.setActive('');
     $('iso').textContent = enabled ? '◇ Isometrik: ON' : '◇ Isometrik';
