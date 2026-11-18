@@ -109,26 +109,44 @@ function workstation(T,r,m){
  r.spot=g.localToWorld(new T.Vector3(0,0,2.35));r.inside=g.localToWorld(new T.Vector3(0,0,2.5));r.front=g.localToWorld(new T.Vector3(0,0,3.6));r.row=g.position.z<-17?'A':'B';r.isometricWorkstation=true
 }
 function createOfficeExtras(T,scene,m){
- const reception=new T.Group();reception.name="mockup-reception";reception.position.set(0,0,14.7);scene.add(reception);
- roundedSlab(T,reception,6.1,1.72,.16,.24,m.frame,0,.48,0);
- roundedSlab(T,reception,5.85,1.55,.1,.2,m.lightDesk,0,.62,0);
- bx(T,reception,4.6,.06,.08,0,.55,.75,m.accent,false);sign(T,reception,"RECEPTION","WELCOME TO KANTOR AI",0x62cbd0,0,2.35,-.4,5.6);
- // A visible architectural entry portal frames the reception instead of leaving the front edge undefined.
- const portal=new T.Group();portal.name="mockup-entry-portal";portal.position.set(0,0,17.25);scene.add(portal);
- const portalFrame=mat(T,0x405d6b,{metalness:.48,roughness:.28}),portalAccent=mat(T,0x64d1da,{emissive:0x1d7b86,emissiveIntensity:.55,metalness:.42,roughness:.28});
- [-6.1,6.1].forEach(x=>{
-  roundedSlab(T,portal,.68,.72,4.45,.16,portalFrame,x,0,0);
-  bx(T,portal,.16,3.85,.08,x,2.22,.42,portalAccent,false);
-  bx(T,portal,.94,.14,.9,x,.13,0,m.lightDesk,false);
+ const reception=new T.Group();reception.name="mockup-reception";reception.position.set(0,0,10.35);scene.add(reception);
+ // Backdrop wall with a clear brand panel, warm slatted trim and a broad reception counter.
+ bx(T,reception,8.6,3.35,.22,0,2.02,-1.03,m.frame,false);
+ bx(T,reception,8.2,2.94,.08,0,2.02,-.88,mat(T,0x385b6a,{metalness:.35,roughness:.42}),false);
+ [-3.9,-3.45,3.45,3.9].forEach(x=>bx(T,reception,.055,2.92,.11,x,2.02,-.81,m.accent,false));
+ sign(T,reception,"KANTOR AI","INTELLIGENCE • CREATIVITY • AUTOMATION",0x64d1da,0,2.82,-.78,7.3);
+ roundedSlab(T,reception,7.6,1.72,.62,.28,m.frame,0,.2,.02);
+ roundedSlab(T,reception,7.9,1.92,.16,.3,m.lightDesk,0,.78,.02);
+ bx(T,reception,6.95,.055,.055,0,.59,.92,m.accent,false);
+ // Three concierge displays and a brushed-metal kick plate.
+ [-1.45,0,1.45].forEach((x,i)=>{
+  bx(T,reception,1.05,.72,.11,x,1.42,-.48,m.frame,false);
+  const screen=new T.Mesh(new T.PlaneGeometry(.94,.58),new T.MeshBasicMaterial({color:i===1?0x16465a:0x102b3d,toneMapped:false}));
+  screen.position.set(x,1.43,-.416);reception.add(screen);
+  bx(T,reception,.34,.06,.28,x,1.04,-.28,m.metal,false);
  });
- roundedSlab(T,portal,13.05,.78,.56,.18,portalFrame,0,3.9,0);
- bx(T,portal,11.7,.055,.1,0,3.61,.43,portalAccent,false);
+ const receptionPot=mat(T,0x77665a),receptionLeaves=mat(T,0x559b70),receptionLeafLight=mat(T,0x77b57f);
+ [-5.3,5.3].forEach(x=>{
+  cyl(T,reception,.42,.48,x,.24,.1,receptionPot);cyl(T,reception,.44,.055,x,.5,.1,m.lightDesk);
+  for(let i=0;i<5;i++){const a=i*Math.PI*2/5,leaf=new T.Mesh(new T.IcosahedronGeometry(.28,1),i%2?receptionLeafLight:receptionLeaves);leaf.position.set(x+Math.cos(a)*.22,1.0,.1+Math.sin(a)*.22);leaf.scale.set(.7,1.45,.72);reception.add(leaf)}
+  const crown=new T.Mesh(new T.IcosahedronGeometry(.26,1),receptionLeafLight);crown.position.set(x,1.25,.1);reception.add(crown)
+ });
+ // The entry portal is pulled inward so it reads as part of the office rather than a detached edge prop.
+ const portal=new T.Group();portal.name="mockup-entry-portal";portal.position.set(0,0,14.25);scene.add(portal);
+ const portalFrame=mat(T,0x405d6b,{metalness:.48,roughness:.28}),portalAccent=mat(T,0x64d1da,{emissive:0x1d7b86,emissiveIntensity:.55,metalness:.42,roughness:.28});
+ [-7,7].forEach(x=>{
+  roundedSlab(T,portal,.72,.78,4.5,.18,portalFrame,x,0,0);
+  bx(T,portal,.16,3.85,.08,x,2.22,.46,portalAccent,false);
+  bx(T,portal,1,.14,.95,x,.13,0,m.lightDesk,false);
+ });
+ roundedSlab(T,portal,15.05,.86,.6,.2,portalFrame,0,4.02,0);
+ bx(T,portal,13.4,.055,.11,0,3.71,.48,portalAccent,false);
  const doorGlass=new T.MeshPhysicalMaterial({color:0xc5e9f2,transparent:true,opacity:.24,roughness:.2,metalness:.1,clearcoat:.3,clearcoatRoughness:.2,side:T.DoubleSide,depthWrite:false,forceSinglePass:true});
- [-1.45,1.45].forEach(x=>{const panel=bx(T,portal,2.78,3.35,.055,x,1.92,0,doorGlass,false);panel.renderOrder=3;bx(T,portal,.06,3.42,.11,x,1.92,.08,portalFrame,false)});
- bx(T,portal,.1,3.42,.14,0,1.92,.08,portalFrame,false);
- sign(T,portal,"KANTOR AI","INTELLIGENCE • CREATIVITY • AUTOMATION",0x64d1da,0,4.02,.48,8.8);
- roundedSlab(T,scene,10.8,2.6,.055,.38,mat(T,0xdce9e8,{roughness:.68}),0,.025,16.1);
- [-4.8,4.8].forEach(x=>{cyl(T,portal,.18,.5,x,.25,1.1,m.metal);cyl(T,portal,.22,.07,x,.52,1.1,portalAccent)});
+ [-1.5,1.5].forEach(x=>{const panel=bx(T,portal,2.9,3.4,.055,x,1.98,0,doorGlass,false);panel.renderOrder=3;bx(T,portal,.065,3.48,.11,x,1.98,.08,portalFrame,false)});
+ bx(T,portal,.1,3.48,.14,0,1.98,.08,portalFrame,false);
+ sign(T,portal,"KANTOR AI","NEXT-GENERATION WORKPLACE",0x64d1da,0,4.12,.5,10.2);
+ roundedSlab(T,scene,11.2,2.9,.055,.4,mat(T,0xdce9e8,{roughness:.68}),0,.025,12.45);
+ [-5.35,5.35].forEach(x=>{cyl(T,portal,.18,.5,x,.25,1.25,m.metal);cyl(T,portal,.22,.07,x,.52,1.25,portalAccent)});
  const pantry=new T.Group();pantry.name="mockup-pantry";pantry.position.set(31,0,12.5);scene.add(pantry);bx(T,pantry,4.8,.95,1.15,0,.55,0,m.frame);bx(T,pantry,5.1,.14,1.3,0,1.08,0,m.lightDesk);[-1.4,0,1.4].forEach(x=>{cyl(T,pantry,.12,.8,x,.4,1,m.metal);cyl(T,pantry,.35,.12,x,.85,1,m.seat)});sign(T,pantry,"PANTRY","COFFEE • BREAK • REFRESH",0xd59e62,0,2.45,-.65,4.9);
  const tables=[];[[-8,2],[5,2],[-8,9],[5,9]].forEach(([x,z],i)=>{const g=new T.Group();g.name="mockup-collab-table-"+i;g.position.set(x,0,z);scene.add(g);bx(T,g,3.8,.14,1.8,0,.85,0,m.wood);[-1.7,1.7].forEach(dx=>[-.7,.7].forEach(dz=>bx(T,g,.1,.8,.1,dx,.4,dz,m.metal)));[-1,1].forEach(s=>bx(T,g,.8,.85,.8,s*2.4,.4,0,m.seat));tables.push(g)});
  const greenery=mat(T,0x4a956a),leafLight=mat(T,0x68ad78),pot=mat(T,0x75665a),potRim=mat(T,0xb8aa94);
