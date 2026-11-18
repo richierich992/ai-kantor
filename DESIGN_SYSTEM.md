@@ -99,3 +99,10 @@
 - Added proximity-based passing greetings with per-pair cooldowns; greetings are skipped when either character is busy, meeting, locked, or sharing a station.
 - Gesture cues use existing character arm groups and do not replace GLB assets, movement routes, activity slots, or backend states.
 - Existing Firebase, Apps Script, AI routing, and scheduler paths remain unchanged.
+
+
+## Phase 10 — Premium Polish
+- Added `premium-polish.js` for optional facial morph expressions, subtle head micro-animation, and a restrained selection focus ring.
+- Facial controls are discovered by semantic morph-target names and are skipped safely for models without matching rigs; no GLB assets are assumed to contain specific facial channels.
+- The layer is render-loop driven, respects current character work/social/meeting state, and does not alter navigation or task state.
+- Added browser preview assertions for module initialization on desktop and mobile.
