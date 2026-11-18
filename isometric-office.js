@@ -160,7 +160,7 @@ function workstation(T,r,m){
  if(telemetry){telemetry.visible=true;telemetry.position.set(.72,1.46,-1.1);telemetry.rotation.set(0,0,0);telemetry.scale.set(1,1,1);telemetry.renderOrder=5}
  // Keyboard, mouse, desktop tower with front vent details.
  bx(T,group,.88,.065,.31,-.48,1,-.18,m.frame);
- const keySurface=new T.Mesh(new T.PlaneGeometry(.82,.27),new T.MeshBasicMaterial({map:keysMap,toneMapped:false}));keySurface.rotation.x=-Math.PI/2;keySurface.position.set(-.48,1.035,-.18);group.add(keySurface);
+ const keySurface=new T.Mesh(new T.PlaneGeometry(.82,.27),new T.MeshBasicMaterial({map:m.keysMap,toneMapped:false}));keySurface.rotation.x=-Math.PI/2;keySurface.position.set(-.48,1.035,-.18);group.add(keySurface);
  const mouse=new T.Mesh(new T.SphereGeometry(.13,12,10),m.mouse);mouse.scale.set(.82,.28,1.12);mouse.position.set(.55,1.045,-.17);group.add(mouse);
  bx(T,group,.3,.38,.26,-1.12,1.13,-.34,m.tower);
  bx(T,group,.32,.06,.025,-1.12,1.29,-.198,m.accent,false);
@@ -239,7 +239,7 @@ function createOfficeExtras(T,scene,m){
 export function enhanceIsometricOffice({THREE,scene,rooms,characters,zones=[],zoneMeshes=[],camera,controls,setTarget}){
  if(scene.userData.isometricOfficeRebuild)return scene.userData.isometricOfficeRebuild;
  const woodMap=woodGrain(THREE),fabricMap=fabricWeave(THREE),keysMap=keyboardTexture(THREE);
- const m={wood:mat(THREE,0xffffff,{map:woodMap,roughness:.48,metalness:.04}),metal:mat(THREE,0x58666c,{metalness:.62,roughness:.32}),frame:mat(THREE,0x273a43,{metalness:.5,roughness:.34}),seat:mat(THREE,0xffffff,{map:fabricMap,roughness:.91}),pillow:mat(THREE,0x8aa0ad,{map:fabricMap,roughness:.94}),keyboard:mat(THREE,0xffffff,{map:keysMap,roughness:.8}),mouse:mat(THREE,0x303a40),tower:mat(THREE,0x35454c),lightDesk:mat(THREE,0xe5ebe9,{roughness:.32,metalness:.12}),accent:mat(THREE,0x65c6cf,{emissive:0x1d5863,emissiveIntensity:.22,roughness:.32})};
+ const m={wood:mat(THREE,0xffffff,{map:woodMap,roughness:.48,metalness:.04}),metal:mat(THREE,0x58666c,{metalness:.62,roughness:.32}),frame:mat(THREE,0x273a43,{metalness:.5,roughness:.34}),seat:mat(THREE,0xffffff,{map:fabricMap,roughness:.91}),pillow:mat(THREE,0x8aa0ad,{map:fabricMap,roughness:.94}),keyboard:mat(THREE,0xffffff,{map:keysMap,roughness:.8}),keysMap,mouse:mat(THREE,0x303a40),tower:mat(THREE,0x35454c),lightDesk:mat(THREE,0xe5ebe9,{roughness:.32,metalness:.12}),accent:mat(THREE,0x65c6cf,{emissive:0x1d5863,emissiveIntensity:.22,roughness:.32})};
  const baseMat=mat(THREE,0x253d49,{metalness:.42,roughness:.4}),floorMat=mat(THREE,0xffffff,{map:tile(THREE),roughness:.56,metalness:.025});
  bx(THREE,scene,88,.72,47,0,-.43,-4.5,baseMat);
  roundedSlab(THREE,scene,87.1,46.1,.12,.72,mat(THREE,0x435a62,{metalness:.35,roughness:.38}),0,-.055,-4.5);
