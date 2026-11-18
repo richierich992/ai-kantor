@@ -14,7 +14,8 @@ const modules = [
   "premium-world.js",
   "premium-character.js",
   "premium-social.js",
-  "premium-experience.js"
+  "premium-experience.js",
+  "premium-living-office.js"
 ];
 
 for (const file of modules) {
@@ -58,7 +59,9 @@ const requiredHooks = [
   "enhanceSocialHub",
   "updateSocialHub",
   "animateSocialCharacter",
-  "enhancePremiumExperience"
+  "enhancePremiumExperience",
+  "createLivingOffice",
+  "chooseIdleStation"
 ];
 for (const hook of requiredHooks) {
   if (!html.includes(hook)) fail(`Missing integration hook: ${hook}`);
@@ -67,8 +70,10 @@ if (requiredHooks.every(hook => html.includes(hook))) ok("Premium phase integrat
 
 if (!html.includes("if(document.hidden)")) fail("Hidden-tab render pause missing");
 if (!html.includes("PREMIUM_LOW_POWER")) fail("Adaptive low-power profile missing");
+if (!html.includes("livingOffice.update(dt,clk.elapsedTime)")) fail("Living Office update loop missing");
+if (!html.includes("routeCmdBeforeLivingOffice")) fail("Cross-division meeting dispatch hook missing");
 if (!html.includes("data-preset=\\"cinematic\\"") && !html.includes("applyCameraPreset")) fail("Premium camera presets are not wired");
 if (html.includes("sun.shadow.mapSize.set(4096,4096)")) fail("Legacy 4096 shadow map still enabled");
 if (!html.includes("PREMIUM_LOW_POWER?1024:2048")) fail("Adaptive shadow resolution missing");
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Kantor AI Premium Makeover QA checks passed.");
+console.log("Kantor AI Phase 8 Living Office QA checks passed.");
