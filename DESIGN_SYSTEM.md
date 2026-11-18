@@ -113,3 +113,10 @@
 - Diagnostics never make network probes, mutate Firebase, invoke Apps Script, expose credentials, or claim a service is online solely because it is configured.
 - The existing application remains the owner of login, AI proxy requests, backend agent state, Apps Script operations, task queue, and Telegram scheduler.
 - Browser preview now checks that the integration diagnostics layer initializes and reports the existing agent count.
+
+
+## Phase 12 — Final QA & Release
+- Added import-map JSON validation to static QA to catch invalid Three.js/module bootstrap configuration before browser tests.
+- Desktop and mobile browser previews assert Living Office monitor count/time period/meeting API, character social cues, optional facial polish initialization, read-only integration diagnostics, camera presets, and existing office UI flows.
+- Release remains blocked until both static QA and browser preview pass on the final feature-branch head and screenshots are reviewed.
+- No production Firebase, AI proxy, Apps Script, Telegram, or scheduler secrets are embedded in the repository.
