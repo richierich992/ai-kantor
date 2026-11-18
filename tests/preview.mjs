@@ -58,14 +58,16 @@ async function openPreview(viewport, label) {
   page.on("console", msg => {
     if (msg.type() === "error") report.consoleErrors.push({ viewport: label, text: msg.text() });
   });
-  page.on("pageerror", error => report.pageErrors.push({ viewport: label, text: error.message }));
+  page.on("pageerror", error => report.pageErrors.push({ viewport: label, text: error.message, stack: error.stack || "" }));
   page.on("requestfailed", request => {
-    if (request.url().includes("/assets/")) {
-      report.failedAssetRequests.push({
-        viewport: label,
-        url: request.url(),
-        error: request.failure()?.errorText
-      });
+    const failure = { viewport: label, url: request.url(), error: request.failure()?.errorText };
+    if (request.url().includes("/assets/")) report.failedAssetRequests.push(failure);
+    if (/\\.js(?:[?#]|$)/i.test(request.url())) (report.failedModuleRequests ||= []).push(failure);
+  });
+  page.on("response", response => {
+    const url = response.url();
+    if (/\\.js(?:[?#]|$)/i.test(url) && response.status() >= 400) {
+      (report.failedModuleResponses ||= []).push({ viewport: label, url, status: response.status() });
     }
   });
 
