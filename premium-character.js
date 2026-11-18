@@ -79,6 +79,12 @@ export function decoratePremiumCharacter(character, THREE) {
 
   model.updateMatrixWorld(true);
   const bounds = new THREE.Box3().setFromObject(model);
+  /* Box3 is world-space; decorations are children of character.g, so convert
+     bounds back to the character's local coordinates before positioning them. */
+  const localMin = character.g.worldToLocal(bounds.min.clone());
+  const localMax = character.g.worldToLocal(bounds.max.clone());
+  bounds.min.copy(localMin);
+  bounds.max.copy(localMax);
   const size = new THREE.Vector3();
   const center = new THREE.Vector3();
   bounds.getSize(size);
