@@ -265,3 +265,46 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(prefers-reduced-motion:reduce){
   *,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+/* Login screen — premium access portal */
+#login{
+  position:fixed;isolation:isolate;overflow:hidden;
+  background:
+    radial-gradient(ellipse at 18% 16%,rgba(68,145,183,.28),transparent 34%),
+    radial-gradient(ellipse at 82% 78%,rgba(54,116,133,.23),transparent 36%),
+    linear-gradient(145deg,#071321 0%,#102a43 52%,#081727 100%)
+}
+#login:before{
+  content:"";position:absolute;z-index:0;left:50%;top:50%;transform:translate(-50%,-48%);
+  width:min(500px,calc(100vw - 28px));height:390px;border:1px solid rgba(151,209,232,.22);
+  border-radius:28px;background:linear-gradient(145deg,rgba(17,45,69,.78),rgba(7,23,39,.77));
+  box-shadow:0 30px 100px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)
+}
+#login:after{
+  content:"";position:absolute;z-index:0;width:240px;height:240px;left:calc(50% + 100px);top:calc(50% - 240px);
+  border-radius:50%;background:rgba(99,217,235,.13);filter:blur(48px);pointer-events:none
+}
+#login>*{position:relative;z-index:1}
+#login h2{margin:0 0 9px;color:#f2f9ff;font-size:29px;font-weight:900;letter-spacing:-.035em;text-shadow:0 5px 25px rgba(0,0,0,.2)}
+#login h2:before{content:"GOSHEN  /  AUTONOMOUS WORKSPACE";display:block;margin-bottom:15px;color:#82c9d8;font:800 9px/1.2 system-ui,sans-serif;letter-spacing:.23em}
+#login h2:after{content:"";display:block;width:46px;height:3px;margin:13px auto 0;border-radius:99px;background:linear-gradient(90deg,#a5f1e0,#78d7e8,#8cbaff)}
+#login p{max-width:320px;margin:0 0 22px;color:#a8c2d5;font-size:12px;line-height:1.6}
+#login input{
+  width:min(300px,80vw);margin:0 0 12px;padding:13px 15px;border:1px solid rgba(144,198,225,.27);
+  border-radius:12px;background:rgba(4,17,30,.75);color:#f3faff;font-size:14px;letter-spacing:.08em;
+  box-shadow:inset 0 1px 4px rgba(0,0,0,.2)
+}
+#login input:focus{outline:none;border-color:rgba(99,217,235,.75);box-shadow:0 0 0 4px rgba(99,217,235,.1)}
+#login button{
+  min-width:150px;padding:12px 24px;border:0;border-radius:12px;
+  background:linear-gradient(135deg,#a5f1e0,#78d7e8 58%,#8cbaff);color:#082536;
+  font-size:12px;font-weight:900;letter-spacing:.03em;box-shadow:0 9px 25px rgba(74,192,206,.2)
+}
+#login button:hover{transform:translateY(-2px);box-shadow:0 13px 30px rgba(74,192,206,.28)}
+@media(max-width:520px){
+  #login:before{height:350px;border-radius:22px}
+  #login h2{font-size:25px}
+  #login h2:before{font-size:8px}
+  #login p{font-size:11px}
+}
