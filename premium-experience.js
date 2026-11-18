@@ -206,10 +206,17 @@ function createCameraDock(onPreset) {
 
 export function enhancePremiumExperience({ THREE, scene, zones = [], onPreset }) {
   if (scene.userData.premiumExperiencePhase7) return scene.userData.premiumExperiencePhase7;
+  const originalChildren = new Set(scene.children);
   refineEnvironment(THREE, scene);
   addDepartmentDetails(THREE, scene, zones);
+  const decorRoot = new THREE.Group();
+  decorRoot.name = "legacy-premium-experience-phase7";
+  scene.add(decorRoot);
+  scene.children.slice().forEach(child => {
+    if (child !== decorRoot && !originalChildren.has(child)) decorRoot.attach(child);
+  });
   const cameraDock = createCameraDock(onPreset);
-  const result = { cameraDock, environmentEnhanced: true, decoratedDepartments: zones.length };
+  const result = { cameraDock, decorRoot, environmentEnhanced: true, decoratedDepartments: zones.length };
   scene.userData.premiumExperiencePhase7 = result;
   return result;
 }
