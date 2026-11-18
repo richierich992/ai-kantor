@@ -141,11 +141,16 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
           0.04 * Math.sin((elapsedSeconds || 0) * 2.4 + Number(character.r?.id || 0));
       }
 
-      if (character.greetingUntil > now && character.armR) {
-        const phase = (now - (character.greetingUntil - 1750)) / 1750;
-        const wave = Math.sin(phase * Math.PI * 5) * 0.16;
-        character.armR.rotation.z += (0.48 + wave - character.armR.rotation.z) * Math.min(1, dt * 12);
-        character.armR.rotation.y += (0.18 - character.armR.rotation.y) * Math.min(1, dt * 8);
+      if (character.armR) {
+        const waving = character.greetingUntil > now;
+        const phase = waving ? (now - (character.greetingUntil - 1750)) / 1750 : 0;
+        const wave = waving ? Math.sin(phase * Math.PI * 5) * 0.16 : 0;
+        const baseZ = character.meeting ? 0.16 : 0;
+        const baseY = character.meeting ? 0.12 : 0;
+        const targetZ = waving ? 0.48 + wave : baseZ;
+        const targetY = waving ? 0.18 : baseY;
+        character.armR.rotation.z += (targetZ - character.armR.rotation.z) * Math.min(1, dt * 12);
+        character.armR.rotation.y += (targetY - character.armR.rotation.y) * Math.min(1, dt * 8);
       }
     });
   }
