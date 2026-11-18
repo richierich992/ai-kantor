@@ -87,13 +87,13 @@ async function openPreview(viewport, label) {
     period: window.__livingOfficeQA.currentPeriod,
     meetingReady: typeof window.__livingOfficeQA.runMeeting === "function"
   }) : null);
-  check(!!livingOffice && livingOffice.monitors >= 10 && ["dawn","day","golden","night"].includes(livingOffice.period), label + ": Living Office telemetry, monitors and time ambience initialize");
+  check(!!livingOffice && livingOffice.monitors >= 10 && ["dawn","day","golden","night"].includes(livingOffice.period) && livingOffice.meetingReady, label + ": Living Office telemetry, monitors and time ambience initialize");
   const socialLife = await page.evaluate(() => window.__characterSocialQA);
   check(!!socialLife && socialLife.characterCount >= 10 && socialLife.bubbleCount >= 10, label + ": character social cues initialize");
   const polish = await page.evaluate(() => window.__premiumPolishQA);
   check(!!polish && polish.characterCount >= 10, label + ": premium character polish initializes");
   const integration = await page.evaluate(() => window.__integrationHealthQA);
-  check(!!integration && integration.readOnly === true && integration.agentCount >= 10, label + ": read-only integration diagnostics initialize");
+  check(!!integration && integration.readOnly === true && integration.agentCount >= 10 && ["ready","partially-configured","not-configured"].includes(integration.status), label + ": read-only integration diagnostics initialize");
 
 
 
