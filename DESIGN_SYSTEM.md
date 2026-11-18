@@ -20,7 +20,7 @@
 
 ## Tahapan implementasi
 - **Phase 1 (file ini)**: kulit UI/HUD, login, directory, side panels, modals, command centre, dan responsivitas. Tidak mengubah ID DOM atau kontrak backend.
-- **Phase 2**: revisi layout gedung, material, pencahayaan, signage, lantai, jalur, serta framing kamera.
+- **Phase 2 (implementasi awal di branch makeover)**: lapisan arsitektur kaca, rangka fasad, kanopi dan pintu masuk, aksen LED, kaca pembatas divisi, tanaman tepi pintu masuk, pencahayaan area, latar senja, dan framing kamera diorama ditambahkan melalui `premium-world.js`. Scene Three.js asli, hit target ruangan, dan jalur agent tetap digunakan.
 - **Phase 3**: pemolesan karakter GLB, animasi idle/kerja/jalan, interaksi dan staging rapat.
 - **Phase 4**: Social Hub yang aktif dengan lounge, café, ping-pong, catur, arcade, dan aktivitas idle.
 - **Phase 5**: integrasi visual seluruh status backend, accessibility/performance pass, dan regresi fitur.
@@ -29,6 +29,12 @@
 - Pertahankan ID yang dirujuk JavaScript: `login`, `ui`, `map`, `legend`, `chat`, `dash`, `cfgm`, `cmdb`, `cmdm`, `rview`, dan elemen lainnya.
 - Jangan mengubah Firebase paths, payload backend, URL proxy, skema dashboard, atau ID agent hanya untuk kebutuhan visual.
 - Perubahan visual tahap pertama ditambahkan sebagai stylesheet terpisah; logika Three.js, Firebase, Apps Script, dan routing AI tetap utuh.
+
+## Status implementasi Phase 2
+- Modul arsitektur 3D berdiri sendiri dan dipanggil setelah boot scene lama.
+- Objek baru tidak dimasukkan ke daftar raycast `picks`, sehingga tidak mengambil alih klik ruangan/karakter.
+- Kamera default dan tombol isometrik/reset diarahkan ke framing gedung baru.
+- Preview visual browser dan pengujian interaksi end-to-end masih perlu dilakukan sebelum merge.
 
 ## Kriteria penerimaan Phase 1
 - Login, header controls, daftar divisi, chat, sumber AI, pengaturan, dashboard, command centre, dan panel divisi tetap memakai handler lama.
