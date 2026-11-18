@@ -16,7 +16,8 @@ const modules = [
   "premium-social.js",
   "premium-experience.js",
   "premium-living-office.js",
-  "premium-social-life.js"
+  "premium-social-life.js",
+  "premium-polish.js"
 ];
 
 for (const file of modules) {
@@ -63,7 +64,8 @@ const requiredHooks = [
   "enhancePremiumExperience",
   "createLivingOffice",
   "chooseIdleStation",
-  "createCharacterSocialLife"
+  "createCharacterSocialLife",
+  "createPremiumPolish"
 ];
 for (const hook of requiredHooks) {
   if (!html.includes(hook)) fail(`Missing integration hook: ${hook}`);
@@ -80,4 +82,4 @@ if (!html.includes('data-preset="cinematic"') && !html.includes("applyCameraPres
 if (html.includes("sun.shadow.mapSize.set(4096,4096)")) fail("Legacy 4096 shadow map still enabled");
 if (!html.includes("PREMIUM_LOW_POWER?1024:2048")) fail("Adaptive shadow resolution missing");
 if (process.exitCode) process.exit(process.exitCode);
-console.log("Kantor AI Phase 9 Character Social Life QA checks passed.");
+console.log("Kantor AI Phase 10 Premium Polish QA checks passed.");
