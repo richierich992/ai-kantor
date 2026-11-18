@@ -125,6 +125,35 @@ export function enhanceOfficeWorld({ THREE, scene, camera, controls, zones = [] 
   sign.position.set(0, 6.0, 19.18);
   scene.add(sign);
 
+  /* Hide the old white entry parapets and billboard so the new glazed portal
+     reads as one clean architectural composition instead of two stacked gates. */
+  scene.children.forEach(object => {
+    if (object.isSprite &&
+        Math.abs(object.position.x) < 0.2 &&
+        Math.abs(object.position.y - 5.7) < 0.25 &&
+        Math.abs(object.position.z - 17) < 0.4) {
+      object.visible = false;
+    }
+    const p = object.geometry && object.geometry.parameters;
+    if (!object.isMesh || !p) return;
+    const oldLowWall = Math.abs((p.width || 0) - 36.6) < 0.1 &&
+      Math.abs((p.height || 0) - 1) < 0.1 &&
+      Math.abs((p.depth || 0) - 0.5) < 0.1 &&
+      Math.abs(object.position.y - 0.5) < 0.1 &&
+      Math.abs(object.position.z - 17) < 0.2;
+    const oldGatePost = Math.abs((p.width || 0) - 0.6) < 0.1 &&
+      Math.abs((p.height || 0) - 4) < 0.1 &&
+      Math.abs((p.depth || 0) - 0.6) < 0.1 &&
+      Math.abs(Math.abs(object.position.x) - 5.4) < 0.2 &&
+      Math.abs(object.position.z - 17) < 0.2;
+    const oldGateBeam = Math.abs((p.width || 0) - 11.4) < 0.1 &&
+      Math.abs((p.height || 0) - 0.6) < 0.1 &&
+      Math.abs((p.depth || 0) - 0.6) < 0.1 &&
+      Math.abs(object.position.y - 4.2) < 0.2 &&
+      Math.abs(object.position.z - 17) < 0.2;
+    if (oldLowWall || oldGatePost || oldGateBeam) object.visible = false;
+  });
+
   /* Glass office partitions, lit thresholds and slim coloured mullions */
   const zoneGlow = {
     finance: 0x53d68b,
