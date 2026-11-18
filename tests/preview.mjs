@@ -81,6 +81,14 @@ async function openPreview(viewport, label) {
 
   check(await page.locator("#login").evaluate(el => el.classList.contains("hidden")), label + ": login transitions to office");
   check(await page.locator("#ui").isVisible(), label + ": office UI visible");
+  check(await page.locator("#living-clock").count() === 1 || label === "mobile", label + ": Jakarta office clock mounted for desktop");
+  const livingOffice = await page.evaluate(() => window.__livingOfficeQA ? ({
+    monitors: window.__livingOfficeQA.monitorCount,
+    period: window.__livingOfficeQA.currentPeriod,
+    meetingReady: typeof window.__livingOfficeQA.runMeeting === "function"
+  }) : null);
+  check(!!livingOffice && livingOffice.monitors >= 10 && ["dawn","day","golden","night"].includes(livingOffice.period), label + ": Living Office telemetry, monitors and time ambience initialize");
+
 
   const canvasBox = await page.locator("#map canvas").boundingBox();
   check(!!canvasBox && canvasBox.width >= viewport.width * 0.7 && canvasBox.height > viewport.height * 0.45, label + ": 3D canvas has usable dimensions");
