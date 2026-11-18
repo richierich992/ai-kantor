@@ -103,6 +103,7 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 import * as THREE from 'three';
 import { enhanceOfficeWorld } from './premium-world.js';
 import { decoratePremiumCharacter, animatePremiumCharacter } from './premium-character.js';
+import { enhanceSocialHub, updateSocialHub, animateSocialCharacter } from './premium-social.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -552,7 +553,7 @@ function boot(){
  RL.forEach(r=>{r.front=wp(r,0,DP/2+1.5);r.inside=wp(r,0,1.2);r.spot=wp(r,-1.8,-.95);r.row=r.meet?undefined:(r.g.position.z<-17?'A':'B')});
  D.forEach(d=>chars[d.id]=mkChar(rooms[d.id]));
  RL.forEach(r=>{if(!r.meet)draw(r)});
- buildHall();loadGLBs();initTraffic();
+ buildHall();enhanceSocialHub(THREE,scene,STN);loadGLBs();initTraffic();
 
  const ray=new THREE.Raycaster(),mp=new THREE.Vector2();let pd;
  rend.domElement.addEventListener('pointerdown',e=>pd=[e.clientX,e.clientY]);
@@ -568,7 +569,7 @@ function boot(){
  $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
- (function loop(){const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);
+ (function loop(){const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);
   if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam);requestAnimationFrame(loop)})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
@@ -1001,6 +1002,19 @@ const stepBeforePremium = step;
 step = function(character, dt) {
   stepBeforePremium(character, dt);
   animatePremiumCharacter(character, dt, THREE);
+};
+
+
+
+/* ===== Phase 4 — Premium Social Hub =====
+ * Existing buildHall(), STN slots, roam(), and character path logic remain intact.
+ * The new module decorates the stations after creation and animates ambience
+ * inside the existing render loop.
+ */
+const stepBeforeSocial = step;
+step = function(character, dt) {
+  stepBeforeSocial(character, dt);
+  animateSocialCharacter(character, dt);
 };
 
 </script>
