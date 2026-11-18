@@ -76,7 +76,7 @@ if (!html.includes("livingOffice.update(dt,clk.elapsedTime)")) fail("Living Offi
 if (!html.includes("routeCmdBeforeLivingOffice")) fail("Cross-division meeting dispatch hook missing");
 if (!html.includes("characterSocialLife.update(dt,clk.elapsedTime)")) fail("Character social-life update loop missing");
 if (!html.includes("bootBeforeCharacterSocialLife")) fail("Character social-life boot hook missing");
-if (!html.includes("data-preset=\\"cinematic\\"") && !html.includes("applyCameraPreset")) fail("Premium camera presets are not wired");
+if (!html.includes('data-preset="cinematic"') && !html.includes("applyCameraPreset")) fail("Premium camera presets are not wired");
 if (html.includes("sun.shadow.mapSize.set(4096,4096)")) fail("Legacy 4096 shadow map still enabled");
 if (!html.includes("PREMIUM_LOW_POWER?1024:2048")) fail("Adaptive shadow resolution missing");
 if (process.exitCode) process.exit(process.exitCode);
