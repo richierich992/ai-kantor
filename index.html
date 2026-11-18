@@ -1005,19 +1005,19 @@ boot = function() {
     const portraitView = cam.aspect < 0.85;
     const presets = {
       overview: {
-        fov: portraitView ? 58 : 46,
-        target: [0, 1, -5],
-        camera: portraitView ? [24, 78, 112] : [36, 48, 66]
+        fov: portraitView ? 68 : 43,
+        target: [0, 1, -4.5],
+        camera: portraitView ? [15, 84, 116] : [49, 61, 59]
       },
       cinematic: {
-        fov: portraitView ? 68 : 52,
-        target: [0, 1.5, -3],
-        camera: portraitView ? [0, 96, 172] : [0, 30, 95]
+        fov: portraitView ? 72 : 50,
+        target: [0, 1.5, -5],
+        camera: portraitView ? [0, 78, 132] : [0, 42, 78]
       },
       social: {
-        fov: portraitView ? 68 : 54,
+        fov: portraitView ? 70 : 50,
         target: [-4, 1, 8],
-        camera: portraitView ? [-5, 96, 168] : [-5, 44, 88]
+        camera: portraitView ? [-8, 82, 132] : [-5, 48, 78]
       }
     };
     const view = presets[preset] || presets.overview;
@@ -1055,16 +1055,16 @@ boot = function() {
     const enabled = $('iso').dataset.premiumIso !== '1';
     $('iso').dataset.premiumIso = enabled ? '1' : '0';
     const portraitView = cam.aspect < 0.85;
-    cam.fov = enabled ? (portraitView ? 44 : 35) : (portraitView ? 58 : 46);
+    cam.fov = enabled ? (portraitView ? 60 : 38) : (portraitView ? 68 : 43);
     cam.updateProjectionMatrix();
     tg = enabled
       ? {
-          t: new THREE.Vector3(0, 1, -5),
-          c: portraitView ? new THREE.Vector3(12, 94, 116) : new THREE.Vector3(82, 78, 88)
+          t: new THREE.Vector3(0, 1, -4.5),
+          c: portraitView ? new THREE.Vector3(15, 96, 132) : new THREE.Vector3(65, 75, 68)
         }
       : {
-          t: new THREE.Vector3(0, 1, -5),
-          c: portraitView ? new THREE.Vector3(24, 78, 112) : new THREE.Vector3(36, 48, 66)
+          t: new THREE.Vector3(0, 1, -4.5),
+          c: portraitView ? new THREE.Vector3(15, 84, 116) : new THREE.Vector3(49, 61, 59)
         };
     if (premiumCameraDock) premiumCameraDock.setActive('');
     $('iso').textContent = enabled ? '◇ Isometrik: ON' : '◇ Isometrik';
