@@ -349,7 +349,7 @@ async function loadGLBs(){const L=new GLTFLoader();
   'avatar_ai_stock_analyst_v3','avatar_ai_trend_scout_v3','avatar_ai_video_producer_v3',
   'chess_table_v2','ping_pong_table_v2','social_arcade_v3','social_cafe_station_v3','social_sofa_v3']
   .map(n=>new Promise(res=>L.load('assets/'+n+'.glb',g=>{fixMat(g.scene);GLB[n]=g.scene;res()},undefined,()=>res()))));
- RL.forEach(dress);Object.values(chars).forEach(swapChar);dressLobby();dressHub()}
+ if(!scene.userData.isometricOfficeRebuild)RL.forEach(dress);Object.values(chars).forEach(swapChar);if(!scene.userData.isometricOfficeRebuild)dressLobby();dressHub()}
 function put(n,parent,x,z,yaw=0,sc=1,y=0){const o=GLB[n]&&GLB[n].clone(true);if(!o)return null;o.position.set(x,y,z);o.rotation.y=yaw;o.scale.setScalar(sc);
  o.traverse(m=>{if(m.isMesh)m.castShadow=m.receiveShadow=true});parent.add(o);return o}
 function mkAvatar(n){const src=GLB['avatar_ai_'+n];if(!src)return null;const root=src.clone(true);root.updateMatrixWorld(true);
@@ -471,7 +471,7 @@ function buildHall(){
  buildHrPlaceholder();
 }
 /* Divisi 5 (HR & Administrasi) belum punya agen: tampilkan meja kosong bertanda "belum ada agen" */
-function buildHrPlaceholder(){const g=new THREE.Group();g.position.set(37,0,-12);scene.add(g);
+function buildHrPlaceholder(){const g=new THREE.Group();g.name='legacy-hr-placeholder';g.position.set(37,0,-12);scene.add(g);
  box(2.6,.8,1,0x9c7a54,0,.4,-2,g);box(.9,.1,.9,0x64748b,0,.5,0,g);box(.9,.9,.1,0x64748b,0,1,.45,g);box(.12,.5,.12,0x475569,0,.25,0,g);
  const m=sign(1.5,.8,'HR & Administrasi',['Belum ada agen','(direncanakan)'],'#8a4fd8');m.position.set(0,1.55,-2.4);g.add(m);box(1.6,.9,.06,0x111827,0,1.55,-2.45,g);
  tree(g,3,-3);}
@@ -569,7 +569,7 @@ function boot(){
  RL.forEach(r=>{r.front=wp(r,0,DP/2+1.5);r.inside=wp(r,0,1.2);r.spot=wp(r,-1.8,-.95);r.row=r.meet?undefined:(r.g.position.z<-17?'A':'B')});
  D.forEach(d=>chars[d.id]=mkChar(rooms[d.id]));
  RL.forEach(r=>{if(!r.meet)draw(r)});
- buildHall();enhanceSocialHub(THREE,scene,STN);loadGLBs();initTraffic();
+ buildHall();enhanceSocialHub(THREE,scene,STN);loadGLBs();
 
  const ray=new THREE.Raycaster(),mp=new THREE.Vector2();let pd;
  rend.domElement.addEventListener('pointerdown',e=>pd=[e.clientX,e.clientY]);
@@ -593,7 +593,7 @@ function boot(){
  $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
- (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);updateIsometricOffice(scene,dt);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
+ (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));updateSocialHub(scene,dt,clk.elapsedTime);updateIsometricOffice(scene,dt);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
   if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam)})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
