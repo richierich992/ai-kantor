@@ -199,7 +199,6 @@ export function enhanceSocialHub(THREE, scene, stations) {
   const decor = [];
   const pingPong = [];
   const steam = [];
-  const lights = [];
   const labels = [];
   const arcadeStations = (stations || []).filter(s => s.kind === "arcade");
   const firstArcade = arcadeStations[0];
@@ -226,11 +225,6 @@ export function enhanceSocialHub(THREE, scene, stations) {
     const pad = addFloorPad(THREE, scene, station, radius, color);
     const ring = addRing(THREE, scene, station, radius, color);
     const dots = addOccupancyLights(THREE, scene, station, color);
-    const point = new THREE.PointLight(color, 0.38, station.kind === "arcade" ? 13 : 8, 2);
-    point.position.set(station.x, station.kind === "garden" ? 2.3 : 2.8, station.z);
-    point.castShadow = false;
-    scene.add(point);
-    lights.push({ point, station, base: point.intensity });
 
     const title = TITLES[station.kind];
     let label = null;
@@ -247,7 +241,6 @@ export function enhanceSocialHub(THREE, scene, stations) {
       pad,
       ring,
       dots,
-      point,
       label,
       phase: decor.length * 0.73,
       color
@@ -279,7 +272,7 @@ export function enhanceSocialHub(THREE, scene, stations) {
     baseY: 5.9, phase: 2.9
   });
 
-  scene.userData.premiumSocialDecor = { decor, pingPong, steam, lights, labels };
+  scene.userData.premiumSocialDecor = { decor, pingPong, steam, labels };
   return scene.userData.premiumSocialDecor;
 }
 
@@ -303,7 +296,6 @@ export function updateSocialHub(scene, dt, elapsedSeconds) {
     const pulse = 0.5 + 0.5 * Math.sin(t * 1.35 + item.phase);
     item.ring.material.opacity = occupied ? 0.58 + 0.16 * pulse : 0.31 + 0.08 * pulse;
     item.pad.material.opacity = occupied ? 0.085 : 0.045;
-    item.point.intensity = (occupied ? 0.55 : 0.38) * (0.92 + 0.08 * pulse);
     item.ring.rotation.z += step * 0.06;
   });
 
@@ -329,12 +321,6 @@ export function updateSocialHub(scene, dt, elapsedSeconds) {
       const scale = 0.75 + phase * 1.25;
       particle.mesh.scale.setScalar(scale);
     });
-  });
-
-  state.lights.forEach((entry, index) => {
-    const occupied = (entry.station.slots || []).some(slot => !!slot.occ);
-    const flicker = 0.92 + 0.08 * Math.sin(t * 1.6 + index);
-    entry.point.intensity = entry.base * flicker * (occupied ? 1.45 : 1);
   });
 
   state.labels.forEach(item => {
