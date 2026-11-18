@@ -7,9 +7,9 @@
 - [x] Phase 12: static and desktop/mobile release validation
 
 ## Required before merge
-- [ ] GitHub Actions static QA passes on latest PR head
-- [ ] GitHub Actions browser preview passes on desktop and mobile
-- [ ] Review desktop/mobile screenshots from the latest browser-preview artifact
+- [x] GitHub Actions static QA passes on current PR head (run 44243245782)
+- [x] GitHub Actions browser preview passes on desktop and mobile (37/37 checks, run 44243245757)
+- [ ] Review latest screenshots after mobile camera framing adjustment
 - [ ] Confirm production Firebase login, AI proxy, Apps Script workflows and Telegram notifications with authorized production credentials
 - [ ] Confirm no API keys, service account secrets or tokens are committed
 - [ ] Product owner approves the preview and authorizes merge
@@ -23,4 +23,4 @@
 - Existing agent movement, Social Hub slots and task queue
 
 ## Release decision
-The PR is merge-ready only after all required checks above pass. Browser mocks do not substitute for production end-to-end validation. Do not merge without explicit owner approval.
+The PR is functionally mergeable after the latest screenshot review and owner approval. Browser mocks do not substitute for production end-to-end validation. Do not merge without explicit owner approval.
