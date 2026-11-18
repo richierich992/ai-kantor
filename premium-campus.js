@@ -134,6 +134,14 @@ function createDepartmentPod(THREE, root, zone, index) {
     color: spec.color, metalness: 0.18, roughness: 0.24,
     transparent: true, opacity: 0.075, side: THREE.DoubleSide, depthWrite: false
   });
+  const wallGlass = new THREE.MeshPhysicalMaterial({
+    color: 0xb6e4ef, metalness: 0.08, roughness: 0.16,
+    transparent: true, opacity: 0.19, side: THREE.DoubleSide, depthWrite: false
+  });
+  const glassTint = new THREE.MeshStandardMaterial({
+    color: spec.color, emissive: spec.color, emissiveIntensity: 0.12,
+    transparent: true, opacity: 0.12, roughness: 0.35, metalness: 0.2
+  });
 
   // A crisp raised-looking perimeter trim defines each division as a distinct pod.
   const yTrim = 0.205;
@@ -141,6 +149,34 @@ function createDepartmentPod(THREE, root, zone, index) {
   block(THREE, root, width - 0.4, 0.055, 0.12, cx, yTrim, z1 - 0.12, accent);
   block(THREE, root, 0.12, 0.055, depth - 0.4, x0 + 0.12, yTrim, cz, accent);
   block(THREE, root, 0.12, 0.055, depth - 0.4, x1 - 0.12, yTrim, cz, accent);
+
+  // Full-height glazed walls turn the old waist-height cubicles into identifiable offices.
+  const wallY = 1.55, wallH = 2.8;
+  const wallDepth = Math.max(3, depth - 0.36);
+  [x0 + 0.1, x1 - 0.1].forEach(x => {
+    const panel = block(THREE, root, 0.075, wallH, wallDepth, x, wallY, cz, wallGlass);
+    panel.renderOrder = 2;
+  });
+  const rear = block(THREE, root, width - 0.35, wallH, 0.075, cx, wallY, z0 + 0.1, wallGlass);
+  rear.renderOrder = 2;
+  const doorWidth = Math.min(5.2, Math.max(2.8, width * 0.36));
+  const sideSegment = (width - doorWidth - 0.3) / 2;
+  if (sideSegment > 0.45) {
+    [x0 + sideSegment / 2 + 0.15, x1 - sideSegment / 2 - 0.15].forEach(x => {
+      const panel = block(THREE, root, sideSegment, wallH, 0.075, x, wallY, z1 - 0.1, wallGlass);
+      panel.renderOrder = 2;
+    });
+  }
+  // Thin dark mullions and department-coloured door jambs make the glazing readable.
+  [x0 + 0.12, x1 - 0.12].forEach(x => {
+    block(THREE, root, 0.12, wallH + 0.08, 0.14, x, wallY, cz, frame);
+  });
+  [z0 + 0.12, z1 - 0.12].forEach(z => {
+    block(THREE, root, 0.14, wallH + 0.08, 0.12, cx, wallY, z, frame);
+  });
+  [cx - doorWidth / 2, cx + doorWidth / 2].forEach(x => {
+    block(THREE, root, 0.12, wallH, 0.16, x, wallY, z1 - 0.1, accent);
+  });
 
   // Four structural corners and a floating glass/pergola canopy make the room read as architecture.
   const corners = [[x0 + 0.14, z0 + 0.14], [x1 - 0.14, z0 + 0.14],
@@ -169,7 +205,6 @@ function createDepartmentPod(THREE, root, zone, index) {
   }
 
   // Branded entrance portal facing the shared plaza, without closing the existing doorway.
-  const doorWidth = Math.min(5.2, Math.max(3, width * 0.36));
   const frontZ = z1 + 0.13;
   const postX = [cx - doorWidth / 2, cx + doorWidth / 2];
   postX.forEach(x => {
@@ -366,9 +401,48 @@ export function enhancePremiumCampus({ THREE, scene, zones = [] }) {
   // polished campus floor and landscaped daytime setting in the approved mockup.
   scene.background = makeCampusSkyTexture(THREE);
   if (scene.fog) scene.fog.color.set(0xc2dbe0);
+  const zoneBounds = (zones || []).map(zone => {
+    const [x0, x1, z0, z1] = zone.box;
+    return { x0, x1, z0, z1, w: x1 - x0, d: z1 - z0, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2 };
+  });
   scene.traverse(object => {
     const p = object.geometry && object.geometry.parameters;
     if (!object.isMesh || !p) return;
+    // Retire the original short divider walls; Phase 13 replaces them with clear glazing.
+    if (object.geometry.type === "BoxGeometry") {
+      zoneBounds.forEach(b => {
+        const side = Math.abs((p.width || 0) - 0.25) < 0.01 &&
+          Math.abs((p.height || 0) - 1.1) < 0.01 &&
+          Math.abs((p.depth || 0) - b.d) < 0.02 &&
+          Math.abs(object.position.z - b.cz) < 0.02 &&
+          (Math.abs(object.position.x - b.x0) < 0.02 || Math.abs(object.position.x - b.x1) < 0.02);
+        const rearOrFront = Math.abs((p.width || 0) - b.w) < 0.02 &&
+          Math.abs((p.height || 0) - 0.1) < 0.01 &&
+          Math.abs((p.depth || 0) - 0.25) < 0.02 &&
+          Math.abs(object.position.x - b.cx) < 0.02 &&
+          (Math.abs(object.position.z - b.z0) < 0.02 || Math.abs(object.position.z - b.z1) < 0.02);
+        const frontGapFiller = Math.abs((p.width || 0) - b.w * 0.7) < 0.02 &&
+          Math.abs((p.height || 0) - 0.1) < 0.01 &&
+          Math.abs((p.depth || 0) - 0.25) < 0.02 &&
+          Math.abs(object.position.x - b.cx) < 0.02 &&
+          Math.abs(object.position.z - (b.z1 - 0.15)) < 0.02;
+        if (side || rearOrFront || frontGapFiller) object.visible = false;
+      });
+      // The old dark Goshen entry billboard sits in front of the new reception counter.
+      if (object.geometry.type === "BoxGeometry" &&
+          Math.abs((p.width || 0) - 14.2) < 0.02 &&
+          Math.abs((p.height || 0) - 0.58) < 0.02 &&
+          Math.abs((p.depth || 0) - 5.1) < 0.02 &&
+          Math.abs(object.position.y - 4.5) < 0.02 &&
+          Math.abs(object.position.z - 20.5) < 0.02) {
+        object.material = material(THREE, 0xd7e7ed, { metalness: 0.28, roughness: 0.34 });
+      }
+      if (object.geometry.type === "PlaneGeometry" &&
+          Math.abs((p.width || 0) - 10.2) < 0.02 &&
+          Math.abs((p.height || 0) - 2.15) < 0.02 &&
+          Math.abs(object.position.y - 6.0) < 0.02 &&
+          Math.abs(object.position.z - 19.18) < 0.02) object.visible = false;
+    }
     if (object.geometry.type === "PlaneGeometry" && p.width === 84 && p.height === 43) {
       object.material = material(THREE, 0xe7edf0, { roughness: 0.82, metalness: 0.025 });
       object.receiveShadow = true;
