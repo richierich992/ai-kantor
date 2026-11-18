@@ -125,7 +125,7 @@ export function decoratePremiumCharacter(character, THREE) {
   const badge = new THREE.Sprite(new THREE.SpriteMaterial({
     map,
     transparent: true,
-    depthTest: false,
+    depthTest: true,
     depthWrite: false
   }));
   badge.scale.set(0.38, 0.38, 1);
