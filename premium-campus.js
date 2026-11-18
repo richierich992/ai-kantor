@@ -281,6 +281,23 @@ export function enhancePremiumCampus({ THREE, scene, zones = [] }) {
   root.name = "premium-campus-phase-13";
   scene.add(root);
 
+  // Move away from the dark checkerboard prototype look toward the bright,
+  // polished campus floor and landscaped daytime setting in the approved mockup.
+  scene.background = new THREE.Color(0xa8cde0);
+  if (scene.fog) scene.fog.color.set(0xb8d6df);
+  scene.traverse(object => {
+    const p = object.geometry && object.geometry.parameters;
+    if (!object.isMesh || !p) return;
+    if (object.geometry.type === "PlaneGeometry" && p.width === 84 && p.height === 43) {
+      object.material = material(THREE, 0xe7edf0, { roughness: 0.82, metalness: 0.025 });
+      object.receiveShadow = true;
+    }
+    if (object.geometry.type === "BoxGeometry" && p.width === 420 && p.depth === 300) {
+      object.material = material(THREE, 0x8fb98c, { roughness: 0.98, metalness: 0 });
+      object.receiveShadow = false;
+    }
+  });
+
   const pods = (zones || []).map((zone, index) => createDepartmentPod(THREE, root, zone, index)).filter(Boolean);
   const command = createCentralCore(THREE, root);
   const reception = createReception(THREE, root);
