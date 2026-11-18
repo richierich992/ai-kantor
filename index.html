@@ -112,6 +112,7 @@ import { createPremiumPolish } from './premium-polish.js';
 import { createIntegrationDiagnostics } from './premium-integration.js';
 import { createLivingOffice, chooseIdleStation } from './premium-living-office.js';
 import { enhancePremiumExperience } from './premium-experience.js';
+import { enhancePremiumCampus, updatePremiumCampus } from './premium-campus.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -592,7 +593,7 @@ function boot(){
  $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
- (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
+ (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updatePremiumCampus(scene,dt);updateSocialHub(scene,dt,clk.elapsedTime);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
   if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam)})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
@@ -1126,6 +1127,28 @@ routeCmd = async function(commandText) {
     }
   }
   return result;
+};
+
+
+/* ===== Phase 13 — Premium Campus Architecture =====
+ * A central AI core, themed division pods, reception and landscaped edge
+ * bring the 3D world closer to the approved campus mockup. All legacy room
+ * meshes, hit targets, navigation, agent IDs and backend flows are preserved.
+ */
+let premiumCampus = null;
+const bootBeforePremiumCampus = boot;
+boot = function() {
+  bootBeforePremiumCampus();
+  premiumCampus = enhancePremiumCampus({
+    THREE,
+    scene,
+    zones: DL.map(dl => ({
+      id: dl.id,
+      box: dl.box.slice(),
+      name: (DEPTS.find(d => d.departmentId === dl.id) || {}).name || dl.id
+    }))
+  });
+  window.__premiumCampusQA = premiumCampus.diagnostics();
 };
 
 /* ===== Phase 9 — Character Intelligence & Social Life ===== */
