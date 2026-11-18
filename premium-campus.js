@@ -235,10 +235,7 @@ function createCentralCore(THREE, root) {
   title.position.set(0, 5.55, 0);
   core.add(title);
 
-  const orbiting = new THREE.Group();
-  orbiting.name = "core-orbiting-rings";
-  orbiting.add(haloA, haloB, haloC);
-  return { core, orb, wire, rings: [haloA, haloB, haloC], orbiting, light };
+  return { core, orb, wire, rings: [haloA, haloB, haloC], light };
 }
 
 function createReception(THREE, root) {
