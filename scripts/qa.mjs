@@ -87,6 +87,8 @@ for (const hook of requiredHooks) {
 }
 if (requiredHooks.every(hook => html.includes(hook))) ok("Premium phase integration hooks");
 
+if (!html.includes("enhanceIsometricOffice")) fail("Approved isometric office rebuild is not integrated");
+if (!html.includes("updateIsometricOffice(scene,dt)")) fail("Isometric office update hook is missing");
 if (!html.includes("if(document.hidden)")) fail("Hidden-tab render pause missing");
 if (!html.includes("PREMIUM_LOW_POWER")) fail("Adaptive low-power profile missing");
 if (!html.includes("livingOffice.update(dt,clk.elapsedTime)")) fail("Living Office update loop missing");
