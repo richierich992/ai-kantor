@@ -92,7 +92,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   color:#82a9c3;font:800 9px/1.2 system-ui,sans-serif;letter-spacing:.2em
 }
 #legend div{position:relative;display:flex;align-items:center;gap:9px;margin:2px 0;padding:8px 8px;border-radius:11px;font-size:11px;line-height:1.25;color:#d9e9f6;cursor:pointer;transition:background .18s ease,transform .18s ease}
-#legend div:hover{background:rgba(94,173,207,.12);color:#fff;transform:translateX(2px)}
+#legend div:hover{background:rgba(94,173,207,.12);color:#fff}
 #legend div[style*="font-weight:800"]{margin-top:10px;padding:10px 9px;background:rgba(102,170,203,.075);border:1px solid rgba(148,201,227,.1);font-size:10px;letter-spacing:.01em}
 #legend b{width:25px;height:25px;border:1px solid rgba(255,255,255,.17);box-shadow:0 3px 10px rgba(0,0,0,.2);font:800 10px system-ui,sans-serif}
 #legend .ldot{width:7px;height:7px;flex:none;border-radius:50%;box-shadow:0 0 9px currentColor}
