@@ -576,7 +576,7 @@ function boot(){
   const b=rend.domElement.getBoundingClientRect();mp.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);ray.setFromCamera(mp,cam);
   const hc=ray.intersectObjects(Object.values(chars).map(c=>c.g),true)[0],h=ray.intersectObjects(picks,false)[0];let aid=null;
   if(hc){let o=hc.object;while(o&&o.userData.aid===undefined)o=o.parent;if(o)aid=o.userData.aid}
-  if(aid!==null&&(!h||hc.distance<=h.distance+.8))openDiv(aid);
+  if(aid!==null&&(!h||hc.distance<=h.distance+.8)){if(premiumPolish)premiumPolish.select(aid);openDiv(aid)}else if(premiumPolish)premiumPolish.select(null);
   else if(h){const u=h.object.userData;if(u.zone){$('zone').textContent='📍 Zona: '+u.zoneName;$('zone').style.display='block';setTimeout(()=>{$('zone').style.display='none'},3000)}
    if(u.dept&&DEP[u.dept])openDept(u.dept);else openDiv(u.id)}});
  $('reset').onclick=()=>{tg={t:new THREE.Vector3(0,0,-3),c:new THREE.Vector3(3,60,48)}};
@@ -584,7 +584,7 @@ function boot(){
  $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
- (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);if(integrationDiagnostics&&Math.floor(clk.elapsedTime)%15===0)window.__integrationHealthQA=integrationDiagnostics.snapshot();
+ (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
   if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam)})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
