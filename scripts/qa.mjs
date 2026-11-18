@@ -12,6 +12,7 @@ const ok = message => console.log("PASS:", message);
 const html = read("index.html");
 const modules = [
   "premium-world.js",
+  "premium-campus.js",
   "premium-character.js",
   "premium-social.js",
   "premium-experience.js",
@@ -79,7 +80,9 @@ const requiredHooks = [
   "chooseIdleStation",
   "createCharacterSocialLife",
   "createPremiumPolish",
-  "createIntegrationDiagnostics"
+  "createIntegrationDiagnostics",
+  "enhancePremiumCampus",
+  "updatePremiumCampus"
 ];
 for (const hook of requiredHooks) {
   if (!html.includes(hook)) fail(`Missing integration hook: ${hook}`);
@@ -90,7 +93,7 @@ if (!html.includes("if(document.hidden)")) fail("Hidden-tab render pause missing
 if (!html.includes("PREMIUM_LOW_POWER")) fail("Adaptive low-power profile missing");
 if (!html.includes("livingOffice.update(dt,clk.elapsedTime)")) fail("Living Office update loop missing");
 if (!html.includes("routeCmdBeforeLivingOffice")) fail("Cross-division meeting dispatch hook missing");
-if (!html.includes("characterSocialLife.update(dt,clk.elapsedTime)")) fail("Character social-life update loop missing");
+if (!html.includes("characterSocialLife.update(dt,clk.elapsedTime)")) fail("Character social-life update loop missing");\nif (!html.includes("updatePremiumCampus(scene,dt)")) fail("Premium campus animation update missing");\nif (!html.includes("enhancePremiumCampus")) fail("Premium campus architecture is not integrated");
 if (!html.includes("bootBeforeCharacterSocialLife")) fail("Character social-life boot hook missing");
 if (!html.includes('data-preset="cinematic"') && !html.includes("applyCameraPreset")) fail("Premium camera presets are not wired");
 if (html.includes("sun.shadow.mapSize.set(4096,4096)")) fail("Legacy 4096 shadow map still enabled");
