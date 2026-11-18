@@ -123,7 +123,9 @@ async function openPreview(viewport, label) {
 
   if (label === "desktop") {
     await page.screenshot({ path: path.join(outDir, "kantor-ai-desktop-office.png"), fullPage: true });
-    await page.locator('#legend [data-id="1"]').click({ timeout: 15000 });
+    const firstAgent = page.locator('#legend [data-id="1"]');
+    await firstAgent.scrollIntoViewIfNeeded();
+    await firstAgent.click({ position: { x: 18, y: 15 }, timeout: 15000 });
     check(await page.locator("#chat").evaluate(el => el.classList.contains("open")), "desktop: clicking an agent opens chat panel");
     await page.screenshot({ path: path.join(outDir, "kantor-ai-desktop-agent.png"), fullPage: true });
     await page.locator("#cx").click();
