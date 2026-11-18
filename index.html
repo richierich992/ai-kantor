@@ -989,19 +989,19 @@ boot = function() {
     const portraitView = cam.aspect < 0.85;
     const presets = {
       overview: {
-        fov: portraitView ? 50 : 43,
-        target: portraitView ? [0, 1, -6] : [0, 1, -4.5],
-        camera: portraitView ? [0, 44, 58] : [49, 61, 59]
+        fov: portraitView ? 56 : 43,
+        target: [0, 1, -4.5],
+        camera: portraitView ? [0, 148, 128] : [55, 69, 66]
       },
       cinematic: {
-        fov: portraitView ? 54 : 50,
+        fov: portraitView ? 58 : 50,
         target: portraitView ? [0, 1.5, -7] : [0, 1.5, -5],
-        camera: portraitView ? [0, 40, 55] : [0, 42, 78]
+        camera: portraitView ? [0, 148, 150] : [0, 42, 78]
       },
       social: {
-        fov: portraitView ? 52 : 50,
-        target: portraitView ? [-10, 1, 8] : [-4, 1, 8],
-        camera: portraitView ? [-10, 42, 55] : [-5, 48, 78]
+        fov: portraitView ? 58 : 50,
+        target: portraitView ? [-4, 1, 8] : [-4, 1, 8],
+        camera: portraitView ? [-4, 130, 95] : [-5, 48, 78]
       }
     };
     const view = presets[preset] || presets.overview;
@@ -1039,16 +1039,16 @@ boot = function() {
     const enabled = $('iso').dataset.premiumIso !== '1';
     $('iso').dataset.premiumIso = enabled ? '1' : '0';
     const portraitView = cam.aspect < 0.85;
-    cam.fov = enabled ? (portraitView ? 48 : 38) : (portraitView ? 50 : 43);
+    cam.fov = enabled ? (portraitView ? 56 : 38) : (portraitView ? 56 : 43);
     cam.updateProjectionMatrix();
     tg = enabled
       ? {
-          t: new THREE.Vector3(0, 1, -6),
-          c: portraitView ? new THREE.Vector3(0, 42, 56) : new THREE.Vector3(65, 75, 68)
+          t: new THREE.Vector3(0, 1, -4.5),
+          c: portraitView ? new THREE.Vector3(0, 148, 128) : new THREE.Vector3(65, 75, 68)
         }
       : {
-          t: new THREE.Vector3(0, 1, -6),
-          c: portraitView ? new THREE.Vector3(0, 44, 58) : new THREE.Vector3(49, 61, 59)
+          t: new THREE.Vector3(0, 1, -4.5),
+          c: portraitView ? new THREE.Vector3(0, 148, 128) : new THREE.Vector3(55, 69, 66)
         };
     if (premiumCameraDock) premiumCameraDock.setActive('');
     $('iso').textContent = enabled ? '◇ Isometrik: ON' : '◇ Isometrik';
