@@ -73,3 +73,5 @@
 - Lampu titik per stasiun Social Hub dan per partisi divisi dihapus untuk mengurangi jumlah dynamic lights; ambience tetap melalui emissive/LED, ring, dan pad.
 - Emblem profesi sekarang menghormati depth test agar tidak menembus dinding/objek.
 - Pemeriksaan dilakukan statis terhadap file, asset, integrasi, dan konfigurasi. Browser render, FPS perangkat nyata, serta end-to-end login/chat/Firebase/Apps Script belum dapat diverifikasi dari audit repository.
+
+- GitHub Actions static QA pada commit `65a7f2534c07a95957d71e8a1998f6663d89fe9f` berhasil: Node syntax checks, import hooks, asset manifest, dan profil performa lulus. Browser/device regression masih menunggu.
