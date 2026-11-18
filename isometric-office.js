@@ -30,7 +30,7 @@ function createOfficeExtras(T,scene,m){
 export function enhanceIsometricOffice({THREE,scene,rooms,characters,zones=[],zoneMeshes=[],camera,controls,setTarget}){
  if(scene.userData.isometricOfficeRebuild)return scene.userData.isometricOfficeRebuild;
  const m={wood:mat(THREE,0x9a7550),metal:mat(THREE,0x3d5057,{metalness:.55}),frame:mat(THREE,0x273a43,{metalness:.5}),seat:mat(THREE,0x47677b),keyboard:mat(THREE,0x25343a),mouse:mat(THREE,0x303a40),tower:mat(THREE,0x35454c),lightDesk:mat(THREE,0xe5ebe9),accent:mat(THREE,0x65c6cf)};
- const floorMat=mat(THREE,0xffffff,{map:tile(),roughness:.9});bx(THREE,scene,88,.55,47,0,-.32,-4.5,mat(THREE,0x46535a));const floor=new THREE.Mesh(new THREE.PlaneGeometry(84,43),floorMat);floor.rotation.x=-Math.PI/2;floor.position.set(0,-.02,-4.5);floor.receiveShadow=true;scene.add(floor);
+ const floorMat=mat(THREE,0xffffff,{map:tile(THREE),roughness:.9});bx(THREE,scene,88,.55,47,0,-.32,-4.5,mat(THREE,0x46535a));const floor=new THREE.Mesh(new THREE.PlaneGeometry(84,43),floorMat);floor.rotation.x=-Math.PI/2;floor.position.set(0,-.02,-4.5);floor.receiveShadow=true;scene.add(floor);
  // Retire the old campus/yard render layers, preserving characters, rooms and Social Hub props.
  if(scene.userData.premiumWorldPhase2Root)scene.userData.premiumWorldPhase2Root.visible=false;
  if(scene.userData.premiumExperiencePhase7?.decorRoot)scene.userData.premiumExperiencePhase7.decorRoot.visible=false;
