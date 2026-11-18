@@ -6,6 +6,7 @@
 export function enhanceOfficeWorld({ THREE, scene, camera, controls, zones = [] }) {
   if (scene.userData.premiumWorldPhase2) return;
   scene.userData.premiumWorldPhase2 = true;
+  const originalChildren = new Set(scene.children);
 
   const makeMat = (color, opts = {}) => new THREE.MeshStandardMaterial({
     color, roughness: 0.58, metalness: 0.18, ...opts
@@ -346,5 +347,12 @@ export function enhanceOfficeWorld({ THREE, scene, camera, controls, zones = [] 
   controls.maxPolarAngle = 1.38;
   controls.update();
 
-  return { foundation: true, glazedZones: zones.length };
+  const legacyRoot = new THREE.Group();
+  legacyRoot.name = "legacy-campus-world-phase2";
+  scene.add(legacyRoot);
+  scene.children.slice().forEach(child => {
+    if (child !== legacyRoot && !originalChildren.has(child)) legacyRoot.attach(child);
+  });
+  scene.userData.premiumWorldPhase2Root = legacyRoot;
+  return { foundation: true, glazedZones: zones.length, legacyRoot };
 }
