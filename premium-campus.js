@@ -61,6 +61,59 @@ function textSprite(THREE, title, subtitle, accent, width = 9.2) {
   return sprite;
 }
 
+function makeCampusGrassTexture(THREE) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createLinearGradient(0, 0, 512, 512);
+  gradient.addColorStop(0, "#7ea982");
+  gradient.addColorStop(0.5, "#8db58a");
+  gradient.addColorStop(1, "#739a7d");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 1800; i++) {
+    const x = (i * 137.5) % 512;
+    const y = (i * 83.7 + (i % 17) * 19) % 512;
+    const radius = 0.7 + (i % 4) * 0.45;
+    ctx.fillStyle = i % 3 === 0 ? "rgba(222,239,190,.14)" : "rgba(34,83,55,.10)";
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    if (i % 5 === 0) {
+      ctx.strokeStyle = "rgba(229,241,192,.12)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (i % 7) - 3, y - 4);
+      ctx.stroke();
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(42, 30);
+  texture.anisotropy = 4;
+  return texture;
+}
+
+function makeCampusSkyTexture(THREE) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 8;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createLinearGradient(0, 0, 0, 256);
+  gradient.addColorStop(0, "#77b8e1");
+  gradient.addColorStop(0.48, "#b8d8e5");
+  gradient.addColorStop(1, "#e7eee6");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 function createDepartmentPod(THREE, root, zone, index) {
   const spec = STYLE[zone.id] || STYLE.it_automation;
   const [x0, x1, z0, z1] = zone.box;
@@ -176,6 +229,37 @@ function createCentralCore(THREE, root) {
   upper.castShadow = true;
   core.add(upper);
 
+  // Open-ended glass rotunda gives the command node a real architectural envelope.
+  const atriumGlass = new THREE.MeshPhysicalMaterial({
+    color: 0x9fe8f0, metalness: 0.14, roughness: 0.2,
+    transparent: true, opacity: 0.075, side: THREE.DoubleSide, depthWrite: false
+  });
+  const atrium = new THREE.Mesh(
+    new THREE.CylinderGeometry(6.18, 6.18, 4.05, 64, 1, true),
+    atriumGlass
+  );
+  atrium.position.y = 2.52;
+  atrium.renderOrder = 2;
+  core.add(atrium);
+  const crown = new THREE.Mesh(new THREE.TorusGeometry(6.18, 0.105, 12, 96), steel);
+  crown.rotation.x = Math.PI / 2;
+  crown.position.y = 4.58;
+  core.add(crown);
+  const roofHalo = new THREE.Mesh(new THREE.TorusGeometry(6.18, 0.045, 10, 96), cyan);
+  roofHalo.rotation.x = Math.PI / 2;
+  roofHalo.position.y = 4.73;
+  core.add(roofHalo);
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12 * Math.PI * 2;
+    const column = new THREE.Mesh(new THREE.BoxGeometry(0.13, 4.05, 0.13), steel);
+    column.position.set(Math.cos(a) * 6.13, 2.52, Math.sin(a) * 6.13);
+    column.castShadow = true;
+    core.add(column);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), cyan);
+    cap.position.set(Math.cos(a) * 6.13, 4.62, Math.sin(a) * 6.13);
+    core.add(cap);
+  }
+
   const baseRing = new THREE.Mesh(new THREE.TorusGeometry(6.82, 0.095, 10, 96), cyan);
   baseRing.rotation.x = Math.PI / 2;
   baseRing.position.y = 0.36;
@@ -280,8 +364,8 @@ export function enhancePremiumCampus({ THREE, scene, zones = [] }) {
 
   // Move away from the dark checkerboard prototype look toward the bright,
   // polished campus floor and landscaped daytime setting in the approved mockup.
-  scene.background = new THREE.Color(0xa8cde0);
-  if (scene.fog) scene.fog.color.set(0xb8d6df);
+  scene.background = makeCampusSkyTexture(THREE);
+  if (scene.fog) scene.fog.color.set(0xc2dbe0);
   scene.traverse(object => {
     const p = object.geometry && object.geometry.parameters;
     if (!object.isMesh || !p) return;
@@ -290,7 +374,9 @@ export function enhancePremiumCampus({ THREE, scene, zones = [] }) {
       object.receiveShadow = true;
     }
     if (object.geometry.type === "BoxGeometry" && p.width === 420 && p.depth === 300) {
-      object.material = material(THREE, 0x8fb98c, { roughness: 0.98, metalness: 0 });
+      object.material = new THREE.MeshStandardMaterial({
+        map: makeCampusGrassTexture(THREE), color: 0xffffff, roughness: 0.98, metalness: 0
+      });
       object.receiveShadow = false;
     }
   });
