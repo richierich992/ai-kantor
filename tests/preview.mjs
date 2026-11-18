@@ -94,16 +94,21 @@ async function openPreview(viewport, label) {
   check(!!polish && polish.characterCount >= 10, label + ": premium character polish initializes");
   const integration = await page.evaluate(() => window.__integrationHealthQA);
   check(!!integration && integration.readOnly === true && integration.agentCount >= 10 && ["ready","partially-configured","not-configured"].includes(integration.status), label + ": read-only integration diagnostics initialize");
-  const mockupOffice = await page.evaluate(() => window.__mockupOfficeQA);
+  const mockupState = await page.evaluate(() => ({
+    layout: window.__mockupOfficeQA || null,
+    boot: window.__mockupOfficeBootQA || null,
+    error: window.__mockupOfficeErrorQA || null
+  }));
+  const mockupOffice = mockupState.layout;
   report.mockupOffice = report.mockupOffice || {};
-  report.mockupOffice[label] = mockupOffice;
+  report.mockupOffice[label] = mockupState;
   await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-mockup-diagnostic.png"), fullPage: true });
   const mockupReady = !!mockupOffice && mockupOffice.theme === "approved-isometric-open-office" &&
     mockupOffice.workstationCount >= 15 && mockupOffice.glassDivisionCount === 5 &&
     mockupOffice.meetingRoomReady && mockupOffice.receptionReady && mockupOffice.pantryReady &&
     mockupOffice.collaborationTableCount === 4;
   check(mockupReady,
-    label + ": approved isometric office layout initializes; diagnostics=" + JSON.stringify(mockupOffice));
+    label + ": approved isometric office layout initializes; diagnostics=" + JSON.stringify(mockupState));
 
 
 
