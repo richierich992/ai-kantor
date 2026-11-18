@@ -967,11 +967,14 @@ boot = function() {
   const resetBeforePremium = $('reset').onclick;
   $('reset').onclick = () => {
     if (typeof resetBeforePremium === 'function') resetBeforePremium();
-    cam.fov = 42;
+    const portraitView = cam.aspect < 0.85;
+    cam.fov = portraitView ? 58 : 46;
     cam.updateProjectionMatrix();
     tg = {
-      t: new THREE.Vector3(0, 0, -5),
-      c: new THREE.Vector3(0, 76, 59)
+      t: new THREE.Vector3(0, 1, -5),
+      c: portraitView
+        ? new THREE.Vector3(42, 105, 150)
+        : new THREE.Vector3(36, 48, 66)
     };
     $('iso').textContent = '◇ Isometrik';
     $('iso').dataset.premiumIso = '0';
@@ -982,11 +985,18 @@ boot = function() {
   $('iso').onclick = () => {
     const enabled = $('iso').dataset.premiumIso !== '1';
     $('iso').dataset.premiumIso = enabled ? '1' : '0';
-    cam.fov = enabled ? 35 : 42;
+    const portraitView = cam.aspect < 0.85;
+    cam.fov = enabled ? (portraitView ? 44 : 35) : (portraitView ? 58 : 46);
     cam.updateProjectionMatrix();
     tg = enabled
-      ? { t: new THREE.Vector3(0, 0, -5), c: new THREE.Vector3(82, 78, 88) }
-      : { t: new THREE.Vector3(0, 0, -5), c: new THREE.Vector3(0, 76, 59) };
+      ? {
+          t: new THREE.Vector3(0, 1, -5),
+          c: portraitView ? new THREE.Vector3(0, 140, 160) : new THREE.Vector3(82, 78, 88)
+        }
+      : {
+          t: new THREE.Vector3(0, 1, -5),
+          c: portraitView ? new THREE.Vector3(42, 105, 150) : new THREE.Vector3(36, 48, 66)
+        };
     $('iso').textContent = enabled ? '◇ Isometrik: ON' : '◇ Isometrik';
   };
 };
