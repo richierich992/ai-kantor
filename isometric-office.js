@@ -115,11 +115,11 @@ function glassZone(T,scene,z){
  const [a,b,c,d]=z.box,w=b-a,depth=d-c,cx=(a+b)/2,cz=(c+d)/2,h=3.25,style=styles[z.id]||styles.finance;
  const frame=mat(T,0x52717e,{metalness:.42,roughness:.3}),glass=new T.MeshPhysicalMaterial({color:0xc5e4ee,transparent:true,opacity:.23,roughness:.2,metalness:.12,clearcoat:.28,clearcoatRoughness:.22,side:T.DoubleSide,depthWrite:false,forceSinglePass:true});
  const accent=mat(T,style[0],{emissive:style[0],emissiveIntensity:.2,roughness:.35});
- const carpetMat=mat(T,style[1],{roughness:.84,emissive:style[1],emissiveIntensity:.2});
- const carpet=new T.Mesh(new T.PlaneGeometry(w-.3,depth-.3),carpetMat);carpet.rotation.x=-Math.PI/2;carpet.position.set(cx,.052,cz);carpet.receiveShadow=true;scene.add(carpet);
- // Thin inset border gives each department pod its own finished floor treatment.
- const floorEdge=mat(T,style[0],{emissive:style[0],emissiveIntensity:.11,metalness:.22,roughness:.48});
- bx(T,scene,w-.55,.035,.055,cx,.064,d-.42,floorEdge,false);bx(T,scene,w-.55,.035,.055,cx,.064,c+.42,floorEdge,false);
+ const carpetMat=mat(T,style[1],{roughness:.9,emissive:style[1],emissiveIntensity:.38});
+ const carpet=new T.Mesh(new T.PlaneGeometry(w-.3,depth-.3),carpetMat);carpet.rotation.x=-Math.PI/2;carpet.position.set(cx,.12,cz);carpet.receiveShadow=false;carpet.renderOrder=1;scene.add(carpet);
+ // Thin inset border floats just above the carpet for a clear division-specific floor finish.
+ const floorEdge=mat(T,style[0],{emissive:style[0],emissiveIntensity:.24,metalness:.22,roughness:.48});
+ bx(T,scene,w-.55,.035,.055,cx,.135,d-.42,floorEdge,false);bx(T,scene,w-.55,.035,.055,cx,.135,c+.42,floorEdge,false);
  // Continuous low rails make each glass department pod read as a deliberate room.
  bx(T,scene,w,.08,.14,cx,.08,c,frame,false);bx(T,scene,w,.08,.14,cx,.08,d,frame,false);
  bx(T,scene,.14,.08,depth,a,.08,cz,frame,false);bx(T,scene,.14,.08,depth,b,.08,cz,frame,false);
