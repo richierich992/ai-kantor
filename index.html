@@ -330,10 +330,14 @@ const AVN_OLD={...AVN}; /* cadangan bila file GLB baru belum disalin ke folder a
 Object.assign(AVN,{1:'stock_analyst_v3',2:'stock_analyst_v3',3:'finance_v2',4:'finance_v2',5:'crypto_trader_v3',6:'crypto_trader_v3',7:'finance_v2',8:'ledger_v3',9:'video_producer_v3',10:'graphic_artist_v3',12:'creator_v2',14:'recipe_chef_v3',11:'it_v2',13:'trend_scout_v3',15:'chatbot_v3',16:'content_publisher_v3'});
 function fixMat(root){root.traverse(o=>{if(!o.isMesh)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m&&m.isMeshStandardMaterial){m.metalness=Math.min(.28,Math.max(0,m.metalness||0));m.roughness=Math.min(.82,Math.max(.46,m.roughness||.58))}})})}
 async function loadGLBs(){const L=new GLTFLoader();
- await Promise.all(['avatar_ai_analyst','avatar_ai_creator','avatar_ai_finance','desk_workstation','office_chair','meeting_table','lounge_sofa','potted_plant','storage_cabinet','reception_desk','wall_display','floor_lamp','bookshelf','coffee_table',
-  'avatar_ai_stock_analyst_v3','avatar_ai_crypto_trader_v3','avatar_ai_ledger_v3','avatar_ai_video_producer_v3','avatar_ai_graphic_artist_v3','avatar_ai_content_publisher_v3','avatar_ai_recipe_chef_v3','avatar_ai_trend_scout_v3','avatar_ai_chatbot_v3','avatar_ai_content_monitor_v3',
-  'avatar_ai_finance_v2','avatar_ai_creator_v2','avatar_ai_it_v2','avatar_ai_research_v2','avatar_ai_hr_v2','avatar_ai_farm_v2','avatar_ai_director_v2',
-  'social_sofa_v3','social_cafe_station_v3','social_arcade_v3','ping_pong_table_v2','chess_table_v2']
+ await Promise.all([
+  /* Only files present in /assets are requested; furniture without GLB keeps its procedural fallback. */
+  'avatar_ai_chatbot_v3','avatar_ai_content_monitor_v3','avatar_ai_content_publisher_v3',
+  'avatar_ai_creator_v2','avatar_ai_crypto_trader_v3','avatar_ai_director_v2','avatar_ai_farm_v2',
+  'avatar_ai_finance_v2','avatar_ai_graphic_artist_v3','avatar_ai_hr_v2','avatar_ai_it_v2',
+  'avatar_ai_ledger_v3','avatar_ai_recipe_chef_v3','avatar_ai_research_v2',
+  'avatar_ai_stock_analyst_v3','avatar_ai_trend_scout_v3','avatar_ai_video_producer_v3',
+  'chess_table_v2','ping_pong_table_v2','social_arcade_v3','social_cafe_station_v3','social_sofa_v3']
   .map(n=>new Promise(res=>L.load('assets/'+n+'.glb',g=>{fixMat(g.scene);GLB[n]=g.scene;res()},undefined,()=>res()))));
  RL.forEach(dress);Object.values(chars).forEach(swapChar);dressLobby();dressHub()}
 function put(n,parent,x,z,yaw=0,sc=1,y=0){const o=GLB[n]&&GLB[n].clone(true);if(!o)return null;o.position.set(x,y,z);o.rotation.y=yaw;o.scale.setScalar(sc);
@@ -512,8 +516,8 @@ function spawn(x0){let r=Math.random()*VT.reduce((a,b)=>a+b[1],0),t=VT[0];for(co
  const z=cart?(dir>0?25.6:36.4):curb?(dir>0?26.9:35.1):(dir>0?28.3:33.7)+rnd(-.3,.3),base=rnd(t[2][0],t[2][1]);
  g.position.set(x,-.48,z);g.rotation.y=dir>0?0:PI;scene.add(g);
  veh.push({g,L,kind,dir,key,x,len,base,sp:x0!==undefined?base:0,bob:/bakso|sate|es/.test(kind)})}
-function initTraffic(){for(let i=0;i<16;i++)spawn(rnd(-105,105))}
-function traffic(dt){tNext-=dt;if(tNext<=0){tNext=rnd(.8,2.2);if(veh.length<20)spawn()}
+function initTraffic(){for(let i=0;i<(PREMIUM_LOW_POWER?7:12);i++)spawn(rnd(-105,105))}
+function traffic(dt){tNext-=dt;if(tNext<=0){tNext=rnd(.8,2.2);if(veh.length<(PREMIUM_LOW_POWER?9:16))spawn()}
  for(let i=veh.length-1;i>=0;i--){const v=veh[i];let lim=v.base;
   for(const o of veh){if(o===v||o.key!==v.key)continue;const d=(o.x-v.x)*v.dir;if(d>0){const gap=d-(o.len+v.len)/2;if(gap<9)lim=Math.min(lim,gap<2.5?0:o.sp*.9)}}
   v.sp+=(lim-v.sp)*Math.min(1,dt*(lim<v.sp?3:.8));v.x+=v.dir*v.sp*dt;v.g.position.x=v.x;
@@ -522,12 +526,14 @@ function traffic(dt){tNext-=dt;if(tNext<=0){tNext=rnd(.8,2.2);if(veh.length<20)s
   if(Math.abs(v.x)>125){scene.remove(v.g);veh.splice(i,1)}}}
 
 /* ===== scene ===== */
+const PREMIUM_LOW_POWER = (window.matchMedia && window.matchMedia('(max-width: 820px)').matches) || ((navigator.hardwareConcurrency || 8) <= 4);
+const premiumPixelRatio = () => Math.min(window.devicePixelRatio || 1, PREMIUM_LOW_POWER ? 1.2 : 1.6);
 function boot(){
  const host=$('map');
- rend=new THREE.WebGLRenderer({antialias:true});rend.setPixelRatio(Math.min(devicePixelRatio,2));rend.shadowMap.enabled=true;rend.shadowMap.type=THREE.PCFSoftShadowMap;rend.toneMapping=THREE.ACESFilmicToneMapping;rend.toneMappingExposure=1.05;rend.setSize(host.clientWidth,host.clientHeight);host.appendChild(rend.domElement);
+ rend=new THREE.WebGLRenderer({antialias:!PREMIUM_LOW_POWER,powerPreference:'default'});rend.setPixelRatio(premiumPixelRatio());rend.shadowMap.enabled=true;rend.shadowMap.type=THREE.PCFSoftShadowMap;rend.toneMapping=THREE.ACESFilmicToneMapping;rend.toneMappingExposure=1.05;rend.setSize(host.clientWidth,host.clientHeight);host.appendChild(rend.domElement);
  {const c=cv(8,256),x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#6fb4ec');g.addColorStop(.6,'#cfe8f7');g.addColorStop(1,'#eaf6ee');x.fillStyle=g;x.fillRect(0,0,8,256);scene.background=tex(c)}scene.fog=new THREE.Fog(0xbfe3f5,190,400);
  cam=new THREE.PerspectiveCamera(45,host.clientWidth/host.clientHeight,.5,400);cam.position.set(3,60,48);
- scene.add(new THREE.HemisphereLight(0xffffff,0x6a8f6a,1.1));const sun=new THREE.DirectionalLight(0xfff3dc,1.5);sun.position.set(36,80,40);sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);const sh=sun.shadow.camera;sh.left=-60;sh.right=60;sh.top=46;sh.bottom=-46;sh.near=10;sh.far=200;sun.shadow.bias=-.0005;scene.add(sun);
+ scene.add(new THREE.HemisphereLight(0xffffff,0x6a8f6a,1.1));const sun=new THREE.DirectionalLight(0xfff3dc,1.5);sun.position.set(36,80,40);sun.castShadow=true;sun.shadow.mapSize.set(PREMIUM_LOW_POWER?1024:2048,PREMIUM_LOW_POWER?1024:2048);const sh=sun.shadow.camera;sh.left=-60;sh.right=60;sh.top=46;sh.bottom=-46;sh.near=10;sh.far=200;sun.shadow.bias=-.0005;scene.add(sun);
  ctl=new OrbitControls(cam,rend.domElement);ctl.target.set(0,0,-3);ctl.enableDamping=true;ctl.maxPolarAngle=1.42;ctl.minDistance=6;ctl.maxDistance=210;
  ctl.mouseButtons={LEFT:THREE.MOUSE.PAN,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};ctl.touches={ONE:THREE.TOUCH.PAN,TWO:THREE.TOUCH.DOLLY_ROTATE};
  ctl.addEventListener('start',()=>tg=null);
@@ -565,12 +571,12 @@ function boot(){
   else if(h){const u=h.object.userData;if(u.zone){$('zone').textContent='📍 Zona: '+u.zoneName;$('zone').style.display='block';setTimeout(()=>{$('zone').style.display='none'},3000)}
    if(u.dept&&DEP[u.dept])openDept(u.dept);else openDiv(u.id)}});
  $('reset').onclick=()=>{tg={t:new THREE.Vector3(0,0,-3),c:new THREE.Vector3(3,60,48)}};
- addEventListener('resize',()=>{rend.setSize(host.clientWidth,host.clientHeight);cam.aspect=host.clientWidth/host.clientHeight;cam.updateProjectionMatrix()});
+ addEventListener('resize',()=>{rend.setPixelRatio(premiumPixelRatio());rend.setSize(host.clientWidth,host.clientHeight);cam.aspect=host.clientWidth/host.clientHeight;cam.updateProjectionMatrix()});
  $('legend').innerHTML=D.slice().sort((a,b)=>a.id-b.id).map(d=>`<div data-id="${d.id}"><b style="background:${d.c}">${d.id}</b>${d.name}</div>`).join('');
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
- (function loop(){const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);
-  if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam);requestAnimationFrame(loop)})();
+ (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));traffic(dt);updateSocialHub(scene,dt,clk.elapsedTime);
+  if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam)})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
 function focus(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw));tg={t:r.g.position.clone().setY(1.5),c:r.g.position.clone().add(f.multiplyScalar(13)).setY(10)}}
