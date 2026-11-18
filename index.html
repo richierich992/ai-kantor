@@ -102,6 +102,7 @@ header{background:linear-gradient(90deg,rgba(20,33,61,.92),rgba(44,66,122,.88));
 <script type="module">
 import * as THREE from 'three';
 import { enhanceOfficeWorld } from './premium-world.js';
+import { decoratePremiumCharacter, animatePremiumCharacter } from './premium-character.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -307,7 +308,7 @@ function step(c,dt){
  else if(c.face!=null)turn(c,c.face,dt*8);
  const A=c.act,fast=!mvg&&(A==='run'||A==='lift'||A==='swing'||A==='shoot');
  c.t+=dt*(mvg||fast?9:1);const s=mvg?Math.sin(c.t)*.7:0,ty=!mvg&&(c.work||A==='type');
- c.legL.rotation.x=A==='run'&&!mvg?Math.sin(c.t)*.8:s;c.legR.rotation.x=A==='run'&&!mvg?-Math.sin(c.t)*.8:-s;
+ if(c.legL)c.legL.rotation.x=A==='run'&&!mvg?Math.sin(c.t)*.8:s;if(c.legR)c.legR.rotation.x=A==='run'&&!mvg?-Math.sin(c.t)*.8:-s;
  let aL=Math.sin(c.t)*.04,aR=-Math.sin(c.t)*.04;
  if(mvg){aL=-s;aR=s}
  else if(A==='swing'){aL=-.9+Math.sin(c.t*.9)*.5;aR=-.9+Math.cos(c.t*.9)*.5}
@@ -317,7 +318,7 @@ function step(c,dt){
  else if(A==='read'){aL=aR=-1.0+Math.sin(c.t*.8)*.04}
  else if(A==='stretch'){aL=aR=-2.7+Math.sin(c.t*.6)*.25}
  else if(ty){aL=-1.2+Math.sin(c.t*14)*.12;aR=-1.2+Math.cos(c.t*14)*.12}
- c.armL.rotation.x=aL;c.armR.rotation.x=aR;
+ if(c.armL)c.armL.rotation.x=aL;if(c.armR)c.armR.rotation.x=aR;
  c.g.position.y=.14+(c.yoff||0)+(mvg?Math.abs(Math.sin(c.t))*.1:0);
  roam(c,dt);
 }
@@ -326,7 +327,7 @@ function step(c,dt){
 const GLB={},AVN={1:'finance',2:'finance',3:'finance',4:'finance',5:'finance',6:'finance',7:'finance',8:'finance',9:'creator',10:'creator',12:'creator',14:'creator',11:'analyst',13:'analyst',15:'analyst',16:'analyst'};
 const AVN_OLD={...AVN}; /* cadangan bila file GLB baru belum disalin ke folder assets/ */
 Object.assign(AVN,{1:'stock_analyst_v3',2:'stock_analyst_v3',3:'finance_v2',4:'finance_v2',5:'crypto_trader_v3',6:'crypto_trader_v3',7:'finance_v2',8:'ledger_v3',9:'video_producer_v3',10:'graphic_artist_v3',12:'creator_v2',14:'recipe_chef_v3',11:'it_v2',13:'trend_scout_v3',15:'chatbot_v3',16:'content_publisher_v3'});
-function fixMat(root){root.traverse(o=>{if(!o.isMesh)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m&&m.isMeshStandardMaterial){m.metalness=0;m.roughness=Math.max(.75,m.roughness||0)}})})}
+function fixMat(root){root.traverse(o=>{if(!o.isMesh)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m&&m.isMeshStandardMaterial){m.metalness=Math.min(.28,Math.max(0,m.metalness||0));m.roughness=Math.min(.82,Math.max(.46,m.roughness||.58))}})})}
 async function loadGLBs(){const L=new GLTFLoader();
  await Promise.all(['avatar_ai_analyst','avatar_ai_creator','avatar_ai_finance','desk_workstation','office_chair','meeting_table','lounge_sofa','potted_plant','storage_cabinet','reception_desk','wall_display','floor_lamp','bookshelf','coffee_table',
   'avatar_ai_stock_analyst_v3','avatar_ai_crypto_trader_v3','avatar_ai_ledger_v3','avatar_ai_video_producer_v3','avatar_ai_graphic_artist_v3','avatar_ai_content_publisher_v3','avatar_ai_recipe_chef_v3','avatar_ai_trend_scout_v3','avatar_ai_chatbot_v3','avatar_ai_content_monitor_v3',
@@ -338,7 +339,7 @@ function put(n,parent,x,z,yaw=0,sc=1,y=0){const o=GLB[n]&&GLB[n].clone(true);if(
  o.traverse(m=>{if(m.isMesh)m.castShadow=m.receiveShadow=true});parent.add(o);return o}
 function mkAvatar(n){const src=GLB['avatar_ai_'+n];if(!src)return null;const root=src.clone(true);root.updateMatrixWorld(true);
  const grp=a=>a.map(k=>root.getObjectByName(k)).filter(Boolean);
- const piv=(ms,dy)=>{const b=new THREE.Box3();ms.forEach(m=>b.expandByObject(m));const p=new THREE.Group();p.position.set((b.min.x+b.max.x)/2,b.max.y-dy,(b.min.z+b.max.z)/2);root.add(p);p.updateMatrixWorld(true);ms.forEach(m=>p.attach(m));return p};
+ const piv=(ms,dy)=>{if(!ms.length)return null;const b=new THREE.Box3();ms.forEach(m=>b.expandByObject(m));if(b.isEmpty())return null;const p=new THREE.Group();p.position.set((b.min.x+b.max.x)/2,b.max.y-dy,(b.min.z+b.max.z)/2);root.add(p);p.updateMatrixWorld(true);ms.forEach(m=>p.attach(m));return p};
  const side=k=>({leg:piv(grp([k+'_shoe',k+'_sole',k+'_leg',k+'_leg_top',k+'_leg_bottom']),0),arm:piv(grp([k+'_sleeve_upper',k+'_elbow',k+'_sleeve_lower',k+'_hand',k+'_cuff']),.08)});
  const l=side('L'),r=side('R');root.traverse(m=>{if(m.isMesh)m.castShadow=true});
  return{root,legL:l.leg,legR:r.leg,armL:l.arm,armR:r.arm}}
@@ -981,6 +982,25 @@ boot = function() {
       : { t: new THREE.Vector3(0, 0, -5), c: new THREE.Vector3(0, 76, 59) };
     $('iso').textContent = enabled ? '◇ Isometrik: ON' : '◇ Isometrik';
   };
+};
+
+
+
+/* ===== Phase 3 — Premium Agent Characters =====
+ * Decorate the original profession-specific GLB after its normal swap.
+ * The secondary motion layer only adds subtle pose polish; movement, pathing,
+ * social activity slots and Firebase/AI workflows remain owned by original code.
+ */
+const swapCharBeforePremium = swapChar;
+swapChar = function(character) {
+  swapCharBeforePremium(character);
+  decoratePremiumCharacter(character, THREE);
+};
+
+const stepBeforePremium = step;
+step = function(character, dt) {
+  stepBeforePremium(character, dt);
+  animatePremiumCharacter(character, dt, THREE);
 };
 
 </script>
