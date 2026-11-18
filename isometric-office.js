@@ -180,6 +180,9 @@ function workstation(T,r,m){
  const lampHead=new T.Mesh(new T.SphereGeometry(.12,10,8),accent);lampHead.position.set(1.17,1.34,-.05);lampHead.scale.set(1,.55,.8);group.add(lampHead);
  cyl(T,group,.15,.15,1.35,.98,.12,mat(T,0x9b8066));
  const leafMat=mat(T,0x479d71);for(let i=0;i<3;i++){const leaf=new T.Mesh(new T.SphereGeometry(.12,8,6),leafMat);leaf.position.set(1.35+(i-1)*.09,1.15,.12);leaf.scale.set(.65,1.6,.7);group.add(leaf)}
+ // Keep fine equipment details out of the shadow map; only the desk slab casts a shadow.
+ group.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false}});
+ const desktop=group.children.find(o=>o.geometry?.type==="ExtrudeGeometry");if(desktop)desktop.castShadow=true;
  r.spot=g.localToWorld(new T.Vector3(0,0,2.35));r.inside=g.localToWorld(new T.Vector3(0,0,2.5));r.front=g.localToWorld(new T.Vector3(0,0,3.6));r.row=g.position.z<-17?'A':'B';r.isometricWorkstation=true
 }
 function createOfficeExtras(T,scene,m){
