@@ -468,6 +468,6 @@ export function createLivingOffice({
     updateScreens,
     get monitorCount() { return screens.length; },
     get meetingSequence() { return meetingSequence; },
-    get currentPeriod() { return currentPart; }
+    get currentPeriod() { return currentPart.toLowerCase(); }
   };
 }
