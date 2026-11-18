@@ -1155,24 +1155,38 @@ boot = function() {
 let mockupOffice = null;
 function applyMockupOffice() {
   if (mockupOffice) return mockupOffice;
-  if (!cam || !ctl) throw new Error("Kamera kantor belum siap untuk rebuild isometrik.");
-  mockupOffice = enhanceIsometricOffice({
-    THREE, scene, rooms, characters,
-    zones: DL.map(dl => ({
-      id: dl.id, box: dl.box.slice(),
-      name: (DEPTS.find(d => d.departmentId === dl.id) || {}).name || dl.id
-    })),
-    zoneMeshes, camera: cam, controls: ctl,
-    setTarget: value => { tg = value; }
-  });
-  window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
   window.__mockupOfficeBootQA = {
-    applied: true,
+    started: true,
     cameraReady: !!cam,
     controlsReady: !!ctl,
-    sceneReady: !!scene.userData.isometricOfficeRebuild
+    roomCount: Object.keys(rooms).length,
+    agentCount: Object.keys(chars).length
   };
-  return mockupOffice;
+  try {
+    if (!cam || !ctl) throw new Error("Kamera kantor belum siap untuk rebuild isometrik.");
+    mockupOffice = enhanceIsometricOffice({
+      THREE, scene, rooms, characters: chars,
+      zones: DL.map(dl => ({
+        id: dl.id, box: dl.box.slice(),
+        name: (DEPTS.find(d => d.departmentId === dl.id) || {}).name || dl.id
+      })),
+      zoneMeshes, camera: cam, controls: ctl,
+      setTarget: value => { tg = value; }
+    });
+    window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
+    window.__mockupOfficeBootQA = {
+      ...window.__mockupOfficeBootQA,
+      completed: true,
+      sceneReady: !!scene.userData.isometricOfficeRebuild
+    };
+    return mockupOffice;
+  } catch (error) {
+    window.__mockupOfficeErrorQA = {
+      message: String(error?.message || error),
+      stack: String(error?.stack || "")
+    };
+    throw error;
+  }
 }
 
 </script>
