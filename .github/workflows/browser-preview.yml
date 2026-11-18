@@ -39,7 +39,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kantor-ai-phase-6-browser-preview
+          name: kantor-ai-phase-12-release-preview
           path: artifacts/
           if-no-files-found: warn
           retention-days: 14
