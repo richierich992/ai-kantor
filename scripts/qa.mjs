@@ -18,7 +18,8 @@ const modules = [
   "premium-living-office.js",
   "premium-social-life.js",
   "premium-polish.js",
-  "premium-integration.js"
+  "premium-integration.js",
+  "isometric-office.js"
 ];
 
 for (const file of modules) {
