@@ -203,10 +203,6 @@ export function enhanceOfficeWorld({ THREE, scene, camera, controls, zones = [] 
       block(0.055, panelH, 0.12, x1 - 0.04, panelY, z, frameLite, scene, false);
     }
 
-    const point = new THREE.PointLight(accentColor, 0.8, Math.max(w, d) * 1.2, 2);
-    point.position.set(cx, 3.05, cz);
-    point.castShadow = false;
-    scene.add(point);
   });
 
   /* Subtle architectural lighting and planted entrance edges */
