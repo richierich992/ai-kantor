@@ -135,8 +135,8 @@ function createDepartmentPod(THREE, root, zone, index) {
     transparent: true, opacity: 0.075, side: THREE.DoubleSide, depthWrite: false
   });
   const wallGlass = new THREE.MeshPhysicalMaterial({
-    color: 0xb6e4ef, metalness: 0.08, roughness: 0.16,
-    transparent: true, opacity: 0.19, side: THREE.DoubleSide, depthWrite: false
+    color: 0x75aeca, metalness: 0.18, roughness: 0.2,
+    transparent: true, opacity: 0.115, side: THREE.DoubleSide, depthWrite: false
   });
   const glassTint = new THREE.MeshStandardMaterial({
     color: spec.color, emissive: spec.color, emissiveIntensity: 0.12,
