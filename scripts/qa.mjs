@@ -35,7 +35,7 @@ for (const file of modules) {
 }
 ok("Premium modules imported by index.html");
 
-const importMapMatch = html.match(/<script type="importmap">([\\s\\S]*?)<\\/script>/i);
+const importMapMatch = html.match(/<script type="importmap">([\s\S]*?)<\/script>/i);
 if (!importMapMatch) fail("Import map script not found");
 else {
   try {
