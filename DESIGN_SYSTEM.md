@@ -92,3 +92,10 @@
 - Multi-division Command Center routing attempts a physical briefing: selected available agents walk to the existing meeting room, animate discussion, then return to their own desks before existing jobs are dispatched. If an agent is already busy, briefing is skipped and the original task routing continues.
 - Ambient sky/fill/entrance/social lighting follows real Jakarta time (dawn, day, golden hour, night). This changes only visual ambience and does not schedule or trigger backend work.
 - Existing Firebase paths, agent identities, AI proxy payloads, Apps Script calls, task queue, and Telegram/backend scheduler are not changed.
+
+
+## Phase 9 — Character Intelligence & Social Life
+- Added `premium-social-life.js` with lightweight 3D speech/activity bubbles for working, meeting, reading, typing, exercise and social activities.
+- Added proximity-based passing greetings with per-pair cooldowns; greetings are skipped when either character is busy, meeting, locked, or sharing a station.
+- Gesture cues use existing character arm groups and do not replace GLB assets, movement routes, activity slots, or backend states.
+- Existing Firebase, Apps Script, AI routing, and scheduler paths remain unchanged.
