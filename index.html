@@ -477,7 +477,8 @@ function buildHrPlaceholder(){const g=new THREE.Group();g.name='legacy-hr-placeh
  tree(g,3,-3);}
 /* net ping pong pada model v2 terpasang memanjang di sumbu panjang meja: pindahkan ke tengah, melintang */
 function fixPingPong(o){o.traverse(n=>{
- if(n.name==='net_mesh'||n.name==='net_tape'){n.rotation.y+=PI/2;n.scale.x*=1.66/2.72}
+ if(n.name==='line_long_top'||n.name==='pingpong_ball'){n.visible=false}
+ else if(n.name==='net_mesh'||n.name==='net_tape'){n.rotation.y+=PI/2;n.scale.x*=1.66/2.72}
  else if(/^net_post_/.test(n.name)&&n.geometry){n.geometry.computeBoundingBox();const gx=n.geometry.boundingBox.getCenter(new THREE.Vector3()).x;n.position.set(-gx,0,Math.sign(gx||1)*.83)}})}
 function dressHub(){STN.forEach(st=>{const rep=GLBREP[st.kind];if(!rep||!rep.every(r=>GLB[r[0]]))return;
  st.g.visible=false;rep.forEach(([n,dx,dz,ry,s])=>{const [wx,wz]=rot(st.yaw,dx,dz),o=put(n,scene,st.x+wx,st.z+wz,st.yaw+ry,s);if(o&&n==='ping_pong_table_v2')fixPingPong(o)})})}
