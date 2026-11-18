@@ -47,9 +47,13 @@ function roundedSlab(T,parent,w,d,h,r,material,x,y,z){
 
 function glassZone(T,scene,z){
  const [a,b,c,d]=z.box,w=b-a,depth=d-c,cx=(a+b)/2,cz=(c+d)/2,h=3.25,style=styles[z.id]||styles.finance;
- const frame=mat(T,0x334a55,{metalness:.58,roughness:.34}),glass=new T.MeshPhysicalMaterial({color:0xb9d5e2,transparent:true,opacity:.17,roughness:.16,metalness:.08,side:T.DoubleSide,depthWrite:false});
+ const frame=mat(T,0x52717e,{metalness:.42,roughness:.3}),glass=new T.MeshPhysicalMaterial({color:0xc5e4ee,transparent:true,opacity:.23,roughness:.12,metalness:.035,transmission:.12,thickness:.35,ior:1.42,side:T.DoubleSide,depthWrite:false});
  const accent=mat(T,style[0],{emissive:style[0],emissiveIntensity:.2,roughness:.35});
- const carpet=new T.Mesh(new T.PlaneGeometry(w-.3,depth-.3),mat(T,style[1],{roughness:.88}));carpet.rotation.x=-Math.PI/2;carpet.position.set(cx,.015,cz);scene.add(carpet);
+ const carpetMat=mat(T,style[1],{roughness:.82});
+ const carpet=new T.Mesh(new T.PlaneGeometry(w-.3,depth-.3),carpetMat);carpet.rotation.x=-Math.PI/2;carpet.position.set(cx,.052,cz);carpet.receiveShadow=true;scene.add(carpet);
+ // Thin inset border gives each department pod its own finished floor treatment.
+ const floorEdge=mat(T,style[0],{emissive:style[0],emissiveIntensity:.11,metalness:.22,roughness:.48});
+ bx(T,scene,w-.55,.035,.055,cx,.064,d-.42,floorEdge,false);bx(T,scene,w-.55,.035,.055,cx,.064,c+.42,floorEdge,false);
  // Continuous low rails make each glass department pod read as a deliberate room.
  bx(T,scene,w,.08,.14,cx,.08,c,frame,false);bx(T,scene,w,.08,.14,cx,.08,d,frame,false);
  bx(T,scene,.14,.08,depth,a,.08,cz,frame,false);bx(T,scene,.14,.08,depth,b,.08,cz,frame,false);
@@ -105,7 +109,26 @@ function workstation(T,r,m){
  r.spot=g.localToWorld(new T.Vector3(0,0,2.35));r.inside=g.localToWorld(new T.Vector3(0,0,2.5));r.front=g.localToWorld(new T.Vector3(0,0,3.6));r.row=g.position.z<-17?'A':'B';r.isometricWorkstation=true
 }
 function createOfficeExtras(T,scene,m){
- const reception=new T.Group();reception.name="mockup-reception";reception.position.set(0,0,14.7);scene.add(reception);bx(T,reception,5.5,.95,1.45,0,.55,0,m.frame);bx(T,reception,5.8,.14,1.58,0,1.08,0,m.lightDesk);bx(T,reception,4.6,.06,.08,0,.55,.75,m.accent);sign(T,reception,"RECEPTION","WELCOME TO KANTOR AI",0x62cbd0,0,2.35,-.4,5.6);
+ const reception=new T.Group();reception.name="mockup-reception";reception.position.set(0,0,14.7);scene.add(reception);
+ roundedSlab(T,reception,6.1,1.72,.16,.24,m.frame,0,.48,0);
+ roundedSlab(T,reception,5.85,1.55,.1,.2,m.lightDesk,0,.62,0);
+ bx(T,reception,4.6,.06,.08,0,.55,.75,m.accent,false);sign(T,reception,"RECEPTION","WELCOME TO KANTOR AI",0x62cbd0,0,2.35,-.4,5.6);
+ // A visible architectural entry portal frames the reception instead of leaving the front edge undefined.
+ const portal=new T.Group();portal.name="mockup-entry-portal";portal.position.set(0,0,17.25);scene.add(portal);
+ const portalFrame=mat(T,0x405d6b,{metalness:.48,roughness:.28}),portalAccent=mat(T,0x64d1da,{emissive:0x1d7b86,emissiveIntensity:.55,metalness:.42,roughness:.28});
+ [-6.1,6.1].forEach(x=>{
+  roundedSlab(T,portal,.68,.72,4.45,.16,portalFrame,x,0,0);
+  bx(T,portal,.16,3.85,.08,x,2.22,.42,portalAccent,false);
+  bx(T,portal,.94,.14,.9,x,.13,0,m.lightDesk,false);
+ });
+ roundedSlab(T,portal,13.05,.78,.56,.18,portalFrame,0,3.9,0);
+ bx(T,portal,11.7,.055,.1,0,3.61,.43,portalAccent,false);
+ const doorGlass=new T.MeshPhysicalMaterial({color:0xc5e9f2,transparent:true,opacity:.24,roughness:.1,metalness:.03,transmission:.15,side:T.DoubleSide,depthWrite:false});
+ [-1.45,1.45].forEach(x=>{const panel=bx(T,portal,2.78,3.35,.055,x,1.92,0,doorGlass,false);panel.renderOrder=3;bx(T,portal,.06,3.42,.11,x,1.92,.08,portalFrame,false)});
+ bx(T,portal,.1,3.42,.14,0,1.92,.08,portalFrame,false);
+ sign(T,portal,"KANTOR AI","INTELLIGENCE • CREATIVITY • AUTOMATION",0x64d1da,0,4.02,.48,8.8);
+ roundedSlab(T,scene,10.8,2.6,.055,.38,mat(T,0xdce9e8,{roughness:.68}),0,.025,16.1);
+ [-4.8,4.8].forEach(x=>{cyl(T,portal,.18,.5,x,.25,1.1,m.metal);cyl(T,portal,.22,.07,x,.52,1.1,portalAccent)});
  const pantry=new T.Group();pantry.name="mockup-pantry";pantry.position.set(31,0,12.5);scene.add(pantry);bx(T,pantry,4.8,.95,1.15,0,.55,0,m.frame);bx(T,pantry,5.1,.14,1.3,0,1.08,0,m.lightDesk);[-1.4,0,1.4].forEach(x=>{cyl(T,pantry,.12,.8,x,.4,1,m.metal);cyl(T,pantry,.35,.12,x,.85,1,m.seat)});sign(T,pantry,"PANTRY","COFFEE • BREAK • REFRESH",0xd59e62,0,2.45,-.65,4.9);
  const tables=[];[[-8,2],[5,2],[-8,9],[5,9]].forEach(([x,z],i)=>{const g=new T.Group();g.name="mockup-collab-table-"+i;g.position.set(x,0,z);scene.add(g);bx(T,g,3.8,.14,1.8,0,.85,0,m.wood);[-1.7,1.7].forEach(dx=>[-.7,.7].forEach(dz=>bx(T,g,.1,.8,.1,dx,.4,dz,m.metal)));[-1,1].forEach(s=>bx(T,g,.8,.85,.8,s*2.4,.4,0,m.seat));tables.push(g)});
  const greenery=mat(T,0x4a956a),leafLight=mat(T,0x68ad78),pot=mat(T,0x75665a),potRim=mat(T,0xb8aa94);
@@ -197,7 +220,8 @@ export function enhanceIsometricOffice({THREE,scene,rooms,characters,zones=[],zo
  ];
  socialZones.forEach((z,i)=>{
   roundedSlab(THREE,scene,z.w,z.d,.10,.62,mat(THREE,0x344d58,{metalness:.38,roughness:.5}),z.x,-.004,z.z);
-  roundedSlab(THREE,scene,z.w-.34,z.d-.34,.035,.48,mat(THREE,i%2?0xdfe8e6:0xe7e8e2,{roughness:.76}),z.x,.09,z.z);
+  const rugTones=[0xf0e4d4,0xdceaf0,0xe7e1f2,0xdceee8];
+  roundedSlab(THREE,scene,z.w-.34,z.d-.34,.035,.48,mat(THREE,rugTones[i],{roughness:.78}),z.x,.09,z.z);
   const stripe=mat(THREE,z.c,{emissive:z.c,emissiveIntensity:.18,metalness:.32,roughness:.35});
   bx(THREE,scene,z.w-1,.035,.045,z.x,.14,z.z-z.d/2+.35,stripe,false);
   bx(THREE,scene,z.w-1,.035,.045,z.x,.14,z.z+z.d/2-.35,stripe,false);
