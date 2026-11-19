@@ -260,6 +260,7 @@ async function openPreview(viewport, label) {
       { agentId: 9, stationKind: "board" },
       { agentId: 11, stationKind: "pingpong" },
       { agentId: 13, stationKind: "chess" },
+      { agentId: 13, stationKind: "cafe", stationIndex: 1, probeOnly: true },
       { agentId: 16, stationKind: "cafe", stationIndex: 1 }
     ];
     return cases.map(item => {
@@ -268,6 +269,16 @@ async function openPreview(viewport, label) {
       const station = matches[item.stationIndex || 0];
       if (!home || !station?.slots?.length) return { ...item, failed: true, reason: "missing home or station" };
       const seat = station.slots[0];
+      if (item.probeOnly) {
+        const probes = [[37, 0, -17], [37, 0, -12], [25, 0, -10], [0, 0, -10]];
+        return {
+          ...item,
+          probes: probes.map(target => {
+            const plan = api.plan(home, [target]);
+            return { target, failed: plan.failed, routePointCount: plan.route.length, route: plan.route };
+          })
+        };
+      }
       const approachPlan = api.plan(home, [seat.approach]);
       const reachedApproach = approachPlan.route.at(-1) || seat.approach;
       const seatPlan = api.plan(reachedApproach, [seat.seat], { allowBlockedGoal: true });
