@@ -72,7 +72,9 @@ async function openPreview(viewport, label) {
   });
 
   await routeFirebase(page);
-  await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 60000 });
+  const previewURL = new URL(baseURL);
+  previewURL.searchParams.set("qa", "1");
+  await page.goto(previewURL.toString(), { waitUntil: "domcontentloaded", timeout: 60000 });
   check((await page.title()).includes("Kantor AI 3D"), label + ": document title");
   check(await page.locator("#login").isVisible(), label + ": login screen visible");
 
@@ -91,7 +93,86 @@ async function openPreview(viewport, label) {
   }) : null);
   check(!!livingOffice && livingOffice.monitors >= 10 && ["dawn","day","golden","night"].includes(livingOffice.period) && livingOffice.meetingReady, label + ": Living Office telemetry, monitors and time ambience initialize");
   const socialLife = await page.evaluate(() => window.__characterSocialQA);
-  check(!!socialLife && socialLife.characterCount >= 10 && socialLife.bubbleCount >= 10, label + ": character social cues initialize");
+  check(!!socialLife && socialLife.characterCount >= 10 && socialLife.bubbleCount >= 10 &&
+    socialLife.conversationEnabled === true && socialLife.conversationLineCount >= 20,
+    label + ": character social cues and conversational dialogue initialize");
+  const conversationLogic = await page.evaluate(() => {
+    const api = window.__characterSocialQA;
+    if (!api?.canPairSlots || !api?.chooseIdleStation) return { error: "conversation test hooks unavailable" };
+    const station = { slots: [] };
+    const seated = { st: station, x: 0, z: -2.1, face: 0, act: "chat", occ: null };
+    const opposite = { st: station, x: 0, z: 2.1, face: Math.PI, act: "chat", occ: null };
+    const sameDirection = { st: station, x: 0, z: 2.1, face: 0, act: "chat", occ: null };
+    station.slots = [seated, opposite, sameDirection];
+    const peer = { slot: seated, loc: seated, act: "chat", path: [], wait: 4, busy: false, meeting: false, r: { id: 2 } };
+    seated.occ = peer;
+    const pairedSeatChosen = api.chooseIdleStation({ r: { id: 1 } }, [sameDirection, opposite]) === opposite;
+    return {
+      faceToFace: api.canPairSlots(seated, opposite),
+      sameDirectionRejected: !api.canPairSlots(seated, sameDirection),
+      pairedSeatChosen,
+      peerWaitReserved: peer.wait >= 60
+    };
+  });
+  check(!conversationLogic.error && conversationLogic.faceToFace &&
+    conversationLogic.sameDirectionRejected && conversationLogic.pairedSeatChosen &&
+    conversationLogic.peerWaitReserved,
+    label + ": Social Hub selects a face-to-face seat and reserves the first guest while the partner arrives; diagnostics=" + JSON.stringify(conversationLogic));
+  const liveConversation = await page.evaluate(async () => {
+    const { createCharacterSocialLife } = await import("./premium-social-life.js");
+    const THREE = await import("three");
+    const makeCharacter = id => ({
+      r: { id, name: "QA Agent " + id },
+      g: new THREE.Group(),
+      act: "chat", path: [], busy: false, meeting: false,
+      slot: null, loc: null, work: false
+    });
+    const a = makeCharacter(101);
+    const b = makeCharacter(102);
+    const station = { slots: [] };
+    const seatA = { st: station, x: 0, z: -2.1, face: 0, act: "chat", occ: a };
+    const seatB = { st: station, x: 0, z: 2.1, face: Math.PI, act: "chat", occ: b };
+    station.slots = [seatA, seatB];
+    a.slot = seatA; a.loc = seatA;
+    b.slot = seatB; b.loc = seatB;
+    const life = createCharacterSocialLife({ THREE, characters: { 101: a, 102: b } });
+    const makeProfileAgent = id => ({ r: { id } });
+    const financeProfile = life.getConversationProfile(makeProfileAgent(1), makeProfileAgent(2), "lounge");
+    const contentProfile = life.getConversationProfile(makeProfileAgent(9), makeProfileAgent(10), "lounge");
+    const technologyProfile = life.getConversationProfile(makeProfileAgent(11), makeProfileAgent(15), "lounge");
+    const researchProfile = life.getConversationProfile(makeProfileAgent(13), makeProfileAgent(13), "lounge");
+    const crossProfile = life.getConversationProfile(makeProfileAgent(1), makeProfileAgent(9), "lounge");
+    const chessProfile = life.getConversationProfile(makeProfileAgent(1), makeProfileAgent(2), "chess");
+    life.update(0.016, 0);
+    const first = {
+      active: life.getActiveConversationCount(),
+      aSpeaks: a.lifeBubble.userData.currentKind === "text" && !!a.lifeBubble.userData.currentContent,
+      bListens: a.lifeBubble.userData.currentKind === "text" && b.lifeBubble.userData.currentContent === "•••"
+    };
+    await new Promise(resolve => setTimeout(resolve, 4600));
+    life.update(0.016, 4.6);
+    const second = {
+      active: life.getActiveConversationCount(),
+      bSpeaks: b.lifeBubble.userData.currentKind === "text" && !!b.lifeBubble.userData.currentContent,
+      aListens: a.lifeBubble.userData.currentKind === "icon" && a.lifeBubble.userData.currentContent === "•••"
+    };
+    return {
+      first, second,
+      profiles: {
+        finance: financeProfile.groupA === "finance" && financeProfile.scriptCount >= 3,
+        content: contentProfile.groupA === "content" && contentProfile.scriptCount >= 3,
+        technology: technologyProfile.groupA === "technology" && technologyProfile.scriptCount >= 3,
+        research: researchProfile.groupA === "research" && researchProfile.scriptCount >= 3,
+        crossDivision: crossProfile.groupA !== crossProfile.groupB && crossProfile.scriptCount >= 3,
+        chess: chessProfile.stationKind === "chess" && chessProfile.scriptCount >= 3
+      }
+    };
+  });
+  check(liveConversation.first.active === 1 && liveConversation.first.aSpeaks &&
+    liveConversation.first.bListens && liveConversation.second.active === 1 &&
+    liveConversation.second.bSpeaks && liveConversation.second.aListens &&
+    Object.values(liveConversation.profiles).every(Boolean),
+    label + ": seated agents exchange dialogue and receive role/station-specific script pools; diagnostics=" + JSON.stringify(liveConversation));
   const polish = await page.evaluate(() => window.__premiumPolishQA);
   check(!!polish && polish.characterCount >= 10, label + ": premium character polish initializes");
   const integration = await page.evaluate(() => window.__integrationHealthQA);
@@ -189,7 +270,73 @@ async function openPreview(viewport, label) {
   check(await cameraDock.locator('[data-preset="cinematic"]').getAttribute("aria-pressed") === "true", label + ": cinematic camera preset activates");
   await cameraDock.locator('[data-preset="social"]').click();
   check(await cameraDock.locator('[data-preset="social"]').getAttribute("aria-pressed") === "true", label + ": Social Hub camera preset activates");
+  /* Wait for the actual camera and OrbitControls target to reach the preset,
+     not merely for the preset button to become active. */
+  await page.waitForFunction(() => {
+    const q = window.__socialCameraQA;
+    const near = (actual, desired) => Array.isArray(actual) && Array.isArray(desired) &&
+      actual.length === 3 && actual.every((value, index) =>
+        Number.isFinite(value) && Math.abs(value - desired[index]) < 0.45);
+    return q?.preset === "social" &&
+      near(q.actualTarget, q.target) && near(q.actualCamera, q.camera);
+  }, null, { timeout: 8000 });
+  const socialCamera = await page.evaluate(() => ({
+    active: document.querySelector('[data-preset="social"]')?.getAttribute("aria-pressed") === "true",
+    preset: window.__socialCameraQA?.preset || "",
+    target: window.__socialCameraQA?.target || null,
+    camera: window.__socialCameraQA?.camera || null,
+    actualTarget: window.__socialCameraQA?.actualTarget || null,
+    actualCamera: window.__socialCameraQA?.actualCamera || null,
+    fov: window.__socialCameraQA?.fov ?? null
+  }));
+  const cameraReached = (actual, desired) => Array.isArray(actual) && Array.isArray(desired) &&
+    actual.length === 3 && actual.every((value, index) => Math.abs(value - desired[index]) < 0.45);
+  check(socialCamera.active && socialCamera.preset === "social" &&
+    Array.isArray(socialCamera.target) && socialCamera.target[0] === -36.5 &&
+    socialCamera.fov === (viewport.width / viewport.height < 0.85 ? 48 : 38) &&
+    cameraReached(socialCamera.actualTarget, socialCamera.target) &&
+    cameraReached(socialCamera.actualCamera, socialCamera.camera),
+    label + ": Social Hub camera reaches the requested position and target; diagnostics=" + JSON.stringify(socialCamera));
+  const stagedPair = await page.evaluate(() => window.__characterSocialQA?.stageDemoConversation?.() || { staged: false });
+  check(stagedPair.staged === true && stagedPair.station === "lounge" && stagedPair.agentIds?.length === 2,
+    label + ": real GLB agents are staged in opposite Social Hub lounge seats; diagnostics=" + JSON.stringify(stagedPair));
+  await page.waitForFunction(() => {
+    const state = window.__characterSocialQA?.demoConversationState?.();
+    const aSpeaks = state?.a?.visible && state.a.kind === "text" && !!state.a.content;
+    const bSpeaks = state?.b?.visible && state.b.kind === "text" && !!state.b.content;
+    const aListens = state?.a?.visible && state.a.content === "•••";
+    const bListens = state?.b?.visible && state.b.content === "•••";
+    return state?.activeCount === 1 && ((aSpeaks && bListens) || (bSpeaks && aListens));
+  }, null, { timeout: 10000 });
+  const realFirstTurn = await page.evaluate(() => window.__characterSocialQA.demoConversationState());
+  const firstSpeaker = realFirstTurn.a.kind === "text" ? "a" : "b";
+  check((realFirstTurn.a.kind === "text" && realFirstTurn.b.content === "•••") ||
+    (realFirstTurn.b.kind === "text" && realFirstTurn.a.content === "•••"),
+    label + ": one real 3D avatar speaks first while the other listens; diagnostics=" + JSON.stringify(realFirstTurn));
+  const visibleMinX = viewport.width > 500 ? -0.58 : -0.90;
+  const bubblePoints = [realFirstTurn.a.screen, realFirstTurn.b.screen];
+  const bothBubblesFramed = bubblePoints.every(point =>
+    point && point.x > visibleMinX && point.x < 0.92 &&
+    point.y > -0.84 && point.y < 0.80 && point.z > -1 && point.z < 1);
+  const bubblesSeparated = bubblePoints.every(Boolean) &&
+    Math.abs(bubblePoints[0].x - bubblePoints[1].x) > 0.22;
+  check(bothBubblesFramed && bubblesSeparated,
+    label + ": both real dialogue bubbles fit in the Social Hub camera frame without overlap or the desktop division panel; diagnostics=" +
+    JSON.stringify({ camera: realFirstTurn.camera, bubbles: bubblePoints }));
   await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-social-hub.png"), fullPage: true });
+  await page.waitForFunction((expectedSpeaker) => {
+    const state = window.__characterSocialQA?.demoConversationState?.();
+    const aSpeaks = state?.a?.visible && state.a.kind === "text" && !!state.a.content;
+    const bSpeaks = state?.b?.visible && state.b.kind === "text" && !!state.b.content;
+    const aListens = state?.a?.visible && state.a.content === "•••";
+    const bListens = state?.b?.visible && state.b.content === "•••";
+    return state?.activeCount === 1 &&
+      (expectedSpeaker === "a" ? bSpeaks && aListens : aSpeaks && bListens);
+  }, firstSpeaker, { timeout: 12000 });
+  const realSecondTurn = await page.evaluate(() => window.__characterSocialQA.demoConversationState());
+  check((firstSpeaker === "a" && realSecondTurn.b.kind === "text" && realSecondTurn.a.content === "•••") ||
+    (firstSpeaker === "b" && realSecondTurn.a.kind === "text" && realSecondTurn.b.content === "•••"),
+    label + ": real 3D avatars alternate to the other speaker; diagnostics=" + JSON.stringify(realSecondTurn));
   await cameraDock.locator('[data-preset="overview"]').click();
   check(await cameraDock.locator('[data-preset="overview"]').getAttribute("aria-pressed") === "true", label + ": overview camera preset restores");
   report.viewports[label] = {

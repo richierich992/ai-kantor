@@ -643,7 +643,19 @@ function boot(){
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
  (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));updateSocialHub(scene,dt,clk.elapsedTime);updateIsometricOffice(scene,dt);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
-  if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam)})();
+  if(tg){
+    /* Time-based easing keeps camera presets responsive on low-FPS mobile devices. */
+    const cameraEase = 1 - Math.exp(-12 * dt);
+    ctl.target.lerp(tg.t, cameraEase);
+    cam.position.lerp(tg.c, cameraEase);
+  }
+  ctl.update();
+  if(window.__socialCameraQA){
+    window.__socialCameraQA.actualTarget = ctl.target.toArray();
+    window.__socialCameraQA.actualCamera = cam.position.toArray();
+  }
+  rend.render(scene,cam)
+})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
 function focus(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw));tg={t:r.g.position.clone().setY(1.5),c:r.g.position.clone().add(f.multiplyScalar(13)).setY(10)}}
@@ -1047,9 +1059,11 @@ boot = function() {
         camera: portraitView ? [65, 67, -7] : [0, 42, 78]
       },
       social: {
-        fov: portraitView ? 68 : 50,
-        target: portraitView ? [-4, 1, 8] : [-4, 1, 8],
-        camera: portraitView ? [48, 59, 8] : [-5, 48, 78]
+        /* Side-on lounge framing keeps both opposing seats visible together.
+           The wider portrait lens leaves room for both dialogue bubbles. */
+        fov: portraitView ? 48 : 38,
+        target: [-36.5, 1.8, 8.5],
+        camera: [-18.5, 13.5, 11.5]
       }
     };
     const view = presets[preset] || presets.overview;
@@ -1059,6 +1073,12 @@ boot = function() {
       t: new THREE.Vector3(...view.target),
       c: new THREE.Vector3(...view.camera)
     };
+    if (new URLSearchParams(location.search).get("qa") === "1") {
+      window.__socialCameraQA = {
+        preset, target: view.target.slice(), camera: view.camera.slice(), fov: view.fov,
+        actualTarget: ctl.target.toArray(), actualCamera: cam.position.toArray()
+      };
+    }
     $('iso').textContent = '◇ Isometrik';
     $('iso').dataset.premiumIso = '0';
     if (premiumCameraDock) premiumCameraDock.setActive(preset);
@@ -1187,7 +1207,77 @@ const bootBeforeCharacterSocialLife = boot;
 boot = function() {
   bootBeforeCharacterSocialLife();
   characterSocialLife = createCharacterSocialLife({ THREE, characters: chars });
-  window.__characterSocialQA = characterSocialLife ? characterSocialLife.diagnostics() : null;
+  if (characterSocialLife) {
+    const socialQA = characterSocialLife.diagnostics();
+    const qaMode = new URLSearchParams(location.search).get("qa") === "1";
+    let demoPair = null;
+    Object.defineProperties(socialQA, {
+      canPairSlots: { value: characterSocialLife.canPairSlots },
+      chooseIdleStation: { value: chooseIdleStation },
+      getActiveConversationCount: { value: characterSocialLife.getActiveConversationCount },
+      getConversationProfile: { value: characterSocialLife.getConversationProfile },
+      /* Only the automated preview can stage two real avatars in the lounge.
+         This leaves normal users' idle routing and live app behaviour untouched. */
+      stageDemoConversation: { value: () => {
+        if (!qaMode) return { staged: false, reason: "QA preview mode is disabled" };
+        const lounge = STN.find(station => station.kind === "lounge" && station.slots?.length >= 4);
+        if (!lounge) return { staged: false, reason: "Lounge station not found" };
+        const seatPair = [
+          [lounge.slots[0], lounge.slots[2]],
+          [lounge.slots[1], lounge.slots[3]]
+        ].find(([a, b]) => characterSocialLife.canPairSlots(a, b) && !a.occ && !b.occ);
+        if (!seatPair) return { staged: false, reason: "No free face-to-face lounge seats" };
+        const people = Object.values(chars).filter(character =>
+          character?.g && !character.busy && !character.meeting && !character.r?.lock
+        ).slice(0, 2);
+        if (people.length < 2) return { staged: false, reason: "Two available agents not found" };
+        const [a, b] = people;
+        [a, b].forEach((character, index) => {
+          if (character.slot?.occ === character) character.slot.occ = null;
+          const slot = seatPair[index];
+          character.slot = slot;
+          character.loc = slot;
+          character.path = [];
+          character.stroll = null;
+          character.done = null;
+          character.busy = false;
+          character.meeting = false;
+          character.work = false;
+          character.act = "chat";
+          character.face = slot.face;
+          character.wait = 60;
+          character.yoff = (slot.sit ? -0.34 : 0) + (slot.dy || 0);
+          character.g.position.set(slot.x, 0.14 + (character.yoff || 0), slot.z);
+          character.g.rotation.y = slot.face;
+          slot.occ = character;
+        });
+        demoPair = [a, b];
+        return { staged: true, station: lounge.kind, agentIds: [a.r.id, b.r.id] };
+      } },
+      demoConversationState: { value: () => {
+        const [a, b] = demoPair || [];
+        const bubbleState = character => {
+          const bubble = character?.lifeBubble;
+          const projected = bubble?.getWorldPosition
+            ? bubble.getWorldPosition(new THREE.Vector3()).project(cam)
+            : null;
+          return {
+            visible: !!bubble?.visible,
+            kind: bubble?.userData?.currentKind || "",
+            content: bubble?.userData?.currentContent || "",
+            screen: projected ? { x: projected.x, y: projected.y, z: projected.z } : null
+          };
+        };
+        return {
+          activeCount: characterSocialLife.getActiveConversationCount(),
+          camera: { position: cam.position.toArray(), target: ctl.target.toArray() },
+          a: bubbleState(a),
+          b: bubbleState(b)
+        };
+      } }
+    });
+    window.__characterSocialQA = socialQA;
+  } else window.__characterSocialQA = null;
   premiumPolish = createPremiumPolish({ THREE, characters: chars });
   window.__premiumPolishQA = premiumPolish ? premiumPolish.diagnostics() : null;
   integrationDiagnostics = createIntegrationDiagnostics({

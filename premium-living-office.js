@@ -1,3 +1,5 @@
+import { areConversationSlotsCompatible } from "./premium-social-life.js";
+
 /* Living Office — Phase 8
  * Purpose-led idle routing, backend-backed workstation monitors, coordinated
  * multi-division briefings, and Jakarta-time ambience.
@@ -22,6 +24,38 @@ function roleGroup(agentId) {
 /** Choose a free Social Hub slot using the agent's work profile. */
 export function chooseIdleStation(character, freeSlots = []) {
   if (!freeSlots.length) return null;
+
+  /* A nearby unoccupied seat facing an existing social guest gets priority.
+     This naturally forms pairs without pulling anyone away from a task. */
+  const conversationSeats = freeSlots.filter(slot => {
+    if (slot?.act !== "chat" || !slot?.st) return false;
+    return (slot.st.slots || []).some(other => {
+      const peer = other?.occ;
+      return !!peer && peer !== character &&
+        peer.slot === other && peer.loc === other &&
+        peer.act === "chat" && !peer.busy && !peer.meeting &&
+        !(peer.path && peer.path.length) &&
+        areConversationSlotsCompatible(slot, other);
+    });
+  });
+  if (conversationSeats.length) {
+    const seat = conversationSeats[Math.floor(Math.random() * conversationSeats.length)];
+    const peerSeat = (seat.st.slots || []).find(other =>
+      other?.occ && other.occ !== character &&
+      other.occ.slot === other && other.occ.loc === other &&
+      other.occ.act === "chat" && !other.occ.busy &&
+      !other.occ.meeting && !other.occ.r?.lock &&
+      !(other.occ.path && other.occ.path.length) &&
+      areConversationSlotsCompatible(seat, other)
+    );
+    /* Reserve the first guest long enough for the arriving agent to reach
+       the opposite seat, even when the walk crosses the whole office. */
+    if (peerSeat?.occ) {
+      peerSeat.occ.wait = Math.max(Number(peerSeat.occ.wait) || 0, 60);
+    }
+    return seat;
+  }
+
   const preferences = ROLE_STATION_PREFERENCES[roleGroup(character?.r?.id)] || {};
   const weighted = freeSlots.map(slot => ({
     slot,

@@ -94,6 +94,18 @@ if (!html.includes("PREMIUM_LOW_POWER")) fail("Adaptive low-power profile missin
 if (!html.includes("livingOffice.update(dt,clk.elapsedTime)")) fail("Living Office update loop missing");
 if (!html.includes("routeCmdBeforeLivingOffice")) fail("Cross-division meeting dispatch hook missing");
 if (!html.includes("characterSocialLife.update(dt,clk.elapsedTime)")) fail("Character social-life update loop missing");
+const socialLife = read("premium-social-life.js");
+if (!socialLife.includes("areConversationSlotsCompatible") ||
+    !socialLife.includes("ROLE_CONVERSATIONS") ||
+    !socialLife.includes("CROSS_ROLE_CONVERSATIONS") ||
+    !socialLife.includes("CHESS_CONVERSATIONS") ||
+    !socialLife.includes("conversationRounds") ||
+    !socialLife.includes("conversationEnabled: true")) fail("Role-aware and station-specific Social Hub conversations are missing");
+const livingOffice = read("premium-living-office.js");
+if (!livingOffice.includes("areConversationSlotsCompatible(slot, other)") ||
+    !livingOffice.includes("conversationSeats") ||
+    !livingOffice.includes("peerSeat.occ.wait = Math.max") ||
+    !livingOffice.includes("Number(peerSeat.occ.wait) || 0, 60")) fail("Idle routing does not prioritize and reserve a face-to-face conversation partner seat");
 const social = read("premium-social.js");
 if (!social.includes("pingPongPlayersAreReady") || !social.includes("players.length >= 2")) fail("Ping-pong rally must require two active players");
 if (!social.includes("updatePingPongBall(item, step)")) fail("Ping-pong ball idle/rally state update missing");
