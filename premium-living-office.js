@@ -39,7 +39,21 @@ export function chooseIdleStation(character, freeSlots = []) {
     });
   });
   if (conversationSeats.length) {
-    return conversationSeats[Math.floor(Math.random() * conversationSeats.length)];
+    const seat = conversationSeats[Math.floor(Math.random() * conversationSeats.length)];
+    const peerSeat = (seat.st.slots || []).find(other =>
+      other?.occ && other.occ !== character &&
+      other.occ.slot === other && other.occ.loc === other &&
+      other.occ.act === "chat" && !other.occ.busy &&
+      !other.occ.meeting && !other.occ.r?.lock &&
+      !(other.occ.path && other.occ.path.length) &&
+      areConversationSlotsCompatible(seat, other)
+    );
+    /* Reserve the first guest long enough for the arriving agent to reach
+       the opposite seat, even when the walk crosses the whole office. */
+    if (peerSeat?.occ) {
+      peerSeat.occ.wait = Math.max(Number(peerSeat.occ.wait) || 0, 60);
+    }
+    return seat;
   }
 
   const preferences = ROLE_STATION_PREFERENCES[roleGroup(character?.r?.id)] || {};
