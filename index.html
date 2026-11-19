@@ -1199,8 +1199,14 @@ step = function(character, dt) {
  * Add backend-backed workstation telemetry and ambience after all existing
  * scene boot wrappers have completed. The original data and command paths stay intact.
  */
+let livingOfficeBootCalls = 0;
 const bootBeforeLivingOffice = boot;
 boot = function() {
+  livingOfficeBootCalls++;
+  window.__livingOfficeBootTrace = {
+    calls: livingOfficeBootCalls,
+    phase8Before: !!scene.userData.livingOfficePhase8
+  };
   bootBeforeLivingOffice();
   livingOffice = createLivingOffice({
     THREE,
@@ -1215,6 +1221,12 @@ boot = function() {
     getBackendAgent: id => ag(id),
     backendReady: () => !!BK.s
   });
+  window.__livingOfficeBootTrace = {
+    calls: livingOfficeBootCalls,
+    phase8Before: !!scene.userData.livingOfficePhase8,
+    phase8After: !!scene.userData.livingOfficePhase8,
+    instanceReady: !!livingOffice
+  };
   window.__livingOfficeQA = livingOffice ? {
     get monitorCount() { return livingOffice.monitorCount; },
     get currentPeriod() { return livingOffice.currentPeriod; },
