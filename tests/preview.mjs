@@ -142,8 +142,8 @@ async function openPreview(viewport, label) {
       aSpeaks: a.lifeBubble.userData.currentKind === "text" && !!a.lifeBubble.userData.currentContent,
       bListens: a.lifeBubble.userData.currentKind === "text" && b.lifeBubble.userData.currentContent === "•••"
     };
-    await new Promise(resolve => setTimeout(resolve, 2750));
-    life.update(0.016, 2.75);
+    await new Promise(resolve => setTimeout(resolve, 4600));
+    life.update(0.016, 4.6);
     const second = {
       active: life.getActiveConversationCount(),
       bSpeaks: b.lifeBubble.userData.currentKind === "text" && !!b.lifeBubble.userData.currentContent,
