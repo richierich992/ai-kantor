@@ -189,6 +189,7 @@ async function openPreview(viewport, label) {
   check(await cameraDock.locator('[data-preset="cinematic"]').getAttribute("aria-pressed") === "true", label + ": cinematic camera preset activates");
   await cameraDock.locator('[data-preset="social"]').click();
   check(await cameraDock.locator('[data-preset="social"]').getAttribute("aria-pressed") === "true", label + ": Social Hub camera preset activates");
+  await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-social-hub.png"), fullPage: true });
   await cameraDock.locator('[data-preset="overview"]').click();
   check(await cameraDock.locator('[data-preset="overview"]').getAttribute("aria-pressed") === "true", label + ": overview camera preset restores");
   report.viewports[label] = {
