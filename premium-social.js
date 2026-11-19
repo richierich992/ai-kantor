@@ -175,7 +175,7 @@ export function updatePingPongBall(item, dt) {
   ball.visible = true;
   if (!playing) {
     if (!item.isResting) {
-      const [rx, rz] = rotated(station.yaw || 0, -0.92, 0.2);
+      const [rx, rz] = rotated(station.yaw || 0, -1.34, 0);
       ball.position.set(station.x + rx, surfaceY + 0.105, station.z + rz);
       ball.rotation.x = 0;
       ball.rotation.z = 0;
@@ -199,7 +199,7 @@ export function updatePingPongBall(item, dt) {
   /* The rally travels across the full table and remains above the GLB tabletop. */
   const [rx, rz] = rotated(
     station.yaw || 0,
-    Math.sin(item.time) * 1.34,
+    Math.sin(item.time - Math.PI / 2) * 1.34,
     Math.sin(item.time * 0.75) * 0.12
   );
   ball.position.set(
