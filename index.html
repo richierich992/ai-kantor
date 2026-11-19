@@ -1047,11 +1047,11 @@ boot = function() {
         camera: portraitView ? [65, 67, -7] : [0, 42, 78]
       },
       social: {
-        /* Frame the west-side lounge and chess tables close enough to read
-           face-to-face character dialogue, including on portrait screens. */
-        fov: portraitView ? 62 : 48,
-        target: [-31.25, 1, 11],
-        camera: [-33, 23, 36]
+        /* Center the lounge conversation area; portrait framing keeps both
+           seated agents on-screen while desktop still includes nearby games. */
+        fov: portraitView ? 58 : 48,
+        target: [-36.5, 1, 8.5],
+        camera: portraitView ? [-36.5, 19, 31] : [-33.5, 22, 36]
       }
     };
     const view = presets[preset] || presets.overview;
