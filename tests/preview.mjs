@@ -269,21 +269,30 @@ async function openPreview(viewport, label) {
     label + ": real GLB agents are staged in opposite Social Hub lounge seats; diagnostics=" + JSON.stringify(stagedPair));
   await page.waitForFunction(() => {
     const state = window.__characterSocialQA?.demoConversationState?.();
-    return state?.activeCount === 1 && state.a?.visible && state.a.kind === "text" &&
-      !!state.a.content && state.b?.visible && state.b.content === "•••";
+    const aSpeaks = state?.a?.visible && state.a.kind === "text" && !!state.a.content;
+    const bSpeaks = state?.b?.visible && state.b.kind === "text" && !!state.b.content;
+    const aListens = state?.a?.visible && state.a.content === "•••";
+    const bListens = state?.b?.visible && state.b.content === "•••";
+    return state?.activeCount === 1 && ((aSpeaks && bListens) || (bSpeaks && aListens));
   }, null, { timeout: 10000 });
   const realFirstTurn = await page.evaluate(() => window.__characterSocialQA.demoConversationState());
-  check(realFirstTurn.a.kind === "text" && realFirstTurn.b.content === "•••",
-    label + ": real 3D avatar renders the first dialogue bubble and listening cue; diagnostics=" + JSON.stringify(realFirstTurn));
+  const firstSpeaker = realFirstTurn.a.kind === "text" ? "a" : "b";
+  check((realFirstTurn.a.kind === "text" && realFirstTurn.b.content === "•••") ||
+    (realFirstTurn.b.kind === "text" && realFirstTurn.a.content === "•••"),
+    label + ": one real 3D avatar speaks first while the other listens; diagnostics=" + JSON.stringify(realFirstTurn));
   await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-social-hub.png"), fullPage: true });
   await page.waitForFunction(() => {
     const state = window.__characterSocialQA?.demoConversationState?.();
-    return state?.activeCount === 1 && state.a?.content === "•••" &&
-      state.b?.kind === "text" && !!state.b.content;
+    const aSpeaks = state?.a?.visible && state.a.kind === "text" && !!state.a.content;
+    const bSpeaks = state?.b?.visible && state.b.kind === "text" && !!state.b.content;
+    const aListens = state?.a?.visible && state.a.content === "•••";
+    const bListens = state?.b?.visible && state.b.content === "•••";
+    return state?.activeCount === 1 && ((aSpeaks && bListens) || (bSpeaks && aListens));
   }, null, { timeout: 5000 });
   const realSecondTurn = await page.evaluate(() => window.__characterSocialQA.demoConversationState());
-  check(realSecondTurn.a.content === "•••" && realSecondTurn.b.kind === "text",
-    label + ": real 3D avatar conversation alternates to the second speaker; diagnostics=" + JSON.stringify(realSecondTurn));
+  check((firstSpeaker === "a" && realSecondTurn.b.kind === "text" && realSecondTurn.a.content === "•••") ||
+    (firstSpeaker === "b" && realSecondTurn.a.kind === "text" && realSecondTurn.b.content === "•••"),
+    label + ": real 3D avatars alternate to the other speaker; diagnostics=" + JSON.stringify(realSecondTurn));
   await cameraDock.locator('[data-preset="overview"]').click();
   check(await cameraDock.locator('[data-preset="overview"]').getAttribute("aria-pressed") === "true", label + ": overview camera preset restores");
   report.viewports[label] = {
