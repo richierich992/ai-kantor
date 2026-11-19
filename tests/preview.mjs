@@ -218,7 +218,7 @@ async function openPreview(viewport, label) {
     label + ": social GLB furniture is mounted in the office; diagnostics=" + JSON.stringify(socialAssets));
   const chessSeatLayout = await page.evaluate(() => window.__chessSeatQA || null);
   const chessSeatsReady = !!chessSeatLayout && chessSeatLayout.tableCount === 2 &&
-    chessSeatLayout.seatCount === 4 && chessSeatLayout.seats.length === 4 &&
+    chessSeatLayout.seatCount === 4 && chessSeatLayout.piecePairCount === 4 && chessSeatLayout.seats.length === 4 &&
     chessSeatLayout.seats.every(seat => seat.visible && Number.isFinite(seat.x) && Number.isFinite(seat.z));
   check(chessSeatsReady,
     label + ": both chess tables have visible opposing seats in their correct positions; diagnostics=" + JSON.stringify(chessSeatLayout));
@@ -229,6 +229,22 @@ async function openPreview(viewport, label) {
   report.navigation[label] = worldNavigation;
   check(worldNavigation.colliderCount > 20 && worldNavigation.blockedCellCount > 100,
     label + ": real office geometry is registered as navigation obstacles; diagnostics=" + JSON.stringify(worldNavigation));
+  const stationSeatLayout = await page.evaluate(() => window.__agentNavigationTest?.stations?.() || []);
+  const chessSlots = stationSeatLayout.filter(station => station.kind === "chess");
+  const chessSlotsCorrect = chessSlots.length === 2 && chessSlots.every(station => station.slots.length === 2 &&
+    station.slots.every(slot => Math.abs(Math.abs(slot.seat[0] - station.x) - 1.55) < 0.02 &&
+      Math.abs(slot.seat[2] - station.z) < 0.02 && slot.sit && slot.sitLift === 0));
+  const loungeStations = stationSeatLayout.filter(station => station.kind === "lounge");
+  const loungeSeatsCorrect = loungeStations.length === 2 && loungeStations.every(station => station.slots.length === 4 &&
+    station.slots.every(slot => slot.sit && Math.abs(slot.sitLift - 0.30) < 0.001 &&
+      Math.abs(Math.abs(slot.seat[2] - station.z) - 2.02) < 0.02));
+  const pingPongStations = stationSeatLayout.filter(station => station.kind === "pingpong");
+  const pingPongSlotsCorrect = pingPongStations.length === 2 && pingPongStations.every(station =>
+    Math.abs(station.pingPongSurfaceY - 1.23) < 0.001 && station.slots.length === 2 &&
+    station.slots.every(slot => slot.act === "swing"));
+  check(chessSlotsCorrect && loungeSeatsCorrect && pingPongSlotsCorrect,
+    label + ": chess, lounge and ping-pong seats use station-aligned coordinates and correct seated heights; diagnostics=" +
+      JSON.stringify({ chessSlots, loungeStations, pingPongStations }));
 
   const obstacleRoute = await page.evaluate(async () => {
     const { createAgentNavigation } = await import("./premium-navigation.js");
@@ -368,6 +384,7 @@ async function openPreview(viewport, label) {
     const restB = [ball.position.x, ball.position.y, ball.position.z];
     slotA.occ = playerA; slotB.occ = playerB;
     const rallyStarted = api.updateBall(item, 0.05);
+    for (let i = 0; i < 20; i++) api.updateBall(item, 0.05);
     const rallyAboveTable = ball.position.y > 1.33 && ball.position.y < 1.85;
     const rallyMovesAcrossTable = Math.abs(ball.position.x - restA[0]) > 0.5;
     const paddlesSwing = station.pingPongPaddles.every(paddle => Math.abs(paddle.rotation.y) > 0.01);
