@@ -97,13 +97,33 @@ function addSocialInteriors(T,scene,m){
  // A small stack of magazines makes the shared table read as a usable lounge surface.
  roundedSlab(T,scene,.55,.34,.035,.06,mat(T,0xe8e1d5),23.5,.67,3.5);
  roundedSlab(T,scene,.48,.29,.028,.05,mat(T,0x7a9d9c),23.53,.71,3.47);
+ // A shared café-height table fills the center of the eastern Social Hub without blocking activity paths.
+ const communityTable=new T.Group();communityTable.name='mockup-social-community-table';communityTable.position.set(20.5,0,10.2);scene.add(communityTable);
+ const communityRug=new T.Mesh(new T.CircleGeometry(2.48,56),mat(T,0xe6ece5,{roughness:.96}));
+ communityRug.rotation.x=-Math.PI/2;communityRug.position.y=.105;communityTable.add(communityRug);
+ const communityRing=new T.Mesh(new T.TorusGeometry(2.34,.035,7,64),mat(T,0x7bbab1,{emissive:0x235d5c,emissiveIntensity:.24,metalness:.32,roughness:.4}));
+ communityRing.rotation.x=Math.PI/2;communityRing.position.y=.145;communityTable.add(communityRing);
+ cyl(T,communityTable,1.06,.17,0,1.02,0,m.wood);
+ cyl(T,communityTable,.14,.82,0,.49,0,m.metal);
+ cyl(T,communityTable,.62,.09,0,.105,0,m.metal);
+ for(let i=0;i<4;i++){
+  const a=Math.PI/4+i*Math.PI/2,x=Math.cos(a)*1.72,z=Math.sin(a)*1.72,seat=new T.Group();
+  seat.position.set(x,0,z);communityTable.add(seat);
+  cyl(T,seat,.36,.15,0,.66,0,m.seat);
+  cyl(T,seat,.055,.52,0,.32,0,m.metal);
+  cyl(T,seat,.3,.055,0,.055,0,m.metal);
+ }
+ // Small tabletop planter and two cups give the shared table a lived-in purpose.
+ cyl(T,communityTable,.13,.16,0,1.18,0,m.frame);
+ const communityPlant=new T.Mesh(new T.IcosahedronGeometry(.16,1),mat(T,0x5e9a70));communityPlant.position.set(0,1.38,0);communityTable.add(communityPlant);
+ cyl(T,communityTable,.075,.12,-.48,1.17,.12,m.lightDesk);cyl(T,communityTable,.075,.12,.48,1.17,.12,m.lightDesk);
  const shelf=new T.Group();shelf.name='mockup-reading-bookshelf';shelf.position.set(-40.65,0,15.4);scene.add(shelf);
  bx(T,shelf,2.5,2.55,.26,0,1.27,0,m.frame);for(let y of [.55,1.24,1.93])bx(T,shelf,2.42,.09,.48,0,y,.12,m.wood);
  for(let row=0;row<3;row++)for(let i=0;i<7;i++){const hh=.42+((i*7+row)%2)*.12,book=bx(T,shelf,.2+((i+row)%3)*.035,hh,.32,-.98+i*.32,.78+row*.68,.18,mat(T,[0x4b8992,0xc58d62,0x7387ad,0x8ba77a,0x9f7d9f][(i+row)%5]),false);book.rotation.z=((i%3)-1)*.035}
  const lamp=new T.Group();lamp.position.set(-32.2,0,15.6);scene.add(lamp);cyl(T,lamp,.055,2.15,0,1.07,0,m.metal);cyl(T,lamp,.48,.22,0,2.15,0,m.lightDesk);
  const shade=new T.Mesh(new T.ConeGeometry(.42,.5,20,1,true),m.lightDesk);shade.position.y=2.2;lamp.add(shade);
  const lampGlow=new T.PointLight(0xffd89a,.32,8,2);lampGlow.position.set(-32.2,2.1,15.6);scene.add(lampGlow);
- return {cafe,shelf,lamp}
+ return {cafe,shelf,lamp,communityTable}
 }
 
 function roundedSlab(T,parent,w,d,h,r,material,x,y,z){
@@ -366,6 +386,6 @@ export function enhanceIsometricOffice({THREE,scene,rooms,characters,zones=[],zo
  });
  if(scene.fog){scene.fog.color.set(0xc8d8dc);scene.fog.near=175;scene.fog.far=340}
  const portrait=window.innerWidth/Math.max(1,window.innerHeight)<.85,target=new THREE.Vector3(0,1,-4.5),pos=portrait?new THREE.Vector3(52,62,-4.5):new THREE.Vector3(50,64,60);if(camera){camera.fov=portrait?67:43;camera.position.copy(pos);camera.updateProjectionMatrix()}if(controls){controls.target.copy(target);controls.update()}if(setTarget)setTarget({t:target.clone(),c:pos.clone()});
- const result={floor,pods:zones.length,meeting,reception:extras.reception,pantry:extras.pantry,tables:extras.tables,socialInteriors,workstations:Object.keys(rooms).filter(id=>!rooms[id]?.meet&&typeof rooms[id]?.id==='number').length,diagnostics:()=>({theme:"approved-isometric-open-office",workstationCount:Object.keys(rooms).filter(id=>!rooms[id]?.meet&&typeof rooms[id]?.id==='number').length,glassDivisionCount:zones.length,meetingRoomReady:!!meeting,receptionReady:true,pantryReady:true,collaborationTableCount:extras.tables.length,departmentDisplays:zones.length,socialCafeReady:!!socialInteriors?.cafe,quietLoungeReady:!!socialInteriors?.shelf})};scene.userData.isometricOfficeRebuild=result;return result
+ const result={floor,pods:zones.length,meeting,reception:extras.reception,pantry:extras.pantry,tables:extras.tables,socialInteriors,workstations:Object.keys(rooms).filter(id=>!rooms[id]?.meet&&typeof rooms[id]?.id==='number').length,diagnostics:()=>({theme:"approved-isometric-open-office",workstationCount:Object.keys(rooms).filter(id=>!rooms[id]?.meet&&typeof rooms[id]?.id==='number').length,glassDivisionCount:zones.length,meetingRoomReady:!!meeting,receptionReady:true,pantryReady:true,collaborationTableCount:extras.tables.length,departmentDisplays:zones.length,socialCafeReady:!!socialInteriors?.cafe,quietLoungeReady:!!socialInteriors?.shelf,socialCommunityTableReady:!!socialInteriors?.communityTable})};scene.userData.isometricOfficeRebuild=result;return result
 }
 export function updateIsometricOffice(scene,dt){const r=scene?.userData?.isometricOfficeRebuild;if(!r)return;r.elapsed=(r.elapsed||0)+Math.min(.05,Math.max(0,dt||0))}
