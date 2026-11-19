@@ -643,7 +643,19 @@ function boot(){
  $('legend').onclick=e=>{const t=e.target.closest('[data-id]');if(t)openDiv(+t.dataset.id)};
  const clk=new THREE.Clock();
  (function loop(){requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return;}const dt=Math.min(clk.getDelta(),.05);Object.values(chars).forEach(c=>step(c,dt));updateSocialHub(scene,dt,clk.elapsedTime);updateIsometricOffice(scene,dt);if(livingOffice)livingOffice.update(dt,clk.elapsedTime);if(characterSocialLife)characterSocialLife.update(dt,clk.elapsedTime);if(premiumPolish)premiumPolish.update(dt,clk.elapsedTime);
-  if(tg){ctl.target.lerp(tg.t,.07);cam.position.lerp(tg.c,.07)}ctl.update();rend.render(scene,cam)})();
+  if(tg){
+    /* Time-based easing keeps camera presets responsive on low-FPS mobile devices. */
+    const cameraEase = 1 - Math.exp(-12 * dt);
+    ctl.target.lerp(tg.t, cameraEase);
+    cam.position.lerp(tg.c, cameraEase);
+  }
+  ctl.update();
+  if(window.__socialCameraQA){
+    window.__socialCameraQA.actualTarget = ctl.target.toArray();
+    window.__socialCameraQA.actualCamera = cam.position.toArray();
+  }
+  rend.render(scene,cam)
+})();
 }
 function focusScreen(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw)),p=r.g.position.clone().addScaledVector(f,-DP/2+.2).setY(1.95);tg={t:p,c:p.clone().addScaledVector(f,9.5).setY(3.6)}}
 function focus(r){const f=new THREE.Vector3(Math.sin(r.yaw),0,Math.cos(r.yaw));tg={t:r.g.position.clone().setY(1.5),c:r.g.position.clone().add(f.multiplyScalar(13)).setY(10)}}
@@ -1062,7 +1074,10 @@ boot = function() {
       c: new THREE.Vector3(...view.camera)
     };
     if (new URLSearchParams(location.search).get("qa") === "1") {
-      window.__socialCameraQA = { preset, target: view.target.slice(), camera: view.camera.slice(), fov: view.fov };
+      window.__socialCameraQA = {
+        preset, target: view.target.slice(), camera: view.camera.slice(), fov: view.fov,
+        actualTarget: ctl.target.toArray(), actualCamera: cam.position.toArray()
+      };
     }
     $('iso').textContent = '◇ Isometrik';
     $('iso').dataset.premiumIso = '0';
