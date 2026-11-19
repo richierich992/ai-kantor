@@ -1187,7 +1187,10 @@ const bootBeforeCharacterSocialLife = boot;
 boot = function() {
   bootBeforeCharacterSocialLife();
   characterSocialLife = createCharacterSocialLife({ THREE, characters: chars });
-  window.__characterSocialQA = characterSocialLife ? characterSocialLife.diagnostics() : null;
+  window.__characterSocialQA = characterSocialLife ? {
+    ...characterSocialLife.diagnostics(),
+    chooseIdleStation
+  } : null;
   premiumPolish = createPremiumPolish({ THREE, characters: chars });
   window.__premiumPolishQA = premiumPolish ? premiumPolish.diagnostics() : null;
   integrationDiagnostics = createIntegrationDiagnostics({
