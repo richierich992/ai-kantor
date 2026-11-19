@@ -368,6 +368,7 @@ async function loadGLBs(){const L=new GLTFLoader();
    socialGlbNames:socialNames.filter(n=>!!GLB[n]),
    stationCount:STN.length,
    arcadeStations:STN.filter(st=>st.kind==='arcade').length,
+   arcadeFrontFacing:STN.filter(st=>st.kind==='arcade'&&Math.abs(Math.sin(st.yaw||0))<.001&&Math.cos(st.yaw||0)>.999).length,
    placedModelInstances:placed.length,
    sofaInstances:placed.filter(n=>n==='social_sofa_v3').length,
    pingPongInstances:placed.filter(n=>n==='ping_pong_table_v2').length,
@@ -502,12 +503,12 @@ function buildHall(){
  // barat-tengah: ping pong, catur, taman dengan jalan setapak
  addStation('pingpong',-26,8);addStation('chess',-26,13.5);addStation('garden',-15.5,12.5);
  // Game Lounge: three GLB arcade cabinets face the room, clear of table-game approach paths.
- [-19.2,-15.9,-12.6].forEach(x=>addStation('arcade',x,15.1,PI));
+ [-19.2,-15.9,-12.6].forEach(x=>addStation('arcade',x,15.1,0));
  // tengah: papan pengumuman
  addStation('board',0,-2.4);
  // timur: ping pong, catur, lounge, basket mini, target, kafe kedua, arcade
  addStation('pingpong',17,2.5);addStation('chess',17,7.5);addStation('lounge',23.5,3.5);addStation('hoop',11,10.5);addStation('darts',27,9);
- addStation('cafe',26.5,15.6,PI);[14,16.4,18.8,21.2,23.6].forEach(x=>addStation('arcade',x,15.4,PI));
+ addStation('cafe',26.5,15.6,0);[14,16.4,18.8,21.2,23.6].forEach(x=>addStation('arcade',x,15.4,0));
  [[-41,-3.2],[-41,16],[-12,-3],[12,-3],[29,15.5],[-8,16],[8,16],[-21,-2]].forEach(([x,z])=>addStation('plant',x,z));
  buildHrPlaceholder();
 }
