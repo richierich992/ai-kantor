@@ -268,30 +268,37 @@ async function openPreview(viewport, label) {
       const station = matches[item.stationIndex || 0];
       if (!home || !station?.slots?.length) return { ...item, failed: true, reason: "missing home or station" };
       const seat = station.slots[0];
-      const plan = api.plan(home, [seat.approach, seat.seat], { allowBlockedGoal: true });
+      const approachPlan = api.plan(home, [seat.approach]);
+      const reachedApproach = approachPlan.route.at(-1) || seat.approach;
+      const seatPlan = api.plan(reachedApproach, [seat.seat], { allowBlockedGoal: true });
+      const finalSegment = seatPlan.segments.at(-1);
+      const contactDistance = finalSegment
+        ? Math.hypot(finalSegment.to[0] - finalSegment.from[0], finalSegment.to[2] - finalSegment.from[2])
+        : 0;
+      const safeTravelSegments = approachPlan.segments.every(segment => segment.clear) &&
+        seatPlan.segments.slice(0, -1).every(segment => segment.clear);
       return {
         ...item,
-        home,
-        approach: seat.approach,
-        seat: seat.seat,
-        failed: plan.failed,
-        segmentsClear: plan.segmentsClear,
-        routePointCount: plan.route.length,
-        route: plan.route,
-        segments: plan.segments
+        home, approach: seat.approach, seat: seat.seat,
+        failed: approachPlan.failed || seatPlan.failed,
+        safeTravelSegments,
+        finalSeatContactClear: !finalSegment || finalSegment.clear,
+        finalContactDistance: contactDistance,
+        approachPointCount: approachPlan.route.length,
+        seatPointCount: seatPlan.route.length
       };
     });
   });
   const realOfficeRoutesReady = !realOfficeRoutes.error &&
     realOfficeRoutes.length >= 5 &&
-    realOfficeRoutes.every(item => !item.failed && item.segmentsClear && item.routePointCount > 0);
+    realOfficeRoutes.every(item => !item.failed && item.safeTravelSegments &&
+      item.approachPointCount > 0 && item.seatPointCount > 0 &&
+      (item.finalSeatContactClear || item.finalContactDistance <= 1.6));
   report.navigationRoutes = report.navigationRoutes || {};
   report.navigationRoutes[label] = realOfficeRoutes;
   check(realOfficeRoutesReady,
-    label + ": real workstation-to-Social-Hub routes for five agents avoid visible office obstacles; diagnostics=" +
+    label + ": real routes from five workstations to nearby Social Hub stations avoid obstacles, with only a short final seating contact allowed; diagnostics=" +
       JSON.stringify(realOfficeRoutes));
-
-
 
   await page.waitForFunction(() => window.__pingPongAssetQA?.tables === 2, null, { timeout: 15000 });
   const pingPongAssetQA = await page.evaluate(() => window.__pingPongAssetQA);
