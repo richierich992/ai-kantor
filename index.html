@@ -1191,10 +1191,63 @@ boot = function() {
   characterSocialLife = createCharacterSocialLife({ THREE, characters: chars });
   if (characterSocialLife) {
     const socialQA = characterSocialLife.diagnostics();
+    const qaMode = new URLSearchParams(location.search).get("qa") === "1";
+    let demoPair = null;
     Object.defineProperties(socialQA, {
       canPairSlots: { value: characterSocialLife.canPairSlots },
       chooseIdleStation: { value: chooseIdleStation },
-      getActiveConversationCount: { value: characterSocialLife.getActiveConversationCount }
+      getActiveConversationCount: { value: characterSocialLife.getActiveConversationCount },
+      /* Only the automated preview can stage two real avatars in the lounge.
+         This leaves normal users' idle routing and live app behaviour untouched. */
+      stageDemoConversation: { value: () => {
+        if (!qaMode) return { staged: false, reason: "QA preview mode is disabled" };
+        const lounge = STN.find(station => station.kind === "lounge" && station.slots?.length >= 4);
+        if (!lounge) return { staged: false, reason: "Lounge station not found" };
+        const seatPair = [
+          [lounge.slots[0], lounge.slots[2]],
+          [lounge.slots[1], lounge.slots[3]]
+        ].find(([a, b]) => characterSocialLife.canPairSlots(a, b) && !a.occ && !b.occ);
+        if (!seatPair) return { staged: false, reason: "No free face-to-face lounge seats" };
+        const people = Object.values(chars).filter(character =>
+          character?.g && !character.busy && !character.meeting && !character.r?.lock
+        ).slice(0, 2);
+        if (people.length < 2) return { staged: false, reason: "Two available agents not found" };
+        const [a, b] = people;
+        [a, b].forEach((character, index) => {
+          if (character.slot?.occ === character) character.slot.occ = null;
+          const slot = seatPair[index];
+          character.slot = slot;
+          character.loc = slot;
+          character.path = [];
+          character.stroll = null;
+          character.done = null;
+          character.busy = false;
+          character.meeting = false;
+          character.work = false;
+          character.act = "chat";
+          character.face = slot.face;
+          character.wait = 60;
+          character.yoff = (slot.sit ? -0.34 : 0) + (slot.dy || 0);
+          character.g.position.set(slot.x, 0.14 + (character.yoff || 0), slot.z);
+          character.g.rotation.y = slot.face;
+          slot.occ = character;
+        });
+        demoPair = [a, b];
+        return { staged: true, station: lounge.kind, agentIds: [a.r.id, b.r.id] };
+      } },
+      demoConversationState: { value: () => {
+        const [a, b] = demoPair || [];
+        const bubbleState = character => ({
+          visible: !!character?.lifeBubble?.visible,
+          kind: character?.lifeBubble?.userData?.currentKind || "",
+          content: character?.lifeBubble?.userData?.currentContent || ""
+        });
+        return {
+          activeCount: characterSocialLife.getActiveConversationCount(),
+          a: bubbleState(a),
+          b: bubbleState(b)
+        };
+      } }
     });
     window.__characterSocialQA = socialQA;
   } else window.__characterSocialQA = null;
