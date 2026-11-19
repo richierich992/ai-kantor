@@ -249,6 +249,12 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
             a, b, startedAt: now,
             script: CONVERSATION_SCRIPTS[scriptIndex]
           };
+          /* Keep both guests seated until every dialogue turn has finished.
+             roam() uses character.wait as the Social Hub dwell timer. */
+          const conversationHold = conversation.script.length * 2.7 + 3;
+          [a, b].forEach(character => {
+            character.wait = Math.max(Number(character.wait) || 0, conversationHold);
+          });
           conversations.set(key, conversation);
         }
 
