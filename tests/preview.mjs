@@ -107,16 +107,26 @@ async function openPreview(viewport, label) {
     const peer = { slot: seated, loc: seated, act: "chat", path: [], wait: 4, busy: false, meeting: false, r: { id: 2 } };
     seated.occ = peer;
     const pairedSeatChosen = api.chooseIdleStation({ r: { id: 1 } }, [sameDirection, opposite]) === opposite;
+    const pingPongStation = { kind: "pingpong", slots: [] };
+    const pingSideA = { st: pingPongStation, x: -2.75, z: 0, act: "swing", occ: null };
+    const pingSideB = { st: pingPongStation, x: 2.75, z: 0, act: "swing", occ: null };
+    pingPongStation.slots = [pingSideA, pingSideB];
+    const pingPongPeer = { slot: pingSideA, loc: pingSideA, act: "swing", path: [], wait: 4, busy: false, meeting: false, r: { id: 4 } };
+    pingSideA.occ = pingPongPeer;
+    const pingPongPartnerChosen = api.chooseIdleStation({ r: { id: 3 } }, [pingSideB]) === pingSideB;
     return {
       faceToFace: api.canPairSlots(seated, opposite),
       sameDirectionRejected: !api.canPairSlots(seated, sameDirection),
       pairedSeatChosen,
-      peerWaitReserved: peer.wait >= 60
+      peerWaitReserved: peer.wait >= 60,
+      pingPongPartnerChosen,
+      pingPongPeerReserved: pingPongPeer.wait >= 60
     };
   });
   check(!conversationLogic.error && conversationLogic.faceToFace &&
     conversationLogic.sameDirectionRejected && conversationLogic.pairedSeatChosen &&
-    conversationLogic.peerWaitReserved,
+    conversationLogic.peerWaitReserved && conversationLogic.pingPongPartnerChosen &&
+    conversationLogic.pingPongPeerReserved,
     label + ": Social Hub selects a face-to-face seat and reserves the first guest while the partner arrives; diagnostics=" + JSON.stringify(conversationLogic));
   const liveConversation = await page.evaluate(async () => {
     const { createCharacterSocialLife } = await import("./premium-social-life.js");
@@ -206,6 +216,12 @@ async function openPreview(viewport, label) {
     socialAssets.arcadeInstances >= 8;
   check(socialAssetsReady,
     label + ": social GLB furniture is mounted in the office; diagnostics=" + JSON.stringify(socialAssets));
+  const chessSeatLayout = await page.evaluate(() => window.__chessSeatQA || null);
+  const chessSeatsReady = !!chessSeatLayout && chessSeatLayout.tableCount === 2 &&
+    chessSeatLayout.seatCount === 4 && chessSeatLayout.seats.length === 4 &&
+    chessSeatLayout.seats.every(seat => seat.visible && Number.isFinite(seat.x) && Number.isFinite(seat.z));
+  check(chessSeatsReady,
+    label + ": both chess tables have visible opposing seats in their correct positions; diagnostics=" + JSON.stringify(chessSeatLayout));
   await page.waitForFunction(() => window.__agentNavigationQA?.ready === true &&
     window.__agentNavigationQA.colliderCount > 20, null, { timeout: 15000 });
   const worldNavigation = await page.evaluate(() => window.__agentNavigationQA);
@@ -310,13 +326,16 @@ async function openPreview(viewport, label) {
 
   await page.waitForFunction(() => window.__pingPongAssetQA?.tables === 2, null, { timeout: 15000 });
   const pingPongAssetQA = await page.evaluate(() => window.__pingPongAssetQA);
-  check(pingPongAssetQA.centerLineHidden === 2 && pingPongAssetQA.embeddedBallHidden === 2,
-    label + ": ping-pong center lines and embedded model balls are hidden; diagnostics=" + JSON.stringify(pingPongAssetQA));
+  check(pingPongAssetQA.centerLineHidden === 2 && pingPongAssetQA.embeddedBallHidden === 2 && pingPongAssetQA.paddleCount === 4,
+    label + ": ping-pong lines and duplicate balls are hidden and all four rackets are mounted for animation; diagnostics=" + JSON.stringify(pingPongAssetQA));
 
   const pingPongBehavior = await page.evaluate(() => {
     const api = window.__pingPongLogicQA;
     if (!api) return { error: "ping-pong logic hook unavailable" };
-    const station = { x: 10, z: 20, yaw: 0, slots: [] };
+    const station = {
+      kind: "pingpong", x: 10, z: 20, yaw: 0, pingPongSurfaceY: 1.23, slots: [],
+      pingPongPaddles: [{ rotation: { x: 0, y: 0 } }, { rotation: { x: 0, y: 0 } }]
+    };
     const slotA = { st: station, x: 8, z: 20, occ: null };
     const slotB = { st: station, x: 12, z: 20, occ: null };
     station.slots = [slotA, slotB];
@@ -341,7 +360,7 @@ async function openPreview(viewport, label) {
       position: { x: -1, y: 0, z: -1, set(x, y, z) { this.x = x; this.y = y; this.z = z; } },
       rotation: { x: 0, z: 0 }
     };
-    const item = { station, ball, time: 7, wasPlaying: true, isResting: false };
+    const item = { station, ball, time: 7, wasPlaying: true, isResting: false, surfaceY: 1.23 };
     slotA.occ = null; slotB.occ = null;
     api.updateBall(item, 0.05);
     const restA = [ball.position.x, ball.position.y, ball.position.z];
@@ -349,19 +368,61 @@ async function openPreview(viewport, label) {
     const restB = [ball.position.x, ball.position.y, ball.position.z];
     slotA.occ = playerA; slotB.occ = playerB;
     const rallyStarted = api.updateBall(item, 0.05);
-    const rallyMoves = ball.position.y > 0.945;
+    const rallyAboveTable = ball.position.y > 1.33 && ball.position.y < 1.85;
+    const rallyMovesAcrossTable = Math.abs(ball.position.x - restA[0]) > 0.5;
+    const paddlesSwing = station.pingPongPaddles.every(paddle => Math.abs(paddle.rotation.y) > 0.01);
     playerA.path = [{ x: 0, z: 0 }];
     const rallyStopsWhenPlayerLeaves = api.updateBall(item, 0.05) === false;
+    const paddlesRestWhenIdle = station.pingPongPaddles.every(paddle => Math.abs(paddle.rotation.y) < 0.0001);
     return {
       noneReady, oneReady, bothReady, separatedReady,
       idleStatic: restA.every((v, i) => Math.abs(v - restB[i]) < 0.0001),
-      rallyStarted, rallyMoves, rallyStopsWhenPlayerLeaves
+      ballRestsOnTable: Math.abs(restA[1] - 1.335) < 0.002,
+      rallyStarted, rallyAboveTable, rallyMovesAcrossTable, paddlesSwing,
+      rallyStopsWhenPlayerLeaves, paddlesRestWhenIdle
     };
   });
   check(!pingPongBehavior.error && !pingPongBehavior.noneReady && !pingPongBehavior.oneReady &&
     pingPongBehavior.bothReady && !pingPongBehavior.separatedReady && pingPongBehavior.idleStatic &&
-    pingPongBehavior.rallyStarted && pingPongBehavior.rallyMoves && pingPongBehavior.rallyStopsWhenPlayerLeaves,
-    label + ": ping-pong ball stays still without two players and stops when a player leaves; diagnostics=" + JSON.stringify(pingPongBehavior));
+    pingPongBehavior.ballRestsOnTable && pingPongBehavior.rallyStarted &&
+    pingPongBehavior.rallyAboveTable && pingPongBehavior.rallyMovesAcrossTable &&
+    pingPongBehavior.paddlesSwing && pingPongBehavior.rallyStopsWhenPlayerLeaves &&
+    pingPongBehavior.paddlesRestWhenIdle,
+    label + ": ping-pong ball stays on the tabletop, rallies across it with animated rackets, and stops when a player leaves; diagnostics=" + JSON.stringify(pingPongBehavior));
+
+  const chessBehavior = await page.evaluate(() => {
+    const api = window.__chessLogicQA;
+    if (!api) return { error: "chess animation hook unavailable" };
+    const station = { kind: "chess", slots: [], chessPieces: [
+      { nodes: [{ position: { z: 0 } }, { position: { z: 0 } }], baseZ: [0, 0], direction: 1 },
+      { nodes: [{ position: { z: 0 } }, { position: { z: 0 } }], baseZ: [0, 0], direction: -1 }
+    ] };
+    const slotA = { st: station, x: -1.55, z: 0, act: "chat", occ: null };
+    const slotB = { st: station, x: 1.55, z: 0, act: "chat", occ: null };
+    station.slots = [slotA, slotB];
+    const item = { station, time: 0, wasPlaying: false };
+    const idleDoesNotMove = api.updatePieces(item, 0.5) === false &&
+      station.chessPieces.every(piece => piece.nodes.every(node => node.position.z === 0));
+    const makePlayer = slot => ({
+      act: "chat", busy: false, meeting: false, path: [],
+      slot, loc: slot, g: { position: { x: slot.x, y: 0, z: slot.z } }
+    });
+    slotA.occ = makePlayer(slotA); slotB.occ = makePlayer(slotB);
+    const bothPlayersReady = api.playersAreReady(station);
+    for (let i = 0; i < 23; i++) api.updatePieces(item, 0.05);
+    const whitePawnMoves = Math.abs(station.chessPieces[0].nodes[0].position.z) > 0.10;
+    const blackPawnWaits = Math.abs(station.chessPieces[1].nodes[0].position.z) < 0.001;
+    for (let i = 0; i < 80; i++) api.updatePieces(item, 0.05);
+    const blackPawnMoves = Math.abs(station.chessPieces[1].nodes[0].position.z) > 0.10;
+    slotA.occ.path = [{ x: 0, z: 0 }];
+    const chessStopsWhenPlayerLeaves = api.updatePieces(item, 0.05) === false &&
+      station.chessPieces.every(piece => piece.nodes.every(node => Math.abs(node.position.z) < 0.001));
+    return { idleDoesNotMove, bothPlayersReady, whitePawnMoves, blackPawnWaits, blackPawnMoves, chessStopsWhenPlayerLeaves };
+  });
+  check(!chessBehavior.error && chessBehavior.idleDoesNotMove && chessBehavior.bothPlayersReady &&
+    chessBehavior.whitePawnMoves && chessBehavior.blackPawnWaits && chessBehavior.blackPawnMoves &&
+    chessBehavior.chessStopsWhenPlayerLeaves,
+    label + ": chess pieces take alternating animated turns only when two agents are seated; diagnostics=" + JSON.stringify(chessBehavior));
 
   const canvasBox = await page.locator("#map canvas").boundingBox();
   check(!!canvasBox && canvasBox.width >= viewport.width * 0.7 && canvasBox.height > viewport.height * 0.45, label + ": 3D canvas has usable dimensions");
