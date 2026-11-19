@@ -482,10 +482,12 @@ export function animateSocialCharacter(character, dt) {
     rightZ = -0.12 - gesture * 0.12;
     leftY = -0.06 + Math.sin(t * 0.85 + 1.2) * 0.07;
   } else if (act === "swing") {
-    const stroke = Math.sin(t * 8.2);
+    /* character.t advances at the walking cadence; use a slower phase for
+       a readable paddle stroke instead of a rapid wrist vibration. */
+    const stroke = Math.sin(t * 0.9);
     leftY = -0.2 + stroke * 0.18;
     rightY = 0.22 - stroke * 0.32;
-    leftZ = -0.08 + Math.cos(t * 4.1) * 0.04;
+    leftZ = -0.08 + Math.cos(t * 0.45) * 0.04;
     rightZ = 0.08 + Math.max(0, stroke) * 0.22;
   } else if (act === "type") {
     leftY = -0.1 + Math.sin(t * 12) * 0.035;
