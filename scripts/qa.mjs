@@ -126,7 +126,7 @@ if (!social.includes("updatePingPongBall(item, step)")) fail("Ping-pong ball idl
 if (!html.includes("n.name==='line_long_top'") || !html.includes("n.name==='pingpong_ball'")) fail("Ping-pong center stripe and duplicate GLB ball are not hidden");
 if (["pingPongPlayersAreReady", "updatePingPongBall"].every(name => social.includes(name))) ok("Ping-pong idle state and two-player rally gating");
 if (!social.includes("updateChessAnimation") || !social.includes("chessPawnPair") ||
-    !social.includes("station.ballSurfaceY") || !social.includes("surfaceY + 0.08")) {
+    !social.includes("station.ballSurfaceY") || !social.includes("surfaceY + 0.105")) {
   fail("Visible chess-piece animation and tabletop-height ping-pong ball are missing");
 }
 if (!html.includes("function createChessSeats") || !html.includes("st.chessSeatRig") ||
