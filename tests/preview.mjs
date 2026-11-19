@@ -496,15 +496,20 @@ async function openPreview(viewport, label) {
   check(pingpongStage.staged === true, label + ": two real avatars can be seated at opposite ping-pong ends; diagnostics=" + JSON.stringify(pingpongStage));
   await page.waitForTimeout(450);
   const pingpongBefore = await page.evaluate(() => window.__socialActivityQA?.inspect("pingpong"));
-  await page.waitForTimeout(650);
-  const pingpongAfter = await page.evaluate(() => window.__socialActivityQA?.inspect("pingpong"));
+  const pingpongArmSamples = [pingpongBefore];
+  for (let sample = 0; sample < 7; sample++) {
+    await page.waitForTimeout(110);
+    pingpongArmSamples.push(await page.evaluate(() => window.__socialActivityQA?.inspect("pingpong")));
+  }
+  const pingpongAfter = pingpongArmSamples.at(-1);
   const pingpongBallMoved = pingpongBefore?.ball && pingpongAfter?.ball &&
     Math.hypot(pingpongAfter.ball[0] - pingpongBefore.ball[0],
       pingpongAfter.ball[1] - pingpongBefore.ball[1],
       pingpongAfter.ball[2] - pingpongBefore.ball[2]) > 0.025;
-  const pingpongArmMoved = pingpongBefore?.seats?.every((seat, index) =>
-    Number.isFinite(seat.occupant?.armR) && Number.isFinite(pingpongAfter?.seats?.[index]?.occupant?.armR) &&
-    Math.abs(seat.occupant.armR - pingpongAfter.seats[index].occupant.armR) > 0.025);
+  const pingpongArmMoved = pingpongBefore?.seats?.every((seat, index) => {
+    const range = pingpongArmSamples.map(sample => sample?.seats?.[index]?.occupant?.armRX).filter(Number.isFinite);
+    return range.length >= 6 && Math.max(...range) - Math.min(...range) > 0.18;
+  });
   const pingpongPlayersReady = pingpongAfter?.rallying &&
     pingpongAfter.seats.length === 2 &&
     pingpongAfter.seats.every(seat => seat.occupant?.act === "swing" && Math.abs(seat.occupant.y - 0.14) < 0.08);
