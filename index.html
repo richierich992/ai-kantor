@@ -1305,6 +1305,10 @@ boot = function() {
             visible: !!bubble?.visible,
             kind: bubble?.userData?.currentKind || "",
             content: bubble?.userData?.currentContent || "",
+            positionY: character?.g?.position?.y ?? null,
+            sitLift: character?.slot?.sitLift ?? null,
+            legLeftX: character?.legL?.rotation?.x ?? null,
+            legRightX: character?.legR?.rotation?.x ?? null,
             screen: projected ? { x: projected.x, y: projected.y, z: projected.z } : null
           };
         };
