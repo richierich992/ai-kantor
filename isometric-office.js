@@ -90,9 +90,13 @@ function addSocialInteriors(T,scene,m){
  for(let i=0;i<4;i++){const x=-2.25+i*1.5,stool=new T.Group();stool.position.set(x,0,.95);cafe.add(stool);cyl(T,stool,.25,.12,0,.66,0,m.seat);cyl(T,stool,.055,.64,0,.33,0,m.metal);cyl(T,stool,.3,.055,0,.04,0,m.metal);const foot=new T.Mesh(new T.TorusGeometry(.23,.035,6,18),m.metal);foot.rotation.x=Math.PI/2;foot.position.y=.25;stool.add(foot)}
  bx(T,cafe,1.05,.72,.58,-1.85,1.35,-.03,m.frame);bx(T,cafe,.82,.36,.045,-1.85,1.38,.27,m.accent,false);
  for(let i=0;i<3;i++){cyl(T,cafe,.15,.18,1.25+i*.35,1.12,.12,m.lightDesk);cyl(T,cafe,.13,.07,1.25+i*.35,1.25,.12,m.accent)}
- socialSofa(T,scene,29.4,1.15,m,0.92);
- roundedSlab(T,scene,2.2,1.35,.16,.22,m.wood,29.4,.56,3.0);
- cyl(T,scene,.11,.12,28.8,.72,2.9,m.lightDesk);cyl(T,scene,.11,.12,29.4,.72,2.9,m.lightDesk);
+ // The seating itself uses the repository's social_sofa_v3 GLB pair.
+ // This low table sits between the two sofas in the lounge station.
+ roundedSlab(T,scene,2.25,1.18,.16,.22,m.wood,23.5,.56,3.5);
+ cyl(T,scene,.11,.12,22.85,.72,3.35,m.lightDesk);cyl(T,scene,.11,.12,24.1,.72,3.65,m.lightDesk);
+ // A small stack of magazines makes the shared table read as a usable lounge surface.
+ roundedSlab(T,scene,.55,.34,.035,.06,mat(T,0xe8e1d5),23.5,.67,3.5);
+ roundedSlab(T,scene,.48,.29,.028,.05,mat(T,0x7a9d9c),23.53,.71,3.47);
  const shelf=new T.Group();shelf.name='mockup-reading-bookshelf';shelf.position.set(-40.65,0,15.4);scene.add(shelf);
  bx(T,shelf,2.5,2.55,.26,0,1.27,0,m.frame);for(let y of [.55,1.24,1.93])bx(T,shelf,2.42,.09,.48,0,y,.12,m.wood);
  for(let row=0;row<3;row++)for(let i=0;i<7;i++){const hh=.42+((i*7+row)%2)*.12,book=bx(T,shelf,.2+((i+row)%3)*.035,hh,.32,-.98+i*.32,.78+row*.68,.18,mat(T,[0x4b8992,0xc58d62,0x7387ad,0x8ba77a,0x9f7d9f][(i+row)%5]),false);book.rotation.z=((i%3)-1)*.035}
