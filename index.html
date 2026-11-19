@@ -1187,10 +1187,15 @@ const bootBeforeCharacterSocialLife = boot;
 boot = function() {
   bootBeforeCharacterSocialLife();
   characterSocialLife = createCharacterSocialLife({ THREE, characters: chars });
-  window.__characterSocialQA = characterSocialLife ? {
-    ...characterSocialLife.diagnostics(),
-    chooseIdleStation
-  } : null;
+  if (characterSocialLife) {
+    const socialQA = characterSocialLife.diagnostics();
+    Object.defineProperties(socialQA, {
+      canPairSlots: { value: characterSocialLife.canPairSlots },
+      chooseIdleStation: { value: chooseIdleStation },
+      getActiveConversationCount: { value: characterSocialLife.getActiveConversationCount }
+    });
+    window.__characterSocialQA = socialQA;
+  } else window.__characterSocialQA = null;
   premiumPolish = createPremiumPolish({ THREE, characters: chars });
   window.__premiumPolishQA = premiumPolish ? premiumPolish.diagnostics() : null;
   integrationDiagnostics = createIntegrationDiagnostics({
