@@ -485,7 +485,7 @@ const SLOT={
  garden:[[-3,-1.7,0,1,'chat'],[-2,-1.7,0,1,'chat'],[2,1.7,PI,1,'chat'],[3,1.7,PI,1,'chat'],[-4,0,PI/2,0,'stroll',0,[[-4,0],[4,0]]],[4,0,-PI/2,0,'stroll',0,[[4,0],[-4,0]]]],
 };
 /* model GLB pengganti: [nama, dx, dz, putar, skala] */
-const GLBREP={pingpong:[['ping_pong_table_v2',0,0,0,1.18]],chess:[['chess_table_v2',0,0,0,1.16]],lounge:[['social_sofa_v3',0,-2.2,0,1.2],['social_sofa_v3',0,2.2,PI,1.2]],arcade:[['social_arcade_v3',0,0,0,1.18]],cafe:[['social_cafe_station_v3',0,0,0,1.18]],plant:[['potted_plant',0,0,0,1.35]]};
+const GLBREP={pingpong:[['ping_pong_table_v2',0,0,0,1.32]],chess:[['chess_table_v2',0,0,0,1.26]],lounge:[['social_sofa_v3',0,-2.2,0,1.3],['social_sofa_v3',0,2.2,PI,1.3]],arcade:[['social_arcade_v3',0,0,0,1.3]],cafe:[['social_cafe_station_v3',0,0,0,1.3]],plant:[['potted_plant',0,0,0,1.35]]};
 function addStation(kind,x,z,yaw=0){
  const g=new THREE.Group(),k=new THREE.Group();[g,k].forEach(o=>{o.position.set(x,0,z);o.rotation.y=yaw;scene.add(o)});PROP[kind](g,k);
  const st={kind,x,z,yaw,g,k,slots:[]};
