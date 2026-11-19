@@ -482,13 +482,13 @@ export function animateSocialCharacter(character, dt) {
     rightZ = -0.12 - gesture * 0.12;
     leftY = -0.06 + Math.sin(t * 0.85 + 1.2) * 0.07;
   } else if (act === "swing") {
-    /* character.t advances at the walking cadence; use a slower phase for
-       a readable paddle stroke instead of a rapid wrist vibration. */
-    const stroke = Math.sin(t * 0.9);
+    /* A deliberate paddle stroke with visible shoulder, wrist and follow-through
+       motion. character.t is the agent's own continuous activity clock. */
+    const stroke = Math.sin(t * 0.85);
     leftY = -0.2 + stroke * 0.18;
-    rightY = 0.22 - stroke * 0.32;
-    leftZ = -0.08 + Math.cos(t * 0.45) * 0.04;
-    rightZ = 0.08 + Math.max(0, stroke) * 0.22;
+    rightY = 0.22 - stroke * 0.38;
+    leftZ = -0.08 + Math.cos(t * 0.42) * 0.05;
+    rightZ = 0.08 + Math.max(0, stroke) * 0.28;
   } else if (act === "type") {
     leftY = -0.1 + Math.sin(t * 12) * 0.035;
     rightY = 0.1 + Math.cos(t * 12) * 0.035;
@@ -502,12 +502,25 @@ export function animateSocialCharacter(character, dt) {
   }
 
   if (character.armL) {
-    character.armL.rotation.y += (leftY - character.armL.rotation.y) * blend;
-    character.armL.rotation.z += (leftZ - character.armL.rotation.z) * blend;
+    if (act === "swing") {
+      character.armL.rotation.y = leftY;
+      character.armL.rotation.z = leftZ;
+      character.armL.rotation.x = -0.92 + Math.sin(t * 0.85 + 0.95) * 0.22;
+    } else {
+      character.armL.rotation.y += (leftY - character.armL.rotation.y) * blend;
+      character.armL.rotation.z += (leftZ - character.armL.rotation.z) * blend;
+    }
   }
   if (character.armR) {
-    character.armR.rotation.y += (rightY - character.armR.rotation.y) * blend;
-    character.armR.rotation.z += (rightZ - character.armR.rotation.z) * blend;
+    if (act === "swing") {
+      const stroke = Math.sin(t * 0.85);
+      character.armR.rotation.y = rightY;
+      character.armR.rotation.z = rightZ;
+      character.armR.rotation.x = -0.96 + Math.cos(t * 0.85) * 0.42;
+    } else {
+      character.armR.rotation.y += (rightY - character.armR.rotation.y) * blend;
+      character.armR.rotation.z += (rightZ - character.armR.rotation.z) * blend;
+    }
   }
 
   const seated = inSlot && !!character.slot?.sit;
