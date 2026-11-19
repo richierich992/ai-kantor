@@ -435,6 +435,13 @@ async function openPreview(viewport, label) {
     const bListens = state?.b?.visible && state.b.content === "•••";
     return state?.activeCount === 1 && ((aSpeaks && bListens) || (bSpeaks && aListens));
   }, null, { timeout: 10000 });
+  /* Let the seated transition finish before measuring the final pose. */
+  await page.waitForFunction(() => {
+    const state = window.__characterSocialQA?.demoConversationState?.();
+    return [state?.a, state?.b].every(person =>
+      Number.isFinite(person?.legL) && Number.isFinite(person?.legR) &&
+      person.legL < -0.72 && person.legR < -0.72);
+  }, null, { timeout: 3500 });
   const realFirstTurn = await page.evaluate(() => window.__characterSocialQA.demoConversationState());
   const firstSpeaker = realFirstTurn.a.kind === "text" ? "a" : "b";
   check((realFirstTurn.a.kind === "text" && realFirstTurn.b.content === "•••") ||
@@ -455,7 +462,7 @@ async function openPreview(viewport, label) {
   });
   const loungeSitPose = loungeSeating.every(person =>
     Number.isFinite(person.legL) && Number.isFinite(person.legR) &&
-    person.legL < -0.35 && person.legR < -0.35);
+    person.legL < -0.72 && person.legR < -0.72);
   check(loungeSeatAlignment && loungeFrontApproach && loungeSitPose,
     label + ": lounge avatars sit at cushion height, bend their legs and approach from the open front of the sofa; diagnostics=" +
       JSON.stringify(loungeSeating));
@@ -495,13 +502,16 @@ async function openPreview(viewport, label) {
     Math.hypot(pingpongAfter.ball[0] - pingpongBefore.ball[0],
       pingpongAfter.ball[1] - pingpongBefore.ball[1],
       pingpongAfter.ball[2] - pingpongBefore.ball[2]) > 0.025;
+  const pingpongArmMoved = pingpongBefore?.seats?.every((seat, index) =>
+    Number.isFinite(seat.occupant?.armR) && Number.isFinite(pingpongAfter?.seats?.[index]?.occupant?.armR) &&
+    Math.abs(seat.occupant.armR - pingpongAfter.seats[index].occupant.armR) > 0.025);
   const pingpongPlayersReady = pingpongAfter?.rallying &&
     pingpongAfter.seats.length === 2 &&
     pingpongAfter.seats.every(seat => seat.occupant?.act === "swing" && Math.abs(seat.occupant.y - 0.14) < 0.08);
   const pingpongOnTable = pingpongAfter?.ball && pingpongAfter.ballSurfaceY != null &&
     pingpongAfter.ball[1] >= pingpongAfter.ballSurfaceY - 0.01;
-  check(pingpongPlayersReady && pingpongBallMoved && pingpongOnTable,
-    label + ": two players trigger a visible ping-pong rally with the ball above the tabletop; diagnostics=" +
+  check(pingpongPlayersReady && pingpongBallMoved && pingpongArmMoved && pingpongOnTable,
+    label + ": two players trigger a visible ping-pong rally, paddle arm motion and a ball above the tabletop; diagnostics=" +
       JSON.stringify({ before: pingpongBefore, after: pingpongAfter }));
 
   const chessStage = await page.evaluate(() => window.__socialActivityQA?.stagePair("chess") || { staged: false });
