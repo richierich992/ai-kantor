@@ -246,26 +246,34 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
           if (last != null && now - last < 60000) continue;
           const scriptIndex = Math.abs(Number(a.r?.id || 0) * 7 + Number(b.r?.id || 0) * 11) % CONVERSATION_SCRIPTS.length;
           conversation = {
-            a, b, startedAt: now,
+            a, b, startedAt: now, turnStartedAt: now, turnIndex: 0,
             script: CONVERSATION_SCRIPTS[scriptIndex]
           };
-          /* Keep both guests seated until every dialogue turn has finished.
-             roam() uses character.wait as the Social Hub dwell timer. */
-          const conversationHold = conversation.script.length * 2.7 + 3;
+          /* Give each line enough time to read and keep both guests seated.
+             The dwell timer is in seconds; never fast-forward through lines
+             when a low-frame-rate device misses an animation frame. */
+          const turnDurationSeconds = 4.5;
+          const conversationHold = conversation.script.length * turnDurationSeconds + 3;
           [a, b].forEach(character => {
             character.wait = Math.max(Number(character.wait) || 0, conversationHold);
           });
           conversations.set(key, conversation);
         }
 
-        const turnIndex = Math.floor((now - conversation.startedAt) / 2700);
-        if (turnIndex >= conversation.script.length) {
-          conversations.delete(key);
-          cooldowns.set("c:" + key, now);
-          continue;
+        const turnDurationMs = 4500;
+        if (now - conversation.turnStartedAt >= turnDurationMs) {
+          if (conversation.turnIndex >= conversation.script.length - 1) {
+            conversations.delete(key);
+            cooldowns.set("c:" + key, now);
+            continue;
+          }
+          /* Advance exactly one turn per update. A suspended or slow frame
+             must not skip dialogue that the other agent has not spoken yet. */
+          conversation.turnIndex += 1;
+          conversation.turnStartedAt = now;
         }
 
-        const turn = conversation.script[turnIndex];
+        const turn = conversation.script[conversation.turnIndex];
         const speaker = turn.speaker === 0 ? conversation.a : conversation.b;
         const listener = turn.speaker === 0 ? conversation.b : conversation.a;
         cues.set(speaker, { kind: "text", content: turn.text });
