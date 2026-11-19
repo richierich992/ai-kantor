@@ -262,7 +262,7 @@ async function openPreview(viewport, label) {
   }));
   check(socialCamera.active && socialCamera.preset === "social" &&
     Array.isArray(socialCamera.target) && socialCamera.target[0] === -37.2 &&
-    socialCamera.fov === (innerWidth / innerHeight < 0.85 ? 42 : 32),
+    socialCamera.fov === (viewport.width / viewport.height < 0.85 ? 42 : 32),
     label + ": Social Hub close-up camera preset is applied; diagnostics=" + JSON.stringify(socialCamera));
   const stagedPair = await page.evaluate(() => window.__characterSocialQA?.stageDemoConversation?.() || { staged: false });
   check(stagedPair.staged === true && stagedPair.station === "lounge" && stagedPair.agentIds?.length === 2,
