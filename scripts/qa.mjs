@@ -104,6 +104,9 @@ if (!navigation.includes("findGridPath") ||
 if (!html.includes("agentNavigation.routePath(c.g.position") ||
     !html.includes("agentNavigation.rebuild()") ||
     !html.includes("window.__agentNavigationQA")) fail("Agent movement is not connected to live obstacle navigation");
+if (!html.includes("{id:'research_intelligence',box:[33,41,-26,-18]") ||
+    !html.includes("{id:'hr_admin',box:[33,41,-15,-7]")) fail("Research-to-HR walking corridor must retain at least a 3m gap");
+
 
 const socialLife = read("premium-social-life.js");
 if (!socialLife.includes("areConversationSlotsCompatible") ||
