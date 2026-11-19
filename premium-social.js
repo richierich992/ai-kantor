@@ -141,7 +141,8 @@ function createPingPongBall(THREE, scene, station) {
     ball,
     time: 0,
     wasPlaying: false,
-    isResting: false
+    isResting: false,
+    surfaceY: Number(station.pingPongSurfaceY) || 1.23
   };
 }
 
@@ -169,17 +170,22 @@ export function updatePingPongBall(item, dt) {
   const station = item.station;
   const ball = item.ball;
   const playing = pingPongPlayersAreReady(station);
+  const surfaceY = Number(item.surfaceY) || 1.23;
 
   ball.visible = true;
   if (!playing) {
     if (!item.isResting) {
-      const [rx, rz] = rotated(station.yaw || 0, -0.9, 0.24);
-      ball.position.set(station.x + rx, 0.945, station.z + rz);
+      const [rx, rz] = rotated(station.yaw || 0, -0.92, 0.2);
+      ball.position.set(station.x + rx, surfaceY + 0.105, station.z + rz);
       ball.rotation.x = 0;
       ball.rotation.z = 0;
       item.isResting = true;
     }
     item.wasPlaying = false;
+    (station.pingPongPaddles || []).forEach(paddle => {
+      paddle.rotation.y = 0;
+      paddle.rotation.x = 0;
+    });
     return false;
   }
 
@@ -190,19 +196,82 @@ export function updatePingPongBall(item, dt) {
   }
   item.time += step * 2.8;
 
-  /* Small lateral variation keeps the rally from looking like a rigid line. */
+  /* The rally travels across the full table and remains above the GLB tabletop. */
   const [rx, rz] = rotated(
     station.yaw || 0,
-    Math.sin(item.time) * 0.98,
-    Math.sin(item.time * 0.75) * 0.2
+    Math.sin(item.time) * 1.34,
+    Math.sin(item.time * 0.75) * 0.12
   );
   ball.position.set(
     station.x + rx,
-    0.98 + Math.abs(Math.sin(item.time * 1.75)) * 0.58,
+    surfaceY + 0.12 + Math.abs(Math.sin(item.time * 1.75)) * 0.42,
     station.z + rz
   );
   ball.rotation.x += step * 4;
   ball.rotation.z += step * 2.7;
+
+  /* Both rackets swing in alternating strokes while the two guests are playing. */
+  (station.pingPongPaddles || []).forEach((paddle, index) => {
+    const phase = item.time * 4.2 + index * Math.PI;
+    paddle.rotation.y = Math.sin(phase) * 0.42;
+    paddle.rotation.x = 0.12 + Math.max(0, Math.sin(phase)) * 0.16;
+  });
+  return true;
+}
+
+export function chessPlayersAreReady(station) {
+  if (station?.kind !== "chess") return false;
+  const players = (station.slots || []).filter(slot => {
+    const player = slot?.occ;
+    const position = player?.g?.position;
+    if (!player || slot?.st !== station || player.slot !== slot || player.loc !== slot) return false;
+    if (player.act !== "chat" || player.busy || player.meeting || player.path?.length) return false;
+    if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.z)) return false;
+    return Math.hypot(position.x - slot.x, position.z - slot.z) <= 0.65;
+  });
+  return players.length >= 2;
+}
+
+function chessMovePulse(time, start, hold, duration) {
+  const phase = time - start;
+  if (phase <= 0 || phase >= duration * 2 + hold) return 0;
+  const smooth = value => {
+    const t = Math.max(0, Math.min(1, value));
+    return t * t * (3 - 2 * t);
+  };
+  if (phase < duration) return smooth(phase / duration);
+  if (phase < duration + hold) return 1;
+  return 1 - smooth((phase - duration - hold) / duration);
+}
+
+export function updateChessPieces(item, dt) {
+  if (!item?.station) return false;
+  const station = item.station;
+  const pieces = station.chessPieces || [];
+  if (!pieces.length) return false;
+
+  const step = Math.min(0.05, Math.max(0, dt || 0));
+  const playing = chessPlayersAreReady(station);
+  if (!playing) {
+    item.time = 0;
+    item.wasPlaying = false;
+    pieces.forEach(piece => piece.nodes.forEach((node, index) => {
+      node.position.z = piece.baseZ[index];
+    }));
+    return false;
+  }
+
+  item.time += step;
+  const cycle = item.time % 8;
+  const white = chessMovePulse(cycle, 0.4, 1.6, 0.8) * 0.135;
+  const black = chessMovePulse(cycle, 4.0, 1.6, 0.8) * -0.135;
+  pieces.forEach((piece, index) => {
+    const offset = index === 0 ? white : black;
+    piece.nodes.forEach((node, nodeIndex) => {
+      node.position.z = piece.baseZ[nodeIndex] + offset;
+    });
+  });
+  item.wasPlaying = true;
   return true;
 }
 
@@ -265,12 +334,17 @@ export function enhanceSocialHub(THREE, scene, stations) {
       playersAreReady: pingPongPlayersAreReady,
       updateBall: updatePingPongBall
     };
+    window.__chessLogicQA = {
+      playersAreReady: chessPlayersAreReady,
+      updatePieces: updateChessPieces
+    };
   }
   if (scene.userData.premiumSocialPhase4) return null;
   scene.userData.premiumSocialPhase4 = true;
 
   const decor = [];
   const pingPong = [];
+  const chessboards = (stations || []).filter(station => station.kind === "chess").map(station => ({ station, time: 0, wasPlaying: false }));
   const steam = [];
   const labels = [];
   const arcadeStations = (stations || []).filter(s => s.kind === "arcade");
@@ -345,7 +419,7 @@ export function enhanceSocialHub(THREE, scene, stations) {
     baseY: 5.9, phase: 2.9
   });
 
-  scene.userData.premiumSocialDecor = { decor, pingPong, steam, labels };
+  scene.userData.premiumSocialDecor = { decor, pingPong, chessboards, steam, labels };
   return scene.userData.premiumSocialDecor;
 }
 
@@ -373,6 +447,7 @@ export function updateSocialHub(scene, dt, elapsedSeconds) {
   });
 
   state.pingPong.forEach(item => updatePingPongBall(item, step));
+  (state.chessboards || []).forEach(item => updateChessPieces(item, step));
 
   state.steam.forEach(group => {
     group.particles.forEach(particle => {
@@ -407,10 +482,12 @@ export function animateSocialCharacter(character, dt) {
     rightZ = -0.12 - gesture * 0.12;
     leftY = -0.06 + Math.sin(t * 0.85 + 1.2) * 0.07;
   } else if (act === "swing") {
-    leftY = -0.16 + Math.sin(t * 8.2) * 0.12;
-    rightY = 0.16 - Math.sin(t * 8.2) * 0.12;
-    leftZ = -0.05;
-    rightZ = 0.05;
+    const pingPong = character.slot?.st?.kind === "pingpong";
+    const stroke = Math.sin(t * 3.2);
+    leftY = pingPong ? -0.22 + stroke * 0.34 : -0.16 + Math.sin(t * 8.2) * 0.12;
+    rightY = pingPong ? 0.22 - stroke * 0.34 : 0.16 - Math.sin(t * 8.2) * 0.12;
+    leftZ = pingPong ? -0.14 + stroke * 0.08 : -0.05;
+    rightZ = pingPong ? 0.14 - stroke * 0.08 : 0.05;
   } else if (act === "type") {
     leftY = -0.1 + Math.sin(t * 12) * 0.035;
     rightY = 0.1 + Math.cos(t * 12) * 0.035;
