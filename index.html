@@ -313,7 +313,7 @@ function roam(c,dt){
   if(!free.length||away>=Math.ceil(D.length*.55)){c.wait=10;return}
   const sl=chooseIdleStation(c,free)||pick(free);sl.occ=c;c.slot=sl;
   go(c,sl,V3(sl.x,0,sl.z),sl.face);
-  c.done=()=>{c.yoff=(sl.sit?-.34:0)+sl.dy;c.act=sl.act;c.work=false;if(sl.route.length){c.stroll=sl.route;c.si=0}};
+  c.done=()=>{c.yoff=sl.sit?(Number(sl.sitLift)||0):sl.dy;c.act=sl.act;c.work=false;if(sl.route.length){c.stroll=sl.route;c.si=0}};
   c.wait=rnd(20,45);
  }else{
   go(c,r,r.spot,r.yaw+PI);
@@ -336,9 +336,16 @@ function step(c,dt){
  else if(c.face!=null)turn(c,c.face,dt*8);
  const A=c.act,fast=!mvg&&(A==='run'||A==='lift'||A==='swing'||A==='shoot');
  c.t+=dt*(mvg||fast?9:1);const s=mvg?Math.sin(c.t)*.7:0,ty=!mvg&&(c.work||A==='type');
- if(c.legL)c.legL.rotation.x=A==='run'&&!mvg?Math.sin(c.t)*.8:s;if(c.legR)c.legR.rotation.x=A==='run'&&!mvg?-Math.sin(c.t)*.8:-s;
+ const seated=!!(c.slot?.sit&&!mvg);
+ if(c.legL)c.legL.rotation.x=seated?-1.08:(A==='run'&&!mvg?Math.sin(c.t)*.8:s);
+ if(c.legR)c.legR.rotation.x=seated?-1.08:(A==='run'&&!mvg?-Math.sin(c.t)*.8:-s);
  let aL=Math.sin(c.t)*.04,aR=-Math.sin(c.t)*.04;
  if(mvg){aL=-s;aR=s}
+ else if(A==='swing'&&c.slot?.st?.kind==='pingpong'){
+  const stroke=Math.sin(c.t*1.15);
+  aL=-.24-Math.max(0,-stroke)*.95;
+  aR=-.24-Math.max(0,stroke)*1.1;
+ }
  else if(A==='swing'){aL=-.9+Math.sin(c.t*.9)*.5;aR=-.9+Math.cos(c.t*.9)*.5}
  else if(A==='run'){aL=-Math.sin(c.t)*.9;aR=Math.sin(c.t)*.9}
  else if(A==='lift'){aL=aR=-1.3+Math.sin(c.t*.7)*.7}
@@ -346,6 +353,7 @@ function step(c,dt){
  else if(A==='read'){aL=aR=-1.0+Math.sin(c.t*.8)*.04}
  else if(A==='stretch'){aL=aR=-2.7+Math.sin(c.t*.6)*.25}
  else if(ty){aL=-1.2+Math.sin(c.t*14)*.12;aR=-1.2+Math.cos(c.t*14)*.12}
+ if(seated){aL=-.34+Math.sin(c.t*.65)*.025;aR=-.34+Math.cos(c.t*.65)*.025}
  if(c.armL)c.armL.rotation.x=aL;if(c.armR)c.armR.rotation.x=aR;
  c.g.position.y=.14+(c.yoff||0)+(mvg?Math.abs(Math.sin(c.t))*.1:0);
  roam(c,dt);
@@ -444,7 +452,7 @@ const sign=(w,h,l1,l2,bg)=>{const c=cv(512,Math.round(512*h/w)),x=c.getContext('
 const PROP={
  pingpong:(g,k)=>{box(2.7,.12,1.5,0x1e3a5f,0,.8,0,g);[[-1.2,-.6],[1.2,-.6],[-1.2,.6],[1.2,.6]].forEach(([a,b])=>box(.1,.8,.1,0x64748b,a,.4,b,g));box(.04,.3,1.5,0xffffff,0,.97,0,g)},
  chess:(g,k)=>{box(1.4,.1,1.4,0x5a3c20,0,.8,0,g);box(.12,.8,.12,0x64748b,0,.4,0,g);box(1.2,.04,1.2,0xd6c4a2,0,.87,0,g);[[-.3,-.2],[.3,.2],[-.1,.3]].forEach(([a,b],i)=>box(.15,.3,.15,i%2?0xffffff:0x111827,a,1.05,b,g));
-  [-1.2,1.2].forEach(a=>{const s=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.5,14),M(0x475569));s.position.set(a,.25,0);k.add(s)})},
+  const seats=[];[-1,1].forEach(side=>{const chair=new THREE.Group();chair.name='chess-seat-'+(side<0?'west':'east');chair.position.set(side*1.55,0,0);box(.96,.14,.78,0x475569,0,.66,0,chair);box(.14,.78,.82,0x2563eb,side*.42,1.08,0,chair);[-.34,.34].forEach(dx=>[-.27,.27].forEach(dz=>box(.11,.66,.11,0x64748b,dx,.33,dz,chair)));k.add(chair);seats.push(chair)});k.userData.chessSeatGroups=seats},
  lounge:(g,k)=>{box(1.8,.5,1.8,0x8b6b4a,0,.25,0,k);box(2.8,.55,.9,0x3b82f6,0,.28,-2.2,g);box(2.8,.9,.25,0x2563eb,0,.6,-2.7,g);box(2.8,.55,.9,0x3b82f6,0,.28,2.2,g);box(2.8,.9,.25,0x2563eb,0,.6,2.7,g)},
  arcade:(g,k)=>{box(1,1.8,.8,0x111827,0,.9,0,g);box(.8,.55,.06,0x0ea5e9,0,1.4,.42,g);box(.7,.12,.5,0x334155,0,.95,.5,g)},
  cafe:(g,k)=>{box(3,1.1,.9,0x7a5a38,0,.55,0,g);box(3.1,.08,1,0xd6c4a2,0,1.12,0,g);box(.5,.6,.4,0x0f172a,-.8,1.45,0,g);box(.3,.3,.3,0xffffff,.6,1.3,0,g)},
@@ -479,8 +487,8 @@ const PROP={
 /* slot lokal: [dx,dz,hadap,duduk?,aktivitas,naik?,rute jalan-jalan]. hadap 0 = menghadap +z */
 const SLOT={
  pingpong:[[-2.75,0,PI/2,0,'swing'],[2.75,0,-PI/2,0,'swing']],
- chess:[[-1.85,0,PI/2,1,'chat'],[1.85,0,-PI/2,1,'chat']],
- lounge:[[-.7,-2.1,0,1,'chat'],[.7,-2.1,0,1,'chat'],[-.7,2.1,PI,1,'chat'],[.7,2.1,PI,1,'chat']],
+ chess:[[-1.55,0,PI/2,1,'chat'],[1.55,0,-PI/2,1,'chat']],
+ lounge:[[-.7,-2.02,0,1,'chat'],[.7,-2.02,0,1,'chat'],[-.7,2.02,PI,1,'chat'],[.7,2.02,PI,1,'chat']],
  arcade:[[0,1.4,PI,0,'type']],
  cafe:[[-.8,1.5,PI,0,'chat'],[.8,1.5,PI,0,'chat']],
  plant:[],
@@ -497,9 +505,9 @@ const SLOT={
 const GLBREP={pingpong:[['ping_pong_table_v2',0,0,0,1.46]],chess:[['chess_table_v2',0,0,0,1.38]],lounge:[['social_sofa_v3',0,-2.2,0,1.42],['social_sofa_v3',0,2.2,PI,1.42]],arcade:[['social_arcade_v3',0,0,0,1.48]],cafe:[['social_cafe_station_v3',0,0,0,1.38]],plant:[['potted_plant',0,0,0,1.35]]};
 function addStation(kind,x,z,yaw=0){
  const g=new THREE.Group(),k=new THREE.Group();[g,k].forEach(o=>{o.position.set(x,0,z);o.rotation.y=yaw;scene.add(o)});PROP[kind](g,k);
- const st={kind,x,z,yaw,g,k,slots:[]};
+ const st={kind,x,z,yaw,g,k,slots:[],pingPongSurfaceY:kind==='pingpong'?1.23:undefined};
  SLOT[kind].forEach(([dx,dz,f,sit,act,dy,route])=>{const [wx,wz]=rot(yaw,dx,dz),L=Math.hypot(dx,dz)||1,[ox,oz]=rot(yaw,dx/L*1.6,dz/L*1.6);
-  st.slots.push({st,x:x+wx,z:z+wz,face:f+yaw,sit,act,dy:dy||0,occ:null,appr:V3(x+wx+ox,0,z+wz+oz),
+  st.slots.push({st,x:x+wx,z:z+wz,face:f+yaw,sit,act,dy:dy||0,sitLift:sit&&kind==='lounge'?.30:0,occ:null,appr:V3(x+wx+ox,0,z+wz+oz),
    route:(route||[]).map(([a,b])=>{const [rx,rz]=rot(yaw,a,b);return V3(x+rx,0,z+rz)})})});
  STN.push(st);return st}
 function buildHall(){
@@ -526,18 +534,43 @@ function buildHrPlaceholder(){const g=new THREE.Group();g.name='legacy-hr-placeh
  const m=sign(1.5,.8,'HR & Administrasi',['Belum ada agen','(direncanakan)'],'#8a4fd8');m.position.set(0,1.55,-2.4);g.add(m);box(1.6,.9,.06,0x111827,0,1.55,-2.45,g);
  tree(g,3,-3);}
 /* net ping pong pada model v2 terpasang memanjang di sumbu panjang meja: pindahkan ke tengah, melintang */
-function fixPingPong(o){
- const qa=window.__pingPongAssetQA||(window.__pingPongAssetQA={tables:0,centerLineHidden:0,embeddedBallHidden:0});
- qa.tables++;
- o.traverse(n=>{
-  if(n.name==='line_long_top'){n.visible=false;qa.centerLineHidden++}
-  else if(n.name==='pingpong_ball'){n.visible=false;qa.embeddedBallHidden++}
-  else if(n.name==='net_mesh'||n.name==='net_tape'){n.rotation.y+=PI/2;n.scale.x*=1.66/2.72}
-  else if(/^net_post_/.test(n.name)&&n.geometry){n.geometry.computeBoundingBox();const gx=n.geometry.boundingBox.getCenter(new THREE.Vector3()).x;n.position.set(-gx,0,Math.sign(gx||1)*.83)}
- })
+function fixPingPong(o,station){
+  const qa=window.__pingPongAssetQA||(window.__pingPongAssetQA={tables:0,centerLineHidden:0,embeddedBallHidden:0,paddleCount:0});
+  qa.tables++;
+  o.traverse(n=>{
+   if(n.name==='line_long_top'){n.visible=false;qa.centerLineHidden++}
+   else if(n.name==='pingpong_ball'){n.visible=false;qa.embeddedBallHidden++}
+   else if(n.name==='net_mesh'||n.name==='net_tape'){n.rotation.y+=PI/2;n.scale.x*=1.66/2.72}
+   else if(/^net_post_/.test(n.name)&&n.geometry){n.geometry.computeBoundingBox();const gx=n.geometry.boundingBox.getCenter(new THREE.Vector3()).x;n.position.set(-gx,0,Math.sign(gx||1)*.83)}
+  });
+  const paddles=[
+   {names:['paddle_head_0','paddle_handle_0'],pivot:[-1.05,.84,.12]},
+   {names:['paddle_head_1','paddle_handle_1'],pivot:[1.05,.84,-.12]}
+  ];
+  station.pingPongPaddles=[];
+  paddles.forEach((spec,index)=>{const pivot=new THREE.Group();pivot.name='animated-pingpong-paddle-'+index;pivot.position.set(...spec.pivot);o.add(pivot);o.updateMatrixWorld(true);spec.names.forEach(name=>{const part=o.getObjectByName(name);if(part)pivot.attach(part)});station.pingPongPaddles.push(pivot)});
+  qa.paddleCount+=station.pingPongPaddles.filter(p=>p.children.length>0).length;
 }
-function dressHub(){STN.forEach(st=>{const rep=GLBREP[st.kind];if(!rep||!rep.every(r=>GLB[r[0]]))return;
- st.g.visible=false;if(st.k)st.k.visible=false;rep.forEach(([n,dx,dz,ry,s])=>{const [wx,wz]=rot(st.yaw,dx,dz),o=put(n,scene,st.x+wx,st.z+wz,st.yaw+ry,s);if(o&&n==='ping_pong_table_v2')fixPingPong(o)})})}
+function prepareChessBoard(o,station){
+  const specs=[
+   {names:['white_pawn_base_4','white_pawn_head_4'],direction:1},
+   {names:['black_pawn_base_3','black_pawn_head_3'],direction:-1}
+  ];
+  station.chessPieces=specs.map(spec=>{const nodes=spec.names.map(name=>o.getObjectByName(name)).filter(Boolean);return{nodes,baseZ:nodes.map(node=>node.position.z),direction:spec.direction}}).filter(piece=>piece.nodes.length===2);
+}
+function dressHub(){
+  const qaMode=new URLSearchParams(location.search).get('qa')==='1';
+  const chessQA=qaMode?{tableCount:0,seatCount:0,piecePairCount:0,allVisible:true,seats:[]}:null;
+  STN.forEach(st=>{const rep=GLBREP[st.kind];if(!rep||!rep.every(r=>GLB[r[0]]))return;
+   st.g.visible=false;
+   if(st.kind==='chess'){
+    st.k.visible=true;st.chessSeatGroups=st.k.userData.chessSeatGroups||[];
+    if(chessQA){st.k.updateMatrixWorld(true);chessQA.tableCount++;chessQA.seatCount+=st.chessSeatGroups.length;st.chessSeatGroups.forEach(seat=>{const p=seat.getWorldPosition(new THREE.Vector3());chessQA.seats.push({x:p.x,z:p.z,visible:st.k.visible&&seat.visible})});}
+   }else if(st.k)st.k.visible=false;
+   rep.forEach(([n,dx,dz,ry,s])=>{const [wx,wz]=rot(st.yaw,dx,dz),o=put(n,scene,st.x+wx,st.z+wz,st.yaw+ry,s);if(o&&n==='ping_pong_table_v2')fixPingPong(o,st);if(o&&n==='chess_table_v2'){prepareChessBoard(o,st);if(chessQA)chessQA.piecePairCount+=st.chessPieces?.length||0}})
+  });
+  if(chessQA)window.__chessSeatQA=chessQA;
+ }
 
 /* ===== lalu lintas jalan raya ===== */
 const GC={},MC={},TC={},CARC=[0x1d4ed8,0xdc2626,0xf8fafc,0x111827,0xf59e0b,0x16a34a,0x7c3aed,0x94a3b8,0xea580c];
@@ -1254,7 +1287,7 @@ boot = function() {
           character.act = "chat";
           character.face = slot.face;
           character.wait = 60;
-          character.yoff = (slot.sit ? -0.34 : 0) + (slot.dy || 0);
+          character.yoff = slot.sit ? (Number(slot.sitLift) || 0) : (slot.dy || 0);
           character.g.position.set(slot.x, 0.14 + (character.yoff || 0), slot.z);
           character.g.rotation.y = slot.face;
           slot.occ = character;
@@ -1273,6 +1306,10 @@ boot = function() {
             visible: !!bubble?.visible,
             kind: bubble?.userData?.currentKind || "",
             content: bubble?.userData?.currentContent || "",
+            positionY: character?.g?.position?.y ?? null,
+            sitLift: character?.slot?.sitLift ?? null,
+            legLeftX: character?.legL?.rotation?.x ?? null,
+            legRightX: character?.legR?.rotation?.x ?? null,
             screen: projected ? { x: projected.x, y: projected.y, z: projected.z } : null
           };
         };
@@ -1326,7 +1363,7 @@ function applyMockupOffice() {
     if(new URLSearchParams(location.search).get("qa")==="1" && agentNavigation){
       window.__agentNavigationTest={
         agentHome:id=>chars[id]?.r?.spot?.toArray?.()||null,
-        stations:()=>STN.map(st=>({kind:st.kind,x:st.x,z:st.z,slots:st.slots.map(slot=>({seat:[slot.x,0,slot.z],approach:slot.appr.toArray()}))})),
+        stations:()=>STN.map(st=>({kind:st.kind,x:st.x,z:st.z,pingPongSurfaceY:st.pingPongSurfaceY??null,chessSeatCount:st.chessSeatGroups?.length||0,slots:st.slots.map(slot=>({seat:[slot.x,0,slot.z],approach:slot.appr.toArray(),sit:!!slot.sit,sitLift:slot.sitLift||0,act:slot.act,face:slot.face}))})),
         plan:(start,waypoints,options={})=>{
           const from=new THREE.Vector3(...start);
           const targets=(waypoints||[]).map(value=>new THREE.Vector3(...value));
