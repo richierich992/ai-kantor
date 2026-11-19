@@ -116,6 +116,43 @@ async function openPreview(viewport, label) {
     conversationLogic.sameDirectionRejected && conversationLogic.pairedSeatChosen &&
     conversationLogic.peerWaitReserved,
     label + ": Social Hub selects a face-to-face seat and reserves the first guest while the partner arrives; diagnostics=" + JSON.stringify(conversationLogic));
+  const liveConversation = await page.evaluate(async () => {
+    const { createCharacterSocialLife } = await import("./premium-social-life.js");
+    const THREE = await import("three");
+    const makeCharacter = id => ({
+      r: { id, name: "QA Agent " + id },
+      g: new THREE.Group(),
+      act: "chat", path: [], busy: false, meeting: false,
+      slot: null, loc: null, work: false
+    });
+    const a = makeCharacter(101);
+    const b = makeCharacter(102);
+    const station = { slots: [] };
+    const seatA = { st: station, x: 0, z: -2.1, face: 0, act: "chat", occ: a };
+    const seatB = { st: station, x: 0, z: 2.1, face: Math.PI, act: "chat", occ: b };
+    station.slots = [seatA, seatB];
+    a.slot = seatA; a.loc = seatA;
+    b.slot = seatB; b.loc = seatB;
+    const life = createCharacterSocialLife({ THREE, characters: { 101: a, 102: b } });
+    life.update(0.016, 0);
+    const first = {
+      active: life.getActiveConversationCount(),
+      aSpeaks: a.lifeBubble.userData.currentKind === "text" && !!a.lifeBubble.userData.currentContent,
+      bListens: a.lifeBubble.userData.currentKind === "text" && b.lifeBubble.userData.currentContent === "👂"
+    };
+    await new Promise(resolve => setTimeout(resolve, 2750));
+    life.update(0.016, 2.75);
+    const second = {
+      active: life.getActiveConversationCount(),
+      bSpeaks: b.lifeBubble.userData.currentKind === "text" && !!b.lifeBubble.userData.currentContent,
+      aListens: a.lifeBubble.userData.currentKind === "icon" && a.lifeBubble.userData.currentContent === "👂"
+    };
+    return { first, second };
+  });
+  check(liveConversation.first.active === 1 && liveConversation.first.aSpeaks &&
+    liveConversation.first.bListens && liveConversation.second.active === 1 &&
+    liveConversation.second.bSpeaks && liveConversation.second.aListens,
+    label + ": two seated agents exchange visible dialogue turns and switch speaker/listener; diagnostics=" + JSON.stringify(liveConversation));
   const polish = await page.evaluate(() => window.__premiumPolishQA);
   check(!!polish && polish.characterCount >= 10, label + ": premium character polish initializes");
   const integration = await page.evaluate(() => window.__integrationHealthQA);
