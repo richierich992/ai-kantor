@@ -1,3 +1,5 @@
+import { areConversationSlotsCompatible } from "./premium-social-life.js";
+
 /* Living Office — Phase 8
  * Purpose-led idle routing, backend-backed workstation monitors, coordinated
  * multi-division briefings, and Jakarta-time ambience.
@@ -22,6 +24,24 @@ function roleGroup(agentId) {
 /** Choose a free Social Hub slot using the agent's work profile. */
 export function chooseIdleStation(character, freeSlots = []) {
   if (!freeSlots.length) return null;
+
+  /* A nearby unoccupied seat facing an existing social guest gets priority.
+     This naturally forms pairs without pulling anyone away from a task. */
+  const conversationSeats = freeSlots.filter(slot => {
+    if (slot?.act !== "chat" || !slot?.st) return false;
+    return (slot.st.slots || []).some(other => {
+      const peer = other?.occ;
+      return !!peer && peer !== character &&
+        peer.slot === other && peer.loc === other &&
+        peer.act === "chat" && !peer.busy && !peer.meeting &&
+        !(peer.path && peer.path.length) &&
+        areConversationSlotsCompatible(slot, other);
+    });
+  });
+  if (conversationSeats.length) {
+    return conversationSeats[Math.floor(Math.random() * conversationSeats.length)];
+  }
+
   const preferences = ROLE_STATION_PREFERENCES[roleGroup(character?.r?.id)] || {};
   const weighted = freeSlots.map(slot => ({
     slot,
