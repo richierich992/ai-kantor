@@ -7,40 +7,220 @@ const ACTIVITY_ICONS = {
   lift: "💪", shoot: "🏀", stretch: "🧘"
 };
 
-const CONVERSATION_SCRIPTS = [
+const GENERAL_CONVERSATIONS = [
   [
-    { speaker: 0, text: "Lagi padat tugas hari ini?" },
-    { speaker: 1, text: "Lumayan, tapi sudah mulai rapi." },
-    { speaker: 0, text: "Nanti istirahat bareng, yuk." },
-    { speaker: 1, text: "Boleh. Sekalian ngopi." },
-    { speaker: 0, text: "Setelah ini aku ke kafe." },
-    { speaker: 1, text: "Oke, kita jalan bareng." }
+    { speaker: 0, text: "Akhirnya sempat istirahat juga." },
+    { speaker: 1, text: "Iya, dari tadi lumayan sibuk." },
+    { speaker: 0, text: "Nanti mau lanjut ke mana?" },
+    { speaker: 1, text: "Mungkin balik sebentar ke meja." },
+    { speaker: 0, text: "Santai dulu saja, masih ada waktu." },
+    { speaker: 1, text: "Betul. Ngobrol sebentar bikin segar." }
   ],
   [
-    { speaker: 0, text: "Sudah lihat update terbaru?" },
-    { speaker: 1, text: "Sudah. Idenya menarik." },
-    { speaker: 0, text: "Ada hal yang perlu kita bahas." },
-    { speaker: 1, text: "Siap, nanti kita diskusikan." },
-    { speaker: 0, text: "Aku catat dulu poinnya." },
-    { speaker: 1, text: "Mantap, biar tidak lupa." }
+    { speaker: 0, text: "Suasana kantor hari ini ramai, ya." },
+    { speaker: 1, text: "Iya, banyak yang sedang dikerjakan." },
+    { speaker: 0, text: "Enak juga melihat semua tim aktif." },
+    { speaker: 1, text: "Asal koordinasinya tetap lancar." },
+    { speaker: 0, text: "Kalau ada yang perlu dibantu, kabari." },
+    { speaker: 1, text: "Siap. Terima kasih, ya." }
   ],
   [
-    { speaker: 0, text: "Bagaimana suasana kerja hari ini?" },
-    { speaker: 1, text: "Seru, banyak hal baru." },
-    { speaker: 0, text: "Tim sedang cukup kompak." },
-    { speaker: 1, text: "Iya, koordinasinya makin enak." },
-    { speaker: 0, text: "Semoga target kita tercapai." },
-    { speaker: 1, text: "Amin. Tetap semangat!" }
-  ],
-  [
-    { speaker: 0, text: "Kopi di sini cocok, ya." },
-    { speaker: 1, text: "Iya, pas buat recharge." },
-    { speaker: 0, text: "Sebentar lagi lanjut kerja?" },
-    { speaker: 1, text: "Iya, habis ngobrol sebentar." },
-    { speaker: 0, text: "Asyik juga istirahat begini." },
-    { speaker: 1, text: "Setuju. Bikin fresh lagi." }
+    { speaker: 0, text: "Kamu biasanya istirahat di sini?" },
+    { speaker: 1, text: "Kalau sedang kosong, iya." },
+    { speaker: 0, text: "Tempatnya cukup nyaman." },
+    { speaker: 1, text: "Setuju, tidak terlalu ramai." },
+    { speaker: 0, text: "Sebentar lagi kita lanjut aktivitas." },
+    { speaker: 1, text: "Oke. Semangat lagi!" }
   ]
 ];
+
+const ROLE_CONVERSATIONS = {
+  finance: [
+    [
+      { speaker: 0, text: "Aku sedang merapikan catatan arus kas." },
+      { speaker: 1, text: "Sudah dipisah antara rutin dan investasi?" },
+      { speaker: 0, text: "Sudah. Jadi lebih mudah dibandingkan." },
+      { speaker: 1, text: "Bagus. Angkanya juga lebih gampang dicek." },
+      { speaker: 0, text: "Nanti aku cocokkan lagi dengan laporan." },
+      { speaker: 1, text: "Aku bantu periksa bagian akhirnya." }
+    ],
+    [
+      { speaker: 0, text: "Menurutmu risiko portofolio sudah seimbang?" },
+      { speaker: 1, text: "Perlu lihat tujuan dan jangka waktunya juga." },
+      { speaker: 0, text: "Benar. Jangan hanya mengejar imbal hasil." },
+      { speaker: 1, text: "Diversifikasi dan batas risiko tetap penting." },
+      { speaker: 0, text: "Aku masukkan itu ke catatan evaluasi." },
+      { speaker: 1, text: "Nanti kita telaah bersama." }
+    ],
+    [
+      { speaker: 0, text: "Data dividen tahun ini sudah terkumpul?" },
+      { speaker: 1, text: "Sebagian besar sudah, tinggal verifikasi." },
+      { speaker: 0, text: "Cek juga konsistensi arus kasnya." },
+      { speaker: 1, text: "Siap, supaya tidak terpaku pada yield." },
+      { speaker: 0, text: "Setelah itu kita susun ringkasannya." },
+      { speaker: 1, text: "Biar mudah dibaca tim." }
+    ]
+  ],
+  content: [
+    [
+      { speaker: 0, text: "Aku punya ide untuk konten berikutnya." },
+      { speaker: 1, text: "Menarik. Pembukanya mau dibuat seperti apa?" },
+      { speaker: 0, text: "Langsung ke inti supaya tidak bertele-tele." },
+      { speaker: 1, text: "Lalu tambahkan visual yang mudah diingat." },
+      { speaker: 0, text: "Aku siapkan beberapa variasi." },
+      { speaker: 1, text: "Nanti kita pilih yang paling kuat." }
+    ],
+    [
+      { speaker: 0, text: "Klip kemarin sudah selesai diedit?" },
+      { speaker: 1, text: "Sudah. Aku sedang cek audio dan subtitle." },
+      { speaker: 0, text: "Pastikan ukuran teks nyaman di ponsel." },
+      { speaker: 1, text: "Siap. Sekalian cek bagian pembukanya." },
+      { speaker: 0, text: "Kalau rapi, kita jadwalkan unggah." },
+      { speaker: 1, text: "Oke, aku siapkan versinya." }
+    ],
+    [
+      { speaker: 0, text: "Ada tren baru yang bisa kita angkat?" },
+      { speaker: 1, text: "Ada beberapa, tapi perlu dicek relevansinya." },
+      { speaker: 0, text: "Jangan ikut tren hanya karena ramai." },
+      { speaker: 1, text: "Setuju. Harus cocok dengan audiens." },
+      { speaker: 0, text: "Aku buat daftar ide dan referensi." },
+      { speaker: 1, text: "Nanti kita tentukan prioritas." }
+    ]
+  ],
+  technology: [
+    [
+      { speaker: 0, text: "Otomasi tugas rutin sudah lebih stabil." },
+      { speaker: 1, text: "Bagus. Log prosesnya juga sudah tersimpan?" },
+      { speaker: 0, text: "Sudah, termasuk catatan saat gagal." },
+      { speaker: 1, text: "Berarti lebih mudah ditelusuri." },
+      { speaker: 0, text: "Berikutnya aku rapikan notifikasinya." },
+      { speaker: 1, text: "Pastikan tidak mengirim pesan berulang." }
+    ],
+    [
+      { speaker: 0, text: "Ada perubahan kecil di alur aplikasi." },
+      { speaker: 1, text: "Sudah diuji di ponsel juga?" },
+      { speaker: 0, text: "Sudah. Tombol dan panelnya tetap rapi." },
+      { speaker: 1, text: "Bagus, jangan sampai desktop saja yang nyaman." },
+      { speaker: 0, text: "Aku lanjut cek koneksi datanya." },
+      { speaker: 1, text: "Aku pantau hasil pengujiannya." }
+    ],
+    [
+      { speaker: 0, text: "Menurutmu proses ini bisa dipersingkat?" },
+      { speaker: 1, text: "Bisa, asal pemeriksaan penting tidak dilewati." },
+      { speaker: 0, text: "Aku akan ukur bagian yang paling lambat." },
+      { speaker: 1, text: "Lalu optimalkan yang paling berdampak." },
+      { speaker: 0, text: "Kita bandingkan sebelum dan sesudah." },
+      { speaker: 1, text: "Setuju. Pakai hasil pengukuran." }
+    ]
+  ],
+  research: [
+    [
+      { speaker: 0, text: "Aku menemukan topik baru untuk dipantau." },
+      { speaker: 1, text: "Sumbernya sudah dibandingkan?" },
+      { speaker: 0, text: "Sedang dicek dari beberapa referensi." },
+      { speaker: 1, text: "Bagus. Pisahkan fakta dan opini." },
+      { speaker: 0, text: "Nanti aku tulis ringkasan singkat." },
+      { speaker: 1, text: "Sertakan tanggal dan sumbernya juga." }
+    ],
+    [
+      { speaker: 0, text: "Laporan kemarin punya beberapa temuan." },
+      { speaker: 1, text: "Mana yang paling penting untuk tim?" },
+      { speaker: 0, text: "Yang berdampak pada keputusan operasional." },
+      { speaker: 1, text: "Coba urutkan dari dampak terbesar." },
+      { speaker: 0, text: "Aku tambahkan tingkat keyakinannya." },
+      { speaker: 1, text: "Itu akan membantu saat dibahas." }
+    ],
+    [
+      { speaker: 0, text: "Kita perlu cek perkembangan topik ini lagi." },
+      { speaker: 1, text: "Apakah ada data yang benar-benar baru?" },
+      { speaker: 0, text: "Belum tentu. Aku akan verifikasi tanggalnya." },
+      { speaker: 1, text: "Jangan sampai memakai informasi lama." },
+      { speaker: 0, text: "Aku tandai mana yang sudah terkonfirmasi." },
+      { speaker: 1, text: "Oke. Baru kita bagikan ke tim." }
+    ]
+  ]
+};
+
+const CROSS_ROLE_CONVERSATIONS = [
+  [
+    { speaker: 0, text: "Kita bisa saling bantu untuk proyek berikutnya." },
+    { speaker: 1, text: "Boleh. Apa yang perlu disiapkan dulu?" },
+    { speaker: 0, text: "Aku rangkum kebutuhan dari timku." },
+    { speaker: 1, text: "Aku cocokkan dengan alur kerja kami." },
+    { speaker: 0, text: "Nanti kita satukan hasilnya." },
+    { speaker: 1, text: "Sip. Biar prosesnya lebih lancar." }
+  ],
+  [
+    { speaker: 0, text: "Sepertinya ada peluang kerja sama antarbagian." },
+    { speaker: 1, text: "Aku juga melihat hal yang sama." },
+    { speaker: 0, text: "Kita mulai dari target yang jelas." },
+    { speaker: 1, text: "Lalu tentukan siapa mengerjakan apa." },
+    { speaker: 0, text: "Aku kirim poin-poinnya setelah ini." },
+    { speaker: 1, text: "Aku tunggu. Kita rapikan bersama." }
+  ],
+  [
+    { speaker: 0, text: "Informasi dari timmu cukup membantu." },
+    { speaker: 1, text: "Senang kalau bisa dipakai." },
+    { speaker: 0, text: "Aku akan hubungkan dengan pekerjaan kami." },
+    { speaker: 1, text: "Kalau ada yang kurang, kabari saja." },
+    { speaker: 0, text: "Baik. Kita cek hasilnya bersama." },
+    { speaker: 1, text: "Siap, semoga makin efektif." }
+  ]
+];
+
+const CHESS_CONVERSATIONS = [
+  [
+    { speaker: 0, text: "Mau satu ronde catur sebelum kembali?" },
+    { speaker: 1, text: "Boleh. Kamu mulai dulu." },
+    { speaker: 0, text: "Aku coba buka dengan langkah sederhana." },
+    { speaker: 1, text: "Aku perhatikan bagian tengah papan." },
+    { speaker: 0, text: "Wah, langkahmu cukup mengejutkan." },
+    { speaker: 1, text: "Hehe, masih pemanasan." }
+  ],
+  [
+    { speaker: 0, text: "Kamu biasanya suka strategi menyerang?" },
+    { speaker: 1, text: "Tergantung posisi. Kadang sabar lebih baik." },
+    { speaker: 0, text: "Aku sering terlalu cepat maju." },
+    { speaker: 1, text: "Coba amankan langkah berikutnya dulu." },
+    { speaker: 0, text: "Baik, kali ini aku lebih hati-hati." },
+    { speaker: 1, text: "Nah, sekarang jadi menarik." }
+  ],
+  [
+    { speaker: 0, text: "Permainan tadi hampir membuatku kalah." },
+    { speaker: 1, text: "Tapi kamu berhasil bertahan." },
+    { speaker: 0, text: "Aku lupa memperhatikan sisi kanan." },
+    { speaker: 1, text: "Itu sering terjadi kalau terburu-buru." },
+    { speaker: 0, text: "Ronde berikutnya aku lebih fokus." },
+    { speaker: 1, text: "Siap. Kita coba lagi nanti." }
+  ]
+];
+
+const CONVERSATION_POOLS = {
+  general: GENERAL_CONVERSATIONS,
+  finance: ROLE_CONVERSATIONS.finance,
+  content: ROLE_CONVERSATIONS.content,
+  technology: ROLE_CONVERSATIONS.technology,
+  research: ROLE_CONVERSATIONS.research,
+  cross: CROSS_ROLE_CONVERSATIONS,
+  chess: CHESS_CONVERSATIONS
+};
+
+function agentGroup(character) {
+  const id = Number(character?.r?.id);
+  if (id >= 1 && id <= 8) return "finance";
+  if ([9, 10, 12, 14].includes(id)) return "content";
+  if ([11, 15, 16].includes(id)) return "technology";
+  if (id === 13) return "research";
+  return "general";
+}
+
+function conversationPool(a, b, stationKind) {
+  if (stationKind === "chess") return CONVERSATION_POOLS.chess;
+  const groupA = agentGroup(a), groupB = agentGroup(b);
+  if (groupA === "general" && groupB === "general") return CONVERSATION_POOLS.general;
+  if (groupA === groupB) return CONVERSATION_POOLS[groupA] || CONVERSATION_POOLS.general;
+  return CONVERSATION_POOLS.cross;
+}
 
 function roundedCard(ctx, x, y, w, h, radius) {
   ctx.beginPath();
@@ -188,6 +368,7 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
   const cooldowns = new Map();
   const previousDistances = new Map();
   const conversations = new Map();
+  const conversationRounds = new Map();
   const entries = Object.values(characters);
   entries.forEach(character => createBubble(THREE, character));
 
@@ -244,10 +425,15 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
         if (!conversation) {
           const last = cooldowns.get("c:" + key);
           if (last != null && now - last < 60000) continue;
-          const scriptIndex = Math.abs(Number(a.r?.id || 0) * 7 + Number(b.r?.id || 0) * 11) % CONVERSATION_SCRIPTS.length;
+          const stationKind = a.slot?.st?.kind || b.slot?.st?.kind || "lounge";
+          const pool = conversationPool(a, b, stationKind);
+          const round = conversationRounds.get(key) || 0;
+          const seed = Math.abs(Number(a.r?.id || 0) * 7 + Number(b.r?.id || 0) * 11);
+          const scriptIndex = (seed + round) % pool.length;
+          conversationRounds.set(key, round + 1);
           conversation = {
             a, b, startedAt: now, turnStartedAt: now, turnIndex: 0,
-            script: CONVERSATION_SCRIPTS[scriptIndex]
+            stationKind, scriptIndex, script: pool[scriptIndex]
           };
           /* Give each line enough time to read and keep both guests seated.
              The dwell timer is in seconds; never fast-forward through lines
@@ -338,7 +524,9 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
       greetingEnabled: true,
       conversationEnabled: true,
       conversationStationKinds: ["lounge", "chess"],
-      conversationLineCount: CONVERSATION_SCRIPTS.reduce((sum, script) => sum + script.length, 0),
+      conversationLineCount: Object.values(CONVERSATION_POOLS)
+        .reduce((sum, pool) => sum + pool.reduce((lines, script) => lines + script.length, 0), 0),
+      conversationPoolCount: Object.keys(CONVERSATION_POOLS).length,
       activityCueCount: entries.filter(character => !!character.act || character.busy || character.meeting).length
     };
   }
@@ -348,6 +536,11 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
     update,
     diagnostics,
     canPairSlots: areConversationSlotsCompatible,
-    getActiveConversationCount: () => conversations.size
+    getActiveConversationCount: () => conversations.size,
+    getConversationProfile: (a, b, stationKind = "lounge") => {
+      const groupA = agentGroup(a), groupB = agentGroup(b);
+      const pool = conversationPool(a, b, stationKind);
+      return { groupA, groupB, stationKind, scriptCount: pool.length };
+    }
   };
 }
