@@ -25,6 +25,32 @@ function roleGroup(agentId) {
 export function chooseIdleStation(character, freeSlots = []) {
   if (!freeSlots.length) return null;
 
+  /* Table games need two people at the same station. Once somebody arrives,
+     reserve the opposite free seat before choosing a random idle destination. */
+  const pairedActivitySeats = freeSlots.filter(slot => {
+    const kind = slot?.st?.kind;
+    if (kind !== "pingpong" && kind !== "chess") return false;
+    return (slot.st.slots || []).some(other => {
+      const peer = other?.occ;
+      return !!peer && peer !== character && other !== slot &&
+        peer.slot === other && peer.loc === other &&
+        peer.act === slot.act && !peer.busy && !peer.meeting &&
+        !peer.r?.lock && !(peer.path && peer.path.length);
+    });
+  });
+  if (pairedActivitySeats.length) {
+    const seat = pairedActivitySeats[Math.floor(Math.random() * pairedActivitySeats.length)];
+    const peerSeat = (seat.st.slots || []).find(other =>
+      other?.occ && other !== seat && other.occ !== character &&
+      other.occ.slot === other && other.occ.loc === other &&
+      other.occ.act === seat.act && !other.occ.busy &&
+      !other.occ.meeting && !other.occ.r?.lock &&
+      !(other.occ.path && other.occ.path.length)
+    );
+    if (peerSeat?.occ) peerSeat.occ.wait = Math.max(Number(peerSeat.occ.wait) || 0, 90);
+    return seat;
+  }
+
   /* A nearby unoccupied seat facing an existing social guest gets priority.
      This naturally forms pairs without pulling anyone away from a task. */
   const conversationSeats = freeSlots.filter(slot => {
