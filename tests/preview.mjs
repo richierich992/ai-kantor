@@ -363,6 +363,32 @@ async function openPreview(viewport, label) {
     pingPongBehavior.rallyStarted && pingPongBehavior.rallyMoves && pingPongBehavior.rallyStopsWhenPlayerLeaves,
     label + ": ping-pong ball stays still without two players and stops when a player leaves; diagnostics=" + JSON.stringify(pingPongBehavior));
 
+  const activityPairing = await page.evaluate(async () => {
+    const { chooseIdleStation } = await import("./premium-living-office.js");
+    const trial = (kind, act) => {
+      const station = { kind, slots: [] };
+      const peer = {
+        act, busy: false, meeting: false, path: [], wait: 4,
+        r: { id: 1, lock: false },
+        g: { position: { x: -2, z: 0 } }
+      };
+      const occupied = { st: station, x: -2, z: 0, face: Math.PI / 2, act, occ: peer };
+      const free = { st: station, x: 2, z: 0, face: -Math.PI / 2, act, occ: null };
+      station.slots = [occupied, free];
+      peer.slot = occupied; peer.loc = occupied;
+      const selected = chooseIdleStation({ r: { id: 2 } }, [free]);
+      return { paired: selected === free, peerReserved: peer.wait >= 90 };
+    };
+    return {
+      pingpong: trial("pingpong", "swing"),
+      chess: trial("chess", "chat")
+    };
+  });
+  check(activityPairing.pingpong.paired && activityPairing.pingpong.peerReserved &&
+    activityPairing.chess.paired && activityPairing.chess.peerReserved,
+    label + ": idle routing sends a second agent to the free side of an active ping-pong/chess table; diagnostics=" +
+      JSON.stringify(activityPairing));
+
   const canvasBox = await page.locator("#map canvas").boundingBox();
   check(!!canvasBox && canvasBox.width >= viewport.width * 0.7 && canvasBox.height > viewport.height * 0.45, label + ": 3D canvas has usable dimensions");
   const cameraDock = page.locator("#camera-dock");
@@ -414,6 +440,26 @@ async function openPreview(viewport, label) {
   check((realFirstTurn.a.kind === "text" && realFirstTurn.b.content === "•••") ||
     (realFirstTurn.b.kind === "text" && realFirstTurn.a.content === "•••"),
     label + ": one real 3D avatar speaks first while the other listens; diagnostics=" + JSON.stringify(realFirstTurn));
+  const loungeSeating = [realFirstTurn.a, realFirstTurn.b];
+  const loungeSeatAlignment = loungeSeating.every(person =>
+    person.sitting && person.position && person.slot && person.seatRootY != null &&
+    Math.abs(person.position[0] - person.slot[0]) < 0.08 &&
+    Math.abs(person.position[2] - person.slot[1]) < 0.08 &&
+    Math.abs(person.position[1] - person.seatRootY) < 0.06 &&
+    person.position[1] > 0.45);
+  const loungeFrontApproach = loungeSeating.every(person => {
+    if (!person.approach || !person.slot || person.face == null) return false;
+    const forward = (person.approach[0] - person.slot[0]) * Math.sin(person.face) +
+      (person.approach[1] - person.slot[1]) * Math.cos(person.face);
+    return forward > 1.2;
+  });
+  const loungeSitPose = loungeSeating.every(person =>
+    Number.isFinite(person.legL) && Number.isFinite(person.legR) &&
+    person.legL < -0.35 && person.legR < -0.35);
+  check(loungeSeatAlignment && loungeFrontApproach && loungeSitPose,
+    label + ": lounge avatars sit at cushion height, bend their legs and approach from the open front of the sofa; diagnostics=" +
+      JSON.stringify(loungeSeating));
+
   const visibleMinX = viewport.width > 500 ? -0.58 : -0.90;
   const bubblePoints = [realFirstTurn.a.screen, realFirstTurn.b.screen];
   const bothBubblesFramed = bubblePoints.every(point =>
@@ -438,6 +484,41 @@ async function openPreview(viewport, label) {
   check((firstSpeaker === "a" && realSecondTurn.b.kind === "text" && realSecondTurn.a.content === "•••") ||
     (firstSpeaker === "b" && realSecondTurn.a.kind === "text" && realSecondTurn.b.content === "•••"),
     label + ": real 3D avatars alternate to the other speaker; diagnostics=" + JSON.stringify(realSecondTurn));
+
+  const pingpongStage = await page.evaluate(() => window.__socialActivityQA?.stagePair("pingpong") || { staged: false });
+  check(pingpongStage.staged === true, label + ": two real avatars can be seated at opposite ping-pong ends; diagnostics=" + JSON.stringify(pingpongStage));
+  await page.waitForTimeout(450);
+  const pingpongBefore = await page.evaluate(() => window.__socialActivityQA?.inspect("pingpong"));
+  await page.waitForTimeout(650);
+  const pingpongAfter = await page.evaluate(() => window.__socialActivityQA?.inspect("pingpong"));
+  const pingpongBallMoved = pingpongBefore?.ball && pingpongAfter?.ball &&
+    Math.hypot(pingpongAfter.ball[0] - pingpongBefore.ball[0],
+      pingpongAfter.ball[1] - pingpongBefore.ball[1],
+      pingpongAfter.ball[2] - pingpongBefore.ball[2]) > 0.025;
+  const pingpongPlayersReady = pingpongAfter?.rallying &&
+    pingpongAfter.seats.length === 2 &&
+    pingpongAfter.seats.every(seat => seat.occupant?.act === "swing" && Math.abs(seat.occupant.y - 0.14) < 0.08);
+  const pingpongOnTable = pingpongAfter?.ball && pingpongAfter.ballSurfaceY != null &&
+    pingpongAfter.ball[1] >= pingpongAfter.ballSurfaceY - 0.01;
+  check(pingpongPlayersReady && pingpongBallMoved && pingpongOnTable,
+    label + ": two players trigger a visible ping-pong rally with the ball above the tabletop; diagnostics=" +
+      JSON.stringify({ before: pingpongBefore, after: pingpongAfter }));
+
+  const chessStage = await page.evaluate(() => window.__socialActivityQA?.stagePair("chess") || { staged: false });
+  check(chessStage.staged === true, label + ": two real avatars can take the chess seats; diagnostics=" + JSON.stringify(chessStage));
+  await page.waitForTimeout(1800);
+  const chessAfter = await page.evaluate(() => window.__socialActivityQA?.inspect("chess"));
+  const chessSeated = chessAfter?.chessSeatCount === 2 && chessAfter.seats.length === 2 &&
+    chessAfter.seats.every(seat => seat.sit && seat.occupant?.act === "chat" &&
+      Math.abs(seat.occupant.y - seat.rootY) < 0.06 && seat.occupant.y > 0.1);
+  const chessPiecesMoving = chessAfter?.chessPieces?.ready === true &&
+    (Math.abs(chessAfter.chessPieces.whiteZ || 0) > 0.06 ||
+      Math.abs(chessAfter.chessPieces.blackZ || 0) > 0.06);
+  check(chessSeated && chessPiecesMoving,
+    label + ": chess station has two real chairs, seated players and moving board pieces; diagnostics=" +
+      JSON.stringify(chessAfter));
+  await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-social-games.png"), fullPage: true });
+
   await cameraDock.locator('[data-preset="overview"]').click();
   check(await cameraDock.locator('[data-preset="overview"]').getAttribute("aria-pressed") === "true", label + ": overview camera preset restores");
   report.viewports[label] = {
