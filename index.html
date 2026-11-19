@@ -485,7 +485,7 @@ const SLOT={
  garden:[[-3,-1.7,0,1,'chat'],[-2,-1.7,0,1,'chat'],[2,1.7,PI,1,'chat'],[3,1.7,PI,1,'chat'],[-4,0,PI/2,0,'stroll',0,[[-4,0],[4,0]]],[4,0,-PI/2,0,'stroll',0,[[4,0],[-4,0]]]],
 };
 /* model GLB pengganti: [nama, dx, dz, putar, skala] */
-const GLBREP={pingpong:[['ping_pong_table_v2',0,0,0,1.32]],chess:[['chess_table_v2',0,0,0,1.26]],lounge:[['social_sofa_v3',0,-2.2,0,1.3],['social_sofa_v3',0,2.2,PI,1.3]],arcade:[['social_arcade_v3',0,0,0,1.3]],cafe:[['social_cafe_station_v3',0,0,0,1.3]],plant:[['potted_plant',0,0,0,1.35]]};
+const GLBREP={pingpong:[['ping_pong_table_v2',0,0,0,1.46]],chess:[['chess_table_v2',0,0,0,1.38]],lounge:[['social_sofa_v3',0,-2.2,0,1.42],['social_sofa_v3',0,2.2,PI,1.42]],arcade:[['social_arcade_v3',0,0,0,1.48]],cafe:[['social_cafe_station_v3',0,0,0,1.38]],plant:[['potted_plant',0,0,0,1.35]]};
 function addStation(kind,x,z,yaw=0){
  const g=new THREE.Group(),k=new THREE.Group();[g,k].forEach(o=>{o.position.set(x,0,z);o.rotation.y=yaw;scene.add(o)});PROP[kind](g,k);
  const st={kind,x,z,yaw,g,k,slots:[]};
@@ -517,10 +517,16 @@ function buildHrPlaceholder(){const g=new THREE.Group();g.name='legacy-hr-placeh
  const m=sign(1.5,.8,'HR & Administrasi',['Belum ada agen','(direncanakan)'],'#8a4fd8');m.position.set(0,1.55,-2.4);g.add(m);box(1.6,.9,.06,0x111827,0,1.55,-2.45,g);
  tree(g,3,-3);}
 /* net ping pong pada model v2 terpasang memanjang di sumbu panjang meja: pindahkan ke tengah, melintang */
-function fixPingPong(o){o.traverse(n=>{
- if(n.name==='line_long_top'||n.name==='pingpong_ball'){n.visible=false}
- else if(n.name==='net_mesh'||n.name==='net_tape'){n.rotation.y+=PI/2;n.scale.x*=1.66/2.72}
- else if(/^net_post_/.test(n.name)&&n.geometry){n.geometry.computeBoundingBox();const gx=n.geometry.boundingBox.getCenter(new THREE.Vector3()).x;n.position.set(-gx,0,Math.sign(gx||1)*.83)}})}
+function fixPingPong(o){
+ const qa=window.__pingPongAssetQA||(window.__pingPongAssetQA={tables:0,centerLineHidden:0,embeddedBallHidden:0});
+ qa.tables++;
+ o.traverse(n=>{
+  if(n.name==='line_long_top'){n.visible=false;qa.centerLineHidden++}
+  else if(n.name==='pingpong_ball'){n.visible=false;qa.embeddedBallHidden++}
+  else if(n.name==='net_mesh'||n.name==='net_tape'){n.rotation.y+=PI/2;n.scale.x*=1.66/2.72}
+  else if(/^net_post_/.test(n.name)&&n.geometry){n.geometry.computeBoundingBox();const gx=n.geometry.boundingBox.getCenter(new THREE.Vector3()).x;n.position.set(-gx,0,Math.sign(gx||1)*.83)}
+ })
+}
 function dressHub(){STN.forEach(st=>{const rep=GLBREP[st.kind];if(!rep||!rep.every(r=>GLB[r[0]]))return;
  st.g.visible=false;if(st.k)st.k.visible=false;rep.forEach(([n,dx,dz,ry,s])=>{const [wx,wz]=rot(st.yaw,dx,dz),o=put(n,scene,st.x+wx,st.z+wz,st.yaw+ry,s);if(o&&n==='ping_pong_table_v2')fixPingPong(o)})})}
 
