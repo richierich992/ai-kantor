@@ -488,7 +488,7 @@ const SLOT={
 const GLBREP={pingpong:[['ping_pong_table_v2',0,0,0,1.18]],chess:[['chess_table_v2',0,0,0,1.16]],lounge:[['social_sofa_v3',0,-2.2,0,1.2],['social_sofa_v3',0,2.2,PI,1.2]],arcade:[['social_arcade_v3',0,0,0,1.18]],cafe:[['social_cafe_station_v3',0,0,0,1.18]],plant:[['potted_plant',0,0,0,1.35]]};
 function addStation(kind,x,z,yaw=0){
  const g=new THREE.Group(),k=new THREE.Group();[g,k].forEach(o=>{o.position.set(x,0,z);o.rotation.y=yaw;scene.add(o)});PROP[kind](g,k);
- const st={kind,x,z,yaw,g,slots:[]};
+ const st={kind,x,z,yaw,g,k,slots:[]};
  SLOT[kind].forEach(([dx,dz,f,sit,act,dy,route])=>{const [wx,wz]=rot(yaw,dx,dz),L=Math.hypot(dx,dz)||1,[ox,oz]=rot(yaw,dx/L*1.6,dz/L*1.6);
   st.slots.push({st,x:x+wx,z:z+wz,face:f+yaw,sit,act,dy:dy||0,occ:null,appr:V3(x+wx+ox,0,z+wz+oz),
    route:(route||[]).map(([a,b])=>{const [rx,rz]=rot(yaw,a,b);return V3(x+rx,0,z+rz)})})});
@@ -522,7 +522,7 @@ function fixPingPong(o){o.traverse(n=>{
  else if(n.name==='net_mesh'||n.name==='net_tape'){n.rotation.y+=PI/2;n.scale.x*=1.66/2.72}
  else if(/^net_post_/.test(n.name)&&n.geometry){n.geometry.computeBoundingBox();const gx=n.geometry.boundingBox.getCenter(new THREE.Vector3()).x;n.position.set(-gx,0,Math.sign(gx||1)*.83)}})}
 function dressHub(){STN.forEach(st=>{const rep=GLBREP[st.kind];if(!rep||!rep.every(r=>GLB[r[0]]))return;
- st.g.visible=false;rep.forEach(([n,dx,dz,ry,s])=>{const [wx,wz]=rot(st.yaw,dx,dz),o=put(n,scene,st.x+wx,st.z+wz,st.yaw+ry,s);if(o&&n==='ping_pong_table_v2')fixPingPong(o)})})}
+ st.g.visible=false;if(st.k)st.k.visible=false;rep.forEach(([n,dx,dz,ry,s])=>{const [wx,wz]=rot(st.yaw,dx,dz),o=put(n,scene,st.x+wx,st.z+wz,st.yaw+ry,s);if(o&&n==='ping_pong_table_v2')fixPingPong(o)})})}
 
 /* ===== lalu lintas jalan raya ===== */
 const GC={},MC={},TC={},CARC=[0x1d4ed8,0xdc2626,0xf8fafc,0x111827,0xf59e0b,0x16a34a,0x7c3aed,0x94a3b8,0xea580c];
