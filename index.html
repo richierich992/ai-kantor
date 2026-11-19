@@ -292,7 +292,7 @@ function pathIn(R){const p=[];
 /* tr = ruang (meja) atau slot social hub. Jalur: meja > lorong > celah antar zona > koridor utama > tujuan */
 function go(c,tr,spot,face){
  if(c.slot&&c.slot!==tr){c.slot.occ=null;c.slot=null}
- c.yoff=0;c.act=null;c.stroll=null;
+ c.yoff=0;c.sitting=false;c.act=null;c.stroll=null;
  const cu=c.loc;let p=[];
  if(cu===tr)p=[];
  else if(cu&&!cu.row&&tr&&!tr.row)p=[cu.appr.clone(),tr.appr.clone()];   // slot ke slot: langsung
@@ -313,7 +313,7 @@ function roam(c,dt){
   if(!free.length||away>=Math.ceil(D.length*.55)){c.wait=10;return}
   const sl=chooseIdleStation(c,free)||pick(free);sl.occ=c;c.slot=sl;
   go(c,sl,V3(sl.x,0,sl.z),sl.face);
-  c.done=()=>{c.yoff=(sl.sit?-.34:0)+sl.dy;c.act=sl.act;c.work=false;if(sl.route.length){c.stroll=sl.route;c.si=0}};
+  c.done=()=>{c.yoff=sl.sit?(sl.rootY-.14):sl.dy;c.sitting=!!sl.sit;c.act=sl.act;c.work=false;if(sl.route.length){c.stroll=sl.route;c.si=0}};
   c.wait=rnd(20,45);
  }else{
   go(c,r,r.spot,r.yaw+PI);
@@ -381,8 +381,50 @@ async function loadGLBs(){const L=new GLTFLoader();
    pingPongInstances:placed.filter(n=>n==='ping_pong_table_v2').length,
    chessInstances:placed.filter(n=>n==='chess_table_v2').length,
    cafeInstances:placed.filter(n=>n==='social_cafe_station_v3').length,
-   arcadeInstances:placed.filter(n=>n==='social_arcade_v3').length
+   arcadeInstances:placed.filter(n=>n==='social_arcade_v3').length,
+   chessSeatCount:STN.filter(st=>st.kind==='chess'&&st.chessSeatRig?.children?.length===2).length
   };
+  if(new URLSearchParams(location.search).get('qa')==='1'){
+   window.__socialActivityQA={
+    stagePair(kind){
+     const station=STN.find(st=>st.kind===kind&&st.slots.length>=2);
+     if(!station)return{staged:false,reason:'Station not found'};
+     const slots=station.slots.slice(0,2);
+     const people=Object.values(chars).filter(c=>c?.g&&!c.busy&&!c.meeting&&!c.r?.lock).slice(0,2);
+     if(people.length<2)return{staged:false,reason:'Two available avatars not found'};
+     people.forEach(c=>{if(c.slot?.occ===c)c.slot.occ=null;c.slot=null;c.path=[];c.stroll=null;c.done=null});
+     slots.forEach((slot,i)=>{
+      if(slot.occ&&slot.occ!==people[i]){slot.occ.slot=null;slot.occ=null}
+      const c=people[i];c.slot=slot;c.loc=slot;c.path=[];c.stroll=null;c.done=null;c.busy=false;c.meeting=false;c.work=false;
+      c.act=slot.act;c.face=slot.face;c.sitting=!!slot.sit;c.yoff=slot.sit?slot.rootY-.14:0;c.wait=90;
+      c.g.position.set(slot.x,slot.rootY,slot.z);c.g.rotation.y=slot.face;slot.occ=c;
+     });
+     return{staged:true,kind,agentIds:people.map(c=>c.r.id)};
+    },
+    inspect(kind){
+     const station=STN.find(st=>st.kind===kind);
+     if(!station)return null;
+     const activity=scene.userData.premiumSocialDecor;
+     const ballItem=activity?.pingPong?.find(item=>item.station===station);
+     const chessItem=activity?.chess?.find(item=>item.station===station);
+     return{
+      kind,x:station.x,z:station.z,ballSurfaceY:station.ballSurfaceY??null,
+      ball:ballItem?[ballItem.ball.position.x,ballItem.ball.position.y,ballItem.ball.position.z]:null,
+      rallying:!!ballItem?.wasPlaying,
+      seats:station.slots.map(slot=>({
+       x:slot.x,z:slot.z,rootY:slot.rootY,face:slot.face,sit:!!slot.sit,
+       approach:[slot.appr.x,slot.appr.z],
+       approachForward:(slot.appr.x-slot.x)*Math.sin(slot.face)+(slot.appr.z-slot.z)*Math.cos(slot.face),
+       occupant:slot.occ?{id:slot.occ.r.id,act:slot.occ.act,y:slot.occ.g.position.y,
+        armL:slot.occ.armL?.rotation.y??null,armR:slot.occ.armR?.rotation.y??null,
+        legL:slot.occ.legL?.rotation.x??null,legR:slot.occ.legR?.rotation.x??null}:null
+      })),
+      chessSeatCount:station.chessSeatRig?.children?.length||0,
+      chessPieces:chessItem?.snapshot||null
+     };
+    }
+   };
+  }
   if(agentNavigation){agentNavigation.rebuild();window.__agentNavigationQA=agentNavigation.diagnostics()}
  }
 function put(n,parent,x,z,yaw=0,sc=1,y=0){const o=GLB[n]&&GLB[n].clone(true);if(!o)return null;o.position.set(x,y,z);o.rotation.y=yaw;o.scale.setScalar(sc);
@@ -479,7 +521,7 @@ const PROP={
 /* slot lokal: [dx,dz,hadap,duduk?,aktivitas,naik?,rute jalan-jalan]. hadap 0 = menghadap +z */
 const SLOT={
  pingpong:[[-2.75,0,PI/2,0,'swing'],[2.75,0,-PI/2,0,'swing']],
- chess:[[-1.85,0,PI/2,1,'chat'],[1.85,0,-PI/2,1,'chat']],
+ chess:[[-1.58,0,PI/2,1,'chat'],[1.58,0,-PI/2,1,'chat']],
  lounge:[[-.7,-2.1,0,1,'chat'],[.7,-2.1,0,1,'chat'],[-.7,2.1,PI,1,'chat'],[.7,2.1,PI,1,'chat']],
  arcade:[[0,1.4,PI,0,'type']],
  cafe:[[-.8,1.5,PI,0,'chat'],[.8,1.5,PI,0,'chat']],
@@ -498,9 +540,17 @@ const GLBREP={pingpong:[['ping_pong_table_v2',0,0,0,1.46]],chess:[['chess_table_
 function addStation(kind,x,z,yaw=0){
  const g=new THREE.Group(),k=new THREE.Group();[g,k].forEach(o=>{o.position.set(x,0,z);o.rotation.y=yaw;scene.add(o)});PROP[kind](g,k);
  const st={kind,x,z,yaw,g,k,slots:[]};
- SLOT[kind].forEach(([dx,dz,f,sit,act,dy,route])=>{const [wx,wz]=rot(yaw,dx,dz),L=Math.hypot(dx,dz)||1,[ox,oz]=rot(yaw,dx/L*1.6,dz/L*1.6);
-  st.slots.push({st,x:x+wx,z:z+wz,face:f+yaw,sit,act,dy:dy||0,occ:null,appr:V3(x+wx+ox,0,z+wz+oz),
-   route:(route||[]).map(([a,b])=>{const [rx,rz]=rot(yaw,a,b);return V3(x+rx,0,z+rz)})})});
+ SLOT[kind].forEach(([dx,dz,f,sit,act,dy,route])=>{
+  const [wx,wz]=rot(yaw,dx,dz),L=Math.hypot(dx,dz)||1,[ox,oz]=rot(yaw,dx/L*1.6,dz/L*1.6);
+  const sx=x+wx,sz=z+wz,face=f+yaw;
+  /* Lounge guests approach from the open front of each sofa, never through its back. */
+  const appr=kind==='lounge'
+   ? V3(sx+Math.sin(face)*1.45,0,sz+Math.cos(face)*1.45)
+   : V3(sx+ox,0,sz+oz);
+  const rootY=kind==='lounge'?.56:kind==='chess'?.20:(kind==='reading'||kind==='garden')?.30:.14+(dy||0);
+  st.slots.push({st,x:sx,z:sz,face,sit,act,dy:dy||0,rootY,occ:null,appr,
+   route:(route||[]).map(([a,b])=>{const [rx,rz]=rot(yaw,a,b);return V3(x+rx,0,z+rz)})})
+ });
  STN.push(st);return st}
 function buildHall(){
  // barat laut: kafe + fitness center
@@ -536,8 +586,40 @@ function fixPingPong(o){
   else if(/^net_post_/.test(n.name)&&n.geometry){n.geometry.computeBoundingBox();const gx=n.geometry.boundingBox.getCenter(new THREE.Vector3()).x;n.position.set(-gx,0,Math.sign(gx||1)*.83)}
  })
 }
+function createChessSeats(st){
+ if(st.chessSeatRig)return st.chessSeatRig;
+ const rig=new THREE.Group();rig.name='chess-seat-rig';rig.position.set(st.x,0,st.z);rig.rotation.y=st.yaw;scene.add(rig);
+ const frame=new THREE.MeshStandardMaterial({color:0x536d7a,metalness:.48,roughness:.38});
+ const cushion=new THREE.MeshStandardMaterial({color:0x6c8f99,roughness:.78});
+ const trim=new THREE.MeshStandardMaterial({color:0x9dc3c7,metalness:.18,roughness:.55});
+ const makePart=(parent,w,h,d,material,x,y,z)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);mesh.position.set(x,y,z);mesh.castShadow=mesh.receiveShadow=true;parent.add(mesh);return mesh};
+ [-1,1].forEach(side=>{
+  const chair=new THREE.Group();chair.name=side<0?'west-chess-chair':'east-chess-chair';
+  chair.position.set(side*1.58,0,0);chair.rotation.y=side<0?PI/2:-PI/2;rig.add(chair);
+  makePart(chair,.92,.13,.82,frame,0,.61,0);
+  makePart(chair,.84,.12,.74,cushion,0,.72,.015);
+  makePart(chair,.92,.82,.14,frame,0,1.08,-.39);
+  makePart(chair,.82,.68,.08,cushion,0,1.08,-.30);
+  [-.34,.34].forEach(px=>[-.29,.29].forEach(pz=>{
+   makePart(chair,.075,.54,.075,frame,px,.29,pz);
+  }));
+  makePart(chair,.92,.055,.76,trim,0,.48,0);
+ });
+ st.chessSeatRig=rig;
+ return rig;
+}
 function dressHub(){STN.forEach(st=>{const rep=GLBREP[st.kind];if(!rep||!rep.every(r=>GLB[r[0]]))return;
- st.g.visible=false;if(st.k)st.k.visible=false;rep.forEach(([n,dx,dz,ry,s])=>{const [wx,wz]=rot(st.yaw,dx,dz),o=put(n,scene,st.x+wx,st.z+wz,st.yaw+ry,s);if(o&&n==='ping_pong_table_v2')fixPingPong(o)})})}
+ st.g.visible=false;if(st.k)st.k.visible=false;st.visuals=[];
+ rep.forEach(([n,dx,dz,ry,s])=>{
+  const [wx,wz]=rot(st.yaw,dx,dz),o=put(n,scene,st.x+wx,st.z+wz,st.yaw+ry,s);
+  if(o){
+   st.visuals.push(o);
+   if(n==='ping_pong_table_v2'){st.glbVisual=o;st.ballSurfaceY=.84*s+.105;fixPingPong(o)}
+   if(n==='chess_table_v2'){st.chessVisual=o;st.chessScale=s}
+  }
+ });
+ if(st.kind==='chess'&&st.chessVisual)createChessSeats(st);
+})}
 
 /* ===== lalu lintas jalan raya ===== */
 const GC={},MC={},TC={},CARC=[0x1d4ed8,0xdc2626,0xf8fafc,0x111827,0xf59e0b,0x16a34a,0x7c3aed,0x94a3b8,0xea580c];
@@ -1253,9 +1335,10 @@ boot = function() {
           character.work = false;
           character.act = "chat";
           character.face = slot.face;
-          character.wait = 60;
-          character.yoff = (slot.sit ? -0.34 : 0) + (slot.dy || 0);
-          character.g.position.set(slot.x, 0.14 + (character.yoff || 0), slot.z);
+          character.wait = 90;
+          character.sitting = !!slot.sit;
+          character.yoff = slot.sit ? slot.rootY - 0.14 : slot.dy || 0;
+          character.g.position.set(slot.x, slot.rootY ?? 0.14, slot.z);
           character.g.rotation.y = slot.face;
           slot.occ = character;
         });
@@ -1269,11 +1352,21 @@ boot = function() {
           const projected = bubble?.getWorldPosition
             ? bubble.getWorldPosition(new THREE.Vector3()).project(cam)
             : null;
+          const slot = character?.slot;
+          const position = character?.g?.position;
           return {
             visible: !!bubble?.visible,
             kind: bubble?.userData?.currentKind || "",
             content: bubble?.userData?.currentContent || "",
-            screen: projected ? { x: projected.x, y: projected.y, z: projected.z } : null
+            screen: projected ? { x: projected.x, y: projected.y, z: projected.z } : null,
+            position: position ? position.toArray() : null,
+            slot: slot ? [slot.x, slot.z] : null,
+            seatRootY: slot?.rootY ?? null,
+            sitting: !!slot?.sit,
+            approach: slot?.appr ? [slot.appr.x, slot.appr.z] : null,
+            face: slot?.face ?? null,
+            legL: character?.legL?.rotation?.x ?? null,
+            legR: character?.legR?.rotation?.x ?? null
           };
         };
         return {
