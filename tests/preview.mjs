@@ -136,6 +136,13 @@ async function openPreview(viewport, label) {
     a.slot = seatA; a.loc = seatA;
     b.slot = seatB; b.loc = seatB;
     const life = createCharacterSocialLife({ THREE, characters: { 101: a, 102: b } });
+    const makeProfileAgent = id => ({ r: { id } });
+    const financeProfile = life.getConversationProfile(makeProfileAgent(1), makeProfileAgent(2), "lounge");
+    const contentProfile = life.getConversationProfile(makeProfileAgent(9), makeProfileAgent(10), "lounge");
+    const technologyProfile = life.getConversationProfile(makeProfileAgent(11), makeProfileAgent(15), "lounge");
+    const researchProfile = life.getConversationProfile(makeProfileAgent(13), makeProfileAgent(13), "lounge");
+    const crossProfile = life.getConversationProfile(makeProfileAgent(1), makeProfileAgent(9), "lounge");
+    const chessProfile = life.getConversationProfile(makeProfileAgent(1), makeProfileAgent(2), "chess");
     life.update(0.016, 0);
     const first = {
       active: life.getActiveConversationCount(),
@@ -149,12 +156,23 @@ async function openPreview(viewport, label) {
       bSpeaks: b.lifeBubble.userData.currentKind === "text" && !!b.lifeBubble.userData.currentContent,
       aListens: a.lifeBubble.userData.currentKind === "icon" && a.lifeBubble.userData.currentContent === "•••"
     };
-    return { first, second };
+    return {
+      first, second,
+      profiles: {
+        finance: financeProfile.groupA === "finance" && financeProfile.scriptCount >= 3,
+        content: contentProfile.groupA === "content" && contentProfile.scriptCount >= 3,
+        technology: technologyProfile.groupA === "technology" && technologyProfile.scriptCount >= 3,
+        research: researchProfile.groupA === "research" && researchProfile.scriptCount >= 3,
+        crossDivision: crossProfile.groupA !== crossProfile.groupB && crossProfile.scriptCount >= 3,
+        chess: chessProfile.stationKind === "chess" && chessProfile.scriptCount >= 3
+      }
+    };
   });
   check(liveConversation.first.active === 1 && liveConversation.first.aSpeaks &&
     liveConversation.first.bListens && liveConversation.second.active === 1 &&
-    liveConversation.second.bSpeaks && liveConversation.second.aListens,
-    label + ": two seated agents exchange visible dialogue turns and switch speaker/listener; diagnostics=" + JSON.stringify(liveConversation));
+    liveConversation.second.bSpeaks && liveConversation.second.aListens &&
+    Object.values(liveConversation.profiles).every(Boolean),
+    label + ": seated agents exchange dialogue and receive role/station-specific script pools; diagnostics=" + JSON.stringify(liveConversation));
   const polish = await page.evaluate(() => window.__premiumPolishQA);
   check(!!polish && polish.characterCount >= 10, label + ": premium character polish initializes");
   const integration = await page.evaluate(() => window.__integrationHealthQA);
