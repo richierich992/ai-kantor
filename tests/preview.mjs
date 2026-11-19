@@ -91,7 +91,29 @@ async function openPreview(viewport, label) {
   }) : null);
   check(!!livingOffice && livingOffice.monitors >= 10 && ["dawn","day","golden","night"].includes(livingOffice.period) && livingOffice.meetingReady, label + ": Living Office telemetry, monitors and time ambience initialize");
   const socialLife = await page.evaluate(() => window.__characterSocialQA);
-  check(!!socialLife && socialLife.characterCount >= 10 && socialLife.bubbleCount >= 10, label + ": character social cues initialize");
+  check(!!socialLife && socialLife.characterCount >= 10 && socialLife.bubbleCount >= 10 &&
+    socialLife.conversationEnabled === true && socialLife.conversationLineCount >= 20,
+    label + ": character social cues and conversational dialogue initialize");
+  const conversationLogic = await page.evaluate(() => {
+    const api = window.__characterSocialQA;
+    if (!api?.canPairSlots || !api?.chooseIdleStation) return { error: "conversation test hooks unavailable" };
+    const station = { slots: [] };
+    const seated = { st: station, x: 0, z: -2.1, face: 0, act: "chat", occ: null };
+    const opposite = { st: station, x: 0, z: 2.1, face: Math.PI, act: "chat", occ: null };
+    const sameDirection = { st: station, x: 0, z: 2.1, face: 0, act: "chat", occ: null };
+    station.slots = [seated, opposite, sameDirection];
+    const peer = { slot: seated, loc: seated, act: "chat", path: [], busy: false, meeting: false, r: { id: 2 } };
+    seated.occ = peer;
+    const pairedSeatChosen = api.chooseIdleStation({ r: { id: 1 } }, [sameDirection, opposite]) === opposite;
+    return {
+      faceToFace: api.canPairSlots(seated, opposite),
+      sameDirectionRejected: !api.canPairSlots(seated, sameDirection),
+      pairedSeatChosen
+    };
+  });
+  check(!conversationLogic.error && conversationLogic.faceToFace &&
+    conversationLogic.sameDirectionRejected && conversationLogic.pairedSeatChosen,
+    label + ": Social Hub routes a second idle character to a face-to-face conversation seat; diagnostics=" + JSON.stringify(conversationLogic));
   const polish = await page.evaluate(() => window.__premiumPolishQA);
   check(!!polish && polish.characterCount >= 10, label + ": premium character polish initializes");
   const integration = await page.evaluate(() => window.__integrationHealthQA);
