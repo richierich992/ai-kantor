@@ -118,7 +118,7 @@ function paintBubble(sprite, content, kind = "icon") {
       ctx.fillStyle = "#f1f8ff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      let fontSize = 34;
+      let fontSize = 40;
       ctx.font = '700 ' + fontSize + 'px "Nunito",system-ui,sans-serif';
       const words = value.split(/\s+/);
       let lines = [], line = "";
@@ -131,7 +131,7 @@ function paintBubble(sprite, content, kind = "icon") {
       });
       if (line) lines.push(line);
       if (lines.length > 2) {
-        fontSize = 29;
+        fontSize = 34;
         ctx.font = '700 ' + fontSize + 'px "Nunito",system-ui,sans-serif';
         lines = [lines.slice(0, -1).join(" "), lines[lines.length - 1]];
       }
@@ -150,7 +150,7 @@ function paintBubble(sprite, content, kind = "icon") {
   sprite.userData.currentContent = value;
   sprite.userData.currentKind = kind;
   sprite.userData.texture.needsUpdate = true;
-  sprite.scale.set(kind === "text" ? 1.62 : 0.72, kind === "text" ? 0.62 : 0.45, 1);
+  sprite.scale.set(kind === "text" ? 2.4 : 0.72, kind === "text" ? 0.92 : 0.45, 1);
   sprite.visible = !!value;
 }
 
@@ -298,8 +298,8 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
       if (bubble?.visible) {
         const pulse = 1 + 0.035 * Math.sin((elapsedSeconds || 0) * 5 + Number(character.r?.id || 0));
         const textBubble = bubble.userData.currentKind === "text";
-        bubble.scale.set((textBubble ? 1.62 : 0.72) * pulse,
-          (textBubble ? 0.62 : 0.45) * pulse, 1);
+        bubble.scale.set((textBubble ? 2.4 : 0.72) * pulse,
+          (textBubble ? 0.92 : 0.45) * pulse, 1);
         bubble.position.y = (character.premiumBadge?.position?.y || character.tag?.position?.y || 2.6) + 0.62 +
           0.04 * Math.sin((elapsedSeconds || 0) * 2.4 + Number(character.r?.id || 0));
       }
