@@ -1200,33 +1200,10 @@ step = function(character, dt) {
  * Add backend-backed workstation telemetry and ambience after all existing
  * scene boot wrappers have completed. The original data and command paths stay intact.
  */
-let livingOfficeBootCalls = 0;
 const bootBeforeLivingOffice = boot;
 boot = function() {
-  livingOfficeBootCalls++;
-  window.__livingOfficeBootTrace = {
-    calls: livingOfficeBootCalls,
-    phase: "before-previous-boot",
-    phase8Before: !!scene.userData.livingOfficePhase8
-  };
-  try {
-    bootBeforeLivingOffice();
-  } catch (error) {
-    window.__livingOfficeBootTrace = {
-      ...window.__livingOfficeBootTrace,
-      phase: "previous-boot-threw",
-      error: String(error?.message || error),
-      stack: String(error?.stack || "")
-    };
-    throw error;
-  }
-  window.__livingOfficeBootTrace = {
-    ...window.__livingOfficeBootTrace,
-    phase: "previous-boot-returned",
-    phase8AfterPreviousBoot: !!scene.userData.livingOfficePhase8
-  };
-  try {
-    livingOffice = createLivingOffice({
+  bootBeforeLivingOffice();
+  livingOffice = createLivingOffice({
     THREE,
     scene,
     rooms,
@@ -1238,22 +1215,7 @@ boot = function() {
     makeVector: V3,
     getBackendAgent: id => ag(id),
     backendReady: () => !!BK.s
-    });
-  } catch (error) {
-    window.__livingOfficeBootTrace = {
-      ...window.__livingOfficeBootTrace,
-      phase: "living-office-create-threw",
-      error: String(error?.message || error),
-      stack: String(error?.stack || "")
-    };
-    throw error;
-  }
-  window.__livingOfficeBootTrace = {
-    ...window.__livingOfficeBootTrace,
-    phase: "complete",
-    phase8After: !!scene.userData.livingOfficePhase8,
-    instanceReady: !!livingOffice
-  };
+  });
   window.__livingOfficeQA = livingOffice ? {
     get monitorCount() { return livingOffice.monitorCount; },
     get currentPeriod() { return livingOffice.currentPeriod; },
