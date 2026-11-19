@@ -175,7 +175,7 @@ export function updatePingPongBall(item, dt) {
     if (!item.isResting) {
       const [rx, rz] = rotated(station.yaw || 0, -0.9, 0.24);
       const surfaceY = Number.isFinite(station.ballSurfaceY) ? station.ballSurfaceY : 1.331;
-      ball.position.set(station.x + rx, surfaceY, station.z + rz);
+      ball.position.set(station.x + rx, surfaceY + 0.105, station.z + rz);
       ball.rotation.x = 0;
       ball.rotation.z = 0;
       item.isResting = true;
@@ -200,7 +200,7 @@ export function updatePingPongBall(item, dt) {
   const surfaceY = Number.isFinite(station.ballSurfaceY) ? station.ballSurfaceY : 1.331;
   ball.position.set(
     station.x + rx,
-    surfaceY + 0.08 + Math.abs(Math.sin(item.time * 1.75)) * 0.52,
+    surfaceY + 0.105 + Math.abs(Math.sin(item.time * 1.75)) * 0.52,
     station.z + rz
   );
   ball.rotation.x += step * 4;
