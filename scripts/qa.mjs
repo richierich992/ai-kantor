@@ -125,6 +125,24 @@ if (!social.includes("pingPongPlayersAreReady") || !social.includes("players.len
 if (!social.includes("updatePingPongBall(item, step)")) fail("Ping-pong ball idle/rally state update missing");
 if (!html.includes("n.name==='line_long_top'") || !html.includes("n.name==='pingpong_ball'")) fail("Ping-pong center stripe and duplicate GLB ball are not hidden");
 if (["pingPongPlayersAreReady", "updatePingPongBall"].every(name => social.includes(name))) ok("Ping-pong idle state and two-player rally gating");
+if (!social.includes("updateChessAnimation") || !social.includes("chessPawnPair") ||
+    !social.includes("station.ballSurfaceY") || !social.includes("surfaceY + 0.08")) {
+  fail("Visible chess-piece animation and tabletop-height ping-pong ball are missing");
+}
+if (!html.includes("function createChessSeats") || !html.includes("st.chessSeatRig") ||
+    !html.includes("Math.sin(face)*1.45") || !html.includes("kind==='lounge'?.56")) {
+  fail("Chess chairs, correct lounge front approach or seated root height are missing");
+}
+if (!livingOffice.includes("pairedActivitySeats") ||
+    !livingOffice.includes("peerSeat.occ.wait = Math.max(Number(peerSeat.occ.wait) || 0, 90)")) {
+  fail("Idle routing does not reserve a second player for chess/ping-pong");
+}
+const preview = read("tests/preview.mjs");
+if (!preview.includes("lounge avatars sit at cushion height") ||
+    !preview.includes("visible ping-pong rally") ||
+    !preview.includes("moving board pieces")) {
+  fail("Browser preview does not validate the reported Social Hub defects");
+}
 
 if (!html.includes("bootBeforeCharacterSocialLife")) fail("Character social-life boot hook missing");
 if (!html.includes('data-preset="cinematic"') && !html.includes("applyCameraPreset")) fail("Premium camera presets are not wired");
