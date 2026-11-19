@@ -291,8 +291,9 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
 
       if (bubble?.visible) {
         const pulse = 1 + 0.035 * Math.sin((elapsedSeconds || 0) * 5 + Number(character.r?.id || 0));
-        bubble.scale.x *= pulse;
-        bubble.scale.y *= pulse;
+        const textBubble = bubble.userData.currentKind === "text";
+        bubble.scale.set((textBubble ? 1.62 : 0.72) * pulse,
+          (textBubble ? 0.62 : 0.45) * pulse, 1);
         bubble.position.y = (character.premiumBadge?.position?.y || character.tag?.position?.y || 2.6) + 0.62 +
           0.04 * Math.sin((elapsedSeconds || 0) * 2.4 + Number(character.r?.id || 0));
       }
