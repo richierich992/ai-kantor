@@ -136,7 +136,74 @@ function createPingPongBall(THREE, scene, station) {
   );
   ball.castShadow = true;
   scene.add(ball);
-  return { station, ball, time: Math.random() * Math.PI * 2 };
+  return {
+    station,
+    ball,
+    time: 0,
+    wasPlaying: false,
+    isResting: false
+  };
+}
+
+/* A rally only starts when both players have arrived and are doing the
+   ping-pong action. A reserved slot or a player still walking is not a game. */
+export function pingPongPlayersAreReady(station) {
+  const players = (station?.slots || []).filter(slot => {
+    const player = slot?.occ;
+    const position = player?.g?.position;
+    if (!player || slot?.st !== station || player.slot !== slot || player.loc !== slot) return false;
+    if (player.act !== "swing" || player.busy || player.meeting || player.path?.length) return false;
+    if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.z)) return false;
+    // A reserved slot or a character on the way is not a player at the table.
+    return Math.hypot(position.x - slot.x, position.z - slot.z) <= 0.65;
+  });
+  return players.length >= 2;
+}
+
+/* Keep the ball on the tabletop while the station is idle. Do not advance its
+   timer or rotation until a two-player rally is actually in progress. */
+export function updatePingPongBall(item, dt) {
+  if (!item?.ball || !item?.station) return false;
+
+  const step = Math.min(0.05, Math.max(0, dt || 0));
+  const station = item.station;
+  const ball = item.ball;
+  const playing = pingPongPlayersAreReady(station);
+
+  ball.visible = true;
+  if (!playing) {
+    if (!item.isResting) {
+      const [rx, rz] = rotated(station.yaw || 0, -0.9, 0.24);
+      ball.position.set(station.x + rx, 0.945, station.z + rz);
+      ball.rotation.x = 0;
+      ball.rotation.z = 0;
+      item.isResting = true;
+    }
+    item.wasPlaying = false;
+    return false;
+  }
+
+  item.isResting = false;
+  if (!item.wasPlaying) {
+    item.time = 0;
+    item.wasPlaying = true;
+  }
+  item.time += step * 2.8;
+
+  /* Small lateral variation keeps the rally from looking like a rigid line. */
+  const [rx, rz] = rotated(
+    station.yaw || 0,
+    Math.sin(item.time) * 0.98,
+    Math.sin(item.time * 0.75) * 0.2
+  );
+  ball.position.set(
+    station.x + rx,
+    0.98 + Math.abs(Math.sin(item.time * 1.75)) * 0.58,
+    station.z + rz
+  );
+  ball.rotation.x += step * 4;
+  ball.rotation.z += step * 2.7;
+  return true;
 }
 
 function createSteam(THREE, scene, station) {
@@ -193,6 +260,12 @@ function makeZoneSign(THREE, scene, title, subtitle, color, x, y, z, width = 4.5
 }
 
 export function enhanceSocialHub(THREE, scene, stations) {
+  if (typeof window !== "undefined") {
+    window.__pingPongLogicQA = {
+      playersAreReady: pingPongPlayersAreReady,
+      updateBall: updatePingPongBall
+    };
+  }
   if (scene.userData.premiumSocialPhase4) return null;
   scene.userData.premiumSocialPhase4 = true;
 
@@ -299,17 +372,7 @@ export function updateSocialHub(scene, dt, elapsedSeconds) {
     item.ring.rotation.z += step * 0.06;
   });
 
-  state.pingPong.forEach(item => {
-    item.time += step * 2.8;
-    const [rx, rz] = rotated(item.station.yaw, Math.sin(item.time) * 0.98, 0);
-    item.ball.position.set(
-      item.station.x + rx,
-      0.98 + Math.abs(Math.sin(item.time * 1.75)) * 0.58,
-      item.station.z + rz
-    );
-    item.ball.rotation.x += step * 4;
-    item.ball.rotation.z += step * 2.7;
-  });
+  state.pingPong.forEach(item => updatePingPongBall(item, step));
 
   state.steam.forEach(group => {
     group.particles.forEach(particle => {
