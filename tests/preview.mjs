@@ -252,18 +252,33 @@ async function openPreview(viewport, label) {
   check(await cameraDock.locator('[data-preset="cinematic"]').getAttribute("aria-pressed") === "true", label + ": cinematic camera preset activates");
   await cameraDock.locator('[data-preset="social"]').click();
   check(await cameraDock.locator('[data-preset="social"]').getAttribute("aria-pressed") === "true", label + ": Social Hub camera preset activates");
-  /* Let the render loop finish its eased camera transition before visual capture. */
-  await page.waitForTimeout(1800);
+  /* Wait for the actual camera and OrbitControls target to reach the preset,
+     not merely for the preset button to become active. */
+  await page.waitForFunction(() => {
+    const q = window.__socialCameraQA;
+    const near = (actual, desired) => Array.isArray(actual) && Array.isArray(desired) &&
+      actual.length === 3 && actual.every((value, index) =>
+        Number.isFinite(value) && Math.abs(value - desired[index]) < 0.45);
+    return q?.preset === "social" &&
+      near(q.actualTarget, q.target) && near(q.actualCamera, q.camera);
+  }, null, { timeout: 8000 });
   const socialCamera = await page.evaluate(() => ({
     active: document.querySelector('[data-preset="social"]')?.getAttribute("aria-pressed") === "true",
     preset: window.__socialCameraQA?.preset || "",
     target: window.__socialCameraQA?.target || null,
+    camera: window.__socialCameraQA?.camera || null,
+    actualTarget: window.__socialCameraQA?.actualTarget || null,
+    actualCamera: window.__socialCameraQA?.actualCamera || null,
     fov: window.__socialCameraQA?.fov ?? null
   }));
+  const cameraReached = (actual, desired) => Array.isArray(actual) && Array.isArray(desired) &&
+    actual.length === 3 && actual.every((value, index) => Math.abs(value - desired[index]) < 0.45);
   check(socialCamera.active && socialCamera.preset === "social" &&
     Array.isArray(socialCamera.target) && socialCamera.target[0] === -36.5 &&
-    socialCamera.fov === (viewport.width / viewport.height < 0.85 ? 48 : 38),
-    label + ": Social Hub close-up camera preset is applied; diagnostics=" + JSON.stringify(socialCamera));
+    socialCamera.fov === (viewport.width / viewport.height < 0.85 ? 48 : 38) &&
+    cameraReached(socialCamera.actualTarget, socialCamera.target) &&
+    cameraReached(socialCamera.actualCamera, socialCamera.camera),
+    label + ": Social Hub camera reaches the requested position and target; diagnostics=" + JSON.stringify(socialCamera));
   const stagedPair = await page.evaluate(() => window.__characterSocialQA?.stageDemoConversation?.() || { staged: false });
   check(stagedPair.staged === true && stagedPair.station === "lounge" && stagedPair.agentIds?.length === 2,
     label + ": real GLB agents are staged in opposite Social Hub lounge seats; diagnostics=" + JSON.stringify(stagedPair));
