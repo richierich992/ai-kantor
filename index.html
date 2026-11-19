@@ -360,7 +360,7 @@ async function loadGLBs(){const L=new GLTFLoader();
   'chess_table_v2','ping_pong_table_v2','social_arcade_v3','social_cafe_station_v3','social_sofa_v3']
   .map(n=>new Promise(res=>L.load('assets/'+n+'.glb',g=>{fixMat(g.scene);GLB[n]=g.scene;res()},undefined,()=>res()))));
  if(!scene.userData.isometricOfficeRebuild)RL.forEach(dress);Object.values(chars).forEach(swapChar);if(!scene.userData.isometricOfficeRebuild)dressLobby();dressHub();
- if(scene.userData.isometricOfficeRebuild){
+ 
   const socialNames=['chess_table_v2','ping_pong_table_v2','social_arcade_v3','social_cafe_station_v3','social_sofa_v3'];
   const placed=STN.flatMap(st=>(GLBREP[st.kind]||[]).map(r=>r[0])).filter(n=>GLB[n]);
   window.__isometricAssetsQA={
@@ -375,7 +375,7 @@ async function loadGLBs(){const L=new GLTFLoader();
    cafeInstances:placed.filter(n=>n==='social_cafe_station_v3').length,
    arcadeInstances:placed.filter(n=>n==='social_arcade_v3').length
   };
- }}
+ }
 function put(n,parent,x,z,yaw=0,sc=1,y=0){const o=GLB[n]&&GLB[n].clone(true);if(!o)return null;o.position.set(x,y,z);o.rotation.y=yaw;o.scale.setScalar(sc);
  o.traverse(m=>{if(m.isMesh)m.castShadow=m.receiveShadow=true});parent.add(o);return o}
 function mkAvatar(n){const src=GLB['avatar_ai_'+n];if(!src)return null;const root=src.clone(true);root.updateMatrixWorld(true);
