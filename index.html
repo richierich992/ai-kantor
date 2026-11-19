@@ -118,6 +118,7 @@ import { enhanceOfficeWorld } from './premium-world.js';
 import { decoratePremiumCharacter, animatePremiumCharacter } from './premium-character.js';
 import { enhanceSocialHub, updateSocialHub, animateSocialCharacter } from './premium-social.js';
 import { createCharacterSocialLife } from './premium-social-life.js';
+import { createAgentNavigation } from './premium-navigation.js';
 import { createPremiumPolish } from './premium-polish.js';
 import { createIntegrationDiagnostics } from './premium-integration.js';
 import { createLivingOffice, chooseIdleStation } from './premium-living-office.js';
@@ -201,6 +202,7 @@ const W=8,DP=7,WH=3.4;
 
 let app,auth,db,oid,cur=null,autoOn=true,unsub=null,rend,cam,ctl,tg=null;
 let livingOffice = null;
+let agentNavigation = null;
 const scene=new THREE.Scene(),rooms={},chars={},picks=[],RL=[],zoneMeshes=[];
 
 /* ===== helper 3D ===== */
@@ -296,7 +298,7 @@ function go(c,tr,spot,face){
  else if(cu&&!cu.row&&tr&&!tr.row)p=[cu.appr.clone(),tr.appr.clone()];   // slot ke slot: langsung
  else if(cu&&!cu.row&&tr&&tr.row)p=[cu.appr.clone(),V3(Math.min(cu.appr.x,27.2),0,HALL_Z)].concat(pathIn(tr)); // slot ke meja: lewat koridor utama (hindari ruang meeting)
  else{p=pathOut(cu);if(tr&&!tr.row){const l=p[p.length-1];if(l&&l.x>27.2)p.push(V3(27.2,0,HALL_Z));p.push(tr.appr.clone())}else if(tr)p=p.concat(pathIn(tr))}
- p.push(spot);c.path=p.map(v=>v.clone());c.loc=tr;c.face=face;c.done=null}
+ p.push(spot);c.path=p.map(v=>v.clone());c.loc=tr;c.face=face;c.done=null;c.navAllowBlockedGoal=!!(tr&&tr.st)}
 /* Saat tidak bekerja: pergi ke social hub, lalu kembali ke meja. Tidak pergi bila sedang mengerjakan tugas / baru selesai (r.hold). */
 function roam(c,dt){
  if(c.busy)return;
@@ -321,9 +323,14 @@ function roam(c,dt){
 const turn=(c,a,k)=>{let d=a-c.g.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));c.g.rotation.y+=d*Math.min(1,k)};
 
 function step(c,dt){
+ if(agentNavigation&&c.path.length&&(c._navPathSource!==c.path||c._navVersion!==agentNavigation.version)){
+  const source=c.path.map(v=>v.clone());
+  c.path=agentNavigation.routePath(c.g.position,source,{allowBlockedGoal:!!c.navAllowBlockedGoal});
+  c._navPathSource=c.path;c._navVersion=agentNavigation.version;
+ }
  const p=c.path[0];let mvg=false;
  if(p){const dx=p.x-c.g.position.x,dz=p.z-c.g.position.z,d=Math.hypot(dx,dz);
-  if(d<.12){c.path.shift();if(!c.path.length&&c.done){const f=c.done;c.done=null;f()}}
+  if(d<.12){c.path.shift();if(!c.path.length&&c.done){const f=c.done;c.done=null;c.navAllowBlockedGoal=false;f()}}
   else{const s=Math.min(d,(c.stroll?1.6:3.4)*dt);c.g.position.x+=dx/d*s;c.g.position.z+=dz/d*s;turn(c,Math.atan2(dx,dz),dt*10);mvg=true}
  }else if(c.stroll&&!c.busy){c.si=(c.si+1)%c.stroll.length;c.path=[c.stroll[c.si].clone()]}
  else if(c.face!=null)turn(c,c.face,dt*8);
@@ -376,6 +383,7 @@ async function loadGLBs(){const L=new GLTFLoader();
    cafeInstances:placed.filter(n=>n==='social_cafe_station_v3').length,
    arcadeInstances:placed.filter(n=>n==='social_arcade_v3').length
   };
+  if(agentNavigation){agentNavigation.rebuild();window.__agentNavigationQA=agentNavigation.diagnostics()}
  }
 function put(n,parent,x,z,yaw=0,sc=1,y=0){const o=GLB[n]&&GLB[n].clone(true);if(!o)return null;o.position.set(x,y,z);o.rotation.y=yaw;o.scale.setScalar(sc);
  o.traverse(m=>{if(m.isMesh)m.castShadow=m.receiveShadow=true});parent.add(o);return o}
@@ -1313,6 +1321,8 @@ function applyMockupOffice() {
       setTarget: value => { tg = value; }
     });
     window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
+    agentNavigation=createAgentNavigation({THREE,scene,characters:chars});
+    window.__agentNavigationQA=agentNavigation?.rebuild?.()||null;
     window.__mockupOfficeBootQA = {
       ...window.__mockupOfficeBootQA,
       completed: true,
