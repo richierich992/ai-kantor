@@ -85,7 +85,16 @@ async function openPreview(viewport, label) {
 
   check(await page.locator("#login").evaluate(el => el.classList.contains("hidden")), label + ": login transitions to office");
   check(await page.locator("#ui").isVisible(), label + ": office UI visible");
-  check(await page.locator("#living-clock").count() === 1 || label === "mobile", label + ": Jakarta office clock mounted for desktop");
+  const clockDiagnostics = await page.evaluate(() => ({
+    clockCount: document.querySelectorAll("#living-clock").length,
+    headerCount: document.querySelectorAll("#ui > header").length,
+    actionsCount: document.querySelectorAll("#ui > header .r").length,
+    livingOfficeReady: !!window.__livingOfficeQA,
+    monitorCount: window.__livingOfficeQA?.monitorCount ?? null,
+    pageErrors: window.__qaPageErrors || []
+  }));
+  check(clockDiagnostics.clockCount === 1 || label === "mobile",
+    label + ": Jakarta office clock mounted for desktop; diagnostics=" + JSON.stringify(clockDiagnostics));
   const livingOffice = await page.evaluate(() => window.__livingOfficeQA ? ({
     monitors: window.__livingOfficeQA.monitorCount,
     period: window.__livingOfficeQA.currentPeriod,
