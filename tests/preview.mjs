@@ -91,6 +91,7 @@ async function openPreview(viewport, label) {
     actionsCount: document.querySelectorAll("#ui > header .r").length,
     livingOfficeReady: !!window.__livingOfficeQA,
     monitorCount: window.__livingOfficeQA?.monitorCount ?? null,
+    livingOfficeBootTrace: window.__livingOfficeBootTrace || null,
     statusText: document.querySelector("#status")?.textContent || "",
     bodyText: document.body.innerText.slice(0, 500)
   }));
