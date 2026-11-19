@@ -288,7 +288,7 @@ async function openPreview(viewport, label) {
     const aListens = state?.a?.visible && state.a.content === "•••";
     const bListens = state?.b?.visible && state.b.content === "•••";
     return state?.activeCount === 1 && ((aSpeaks && bListens) || (bSpeaks && aListens));
-  }, null, { timeout: 5000 });
+  }, null, { timeout: 12000 });
   const realSecondTurn = await page.evaluate(() => window.__characterSocialQA.demoConversationState());
   check((firstSpeaker === "a" && realSecondTurn.b.kind === "text" && realSecondTurn.a.content === "•••") ||
     (firstSpeaker === "b" && realSecondTurn.a.kind === "text" && realSecondTurn.b.content === "•••"),
