@@ -280,15 +280,26 @@ async function openPreview(viewport, label) {
   check((realFirstTurn.a.kind === "text" && realFirstTurn.b.content === "•••") ||
     (realFirstTurn.b.kind === "text" && realFirstTurn.a.content === "•••"),
     label + ": one real 3D avatar speaks first while the other listens; diagnostics=" + JSON.stringify(realFirstTurn));
+  const visibleMinX = viewport.width > 500 ? -0.58 : -0.90;
+  const bubblePoints = [realFirstTurn.a.screen, realFirstTurn.b.screen];
+  const bothBubblesFramed = bubblePoints.every(point =>
+    point && point.x > visibleMinX && point.x < 0.92 &&
+    point.y > -0.84 && point.y < 0.80 && point.z > -1 && point.z < 1);
+  const bubblesSeparated = bubblePoints.every(Boolean) &&
+    Math.abs(bubblePoints[0].x - bubblePoints[1].x) > 0.22;
+  check(bothBubblesFramed && bubblesSeparated,
+    label + ": both real dialogue bubbles fit in the Social Hub camera frame without overlap or the desktop division panel; diagnostics=" +
+    JSON.stringify({ camera: realFirstTurn.camera, bubbles: bubblePoints }));
   await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-social-hub.png"), fullPage: true });
-  await page.waitForFunction(() => {
+  await page.waitForFunction((expectedSpeaker) => {
     const state = window.__characterSocialQA?.demoConversationState?.();
     const aSpeaks = state?.a?.visible && state.a.kind === "text" && !!state.a.content;
     const bSpeaks = state?.b?.visible && state.b.kind === "text" && !!state.b.content;
     const aListens = state?.a?.visible && state.a.content === "•••";
     const bListens = state?.b?.visible && state.b.content === "•••";
-    return state?.activeCount === 1 && ((aSpeaks && bListens) || (bSpeaks && aListens));
-  }, null, { timeout: 12000 });
+    return state?.activeCount === 1 &&
+      (expectedSpeaker === "a" ? bSpeaks && aListens : aSpeaks && bListens);
+  }, firstSpeaker, { timeout: 12000 });
   const realSecondTurn = await page.evaluate(() => window.__characterSocialQA.demoConversationState());
   check((firstSpeaker === "a" && realSecondTurn.b.kind === "text" && realSecondTurn.a.content === "•••") ||
     (firstSpeaker === "b" && realSecondTurn.a.kind === "text" && realSecondTurn.b.content === "•••"),
