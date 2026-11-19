@@ -117,6 +117,7 @@ async function openPreview(viewport, label) {
   const socialAssetsReady = socialAssets &&
     socialAssets.socialGlbCount === 5 &&
     socialAssets.arcadeStations >= 8 &&
+    socialAssets.arcadeFrontFacing === 8 &&
     socialAssets.sofaInstances >= 4 &&
     socialAssets.pingPongInstances === 2 &&
     socialAssets.chessInstances === 2 &&
