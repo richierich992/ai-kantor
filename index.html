@@ -1326,7 +1326,7 @@ function applyMockupOffice() {
     if(new URLSearchParams(location.search).get("qa")==="1" && agentNavigation){
       window.__agentNavigationTest={
         agentHome:id=>chars[id]?.r?.spot?.toArray?.()||null,
-        stations:()=>STN.map(st=>({kind:st.kind,x:st.x,z:st.z,slots:st.slots.map(slot=>[slot.x,0,slot.z])})),
+        stations:()=>STN.map(st=>({kind:st.kind,x:st.x,z:st.z,slots:st.slots.map(slot=>({seat:[slot.x,0,slot.z],approach:slot.appr.toArray()}))})),
         plan:(start,waypoints,options={})=>{
           const from=new THREE.Vector3(...start);
           const targets=(waypoints||[]).map(value=>new THREE.Vector3(...value));
