@@ -1047,11 +1047,11 @@ boot = function() {
         camera: portraitView ? [65, 67, -7] : [0, 42, 78]
       },
       social: {
-        /* Close view of the west-side lounge so the two real avatars and their
-           dialogue are readable; portrait framing preserves both seats. */
-        fov: portraitView ? 42 : 32,
-        target: [-37.2, 1.2, 8.5],
-        camera: portraitView ? [-33.7, 14, 18] : [-33.7, 14, 18]
+        /* Side-on lounge framing keeps both opposing seats visible together.
+           The wider portrait lens leaves room for both dialogue bubbles. */
+        fov: portraitView ? 48 : 38,
+        target: [-36.5, 1.8, 8.5],
+        camera: [-18.5, 13.5, 11.5]
       }
     };
     const view = presets[preset] || presets.overview;
@@ -1240,13 +1240,21 @@ boot = function() {
       } },
       demoConversationState: { value: () => {
         const [a, b] = demoPair || [];
-        const bubbleState = character => ({
-          visible: !!character?.lifeBubble?.visible,
-          kind: character?.lifeBubble?.userData?.currentKind || "",
-          content: character?.lifeBubble?.userData?.currentContent || ""
-        });
+        const bubbleState = character => {
+          const bubble = character?.lifeBubble;
+          const projected = bubble?.getWorldPosition
+            ? bubble.getWorldPosition(new THREE.Vector3()).project(cam)
+            : null;
+          return {
+            visible: !!bubble?.visible,
+            kind: bubble?.userData?.currentKind || "",
+            content: bubble?.userData?.currentContent || "",
+            screen: projected ? { x: projected.x, y: projected.y, z: projected.z } : null
+          };
+        };
         return {
           activeCount: characterSocialLife.getActiveConversationCount(),
+          camera: { position: cam.position.toArray(), target: ctl.target.toArray() },
           a: bubbleState(a),
           b: bubbleState(b)
         };
