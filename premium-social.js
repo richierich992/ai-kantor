@@ -511,16 +511,20 @@ export function animateSocialCharacter(character, dt) {
   }
 
   const seated = inSlot && !!character.slot?.sit;
+  /* The base walking step resets leg pivots every frame. Keep the seat
+     transition progress on the character, then write an absolute pose after
+     that base step so the knees can actually reach the seated angle. */
+  const seatProgress = Number(character._socialSeatProgress) || 0;
+  character._socialSeatProgress = seated
+    ? Math.min(1, seatProgress + Math.min(0.06, Math.max(0, dt || 0)) * 6)
+    : Math.max(0, seatProgress - Math.min(0.06, Math.max(0, dt || 0)) * 8);
+  const seatBlend = character._socialSeatProgress;
   if (character.legL) {
-    const targetX = seated ? -0.92 : 0;
-    const targetZ = seated ? -0.045 : 0;
-    character.legL.rotation.x += (targetX - character.legL.rotation.x) * blend;
-    character.legL.rotation.z += (targetZ - character.legL.rotation.z) * blend;
+    character.legL.rotation.x = -0.92 * seatBlend;
+    character.legL.rotation.z = -0.045 * seatBlend;
   }
   if (character.legR) {
-    const targetX = seated ? -0.92 : 0;
-    const targetZ = seated ? 0.045 : 0;
-    character.legR.rotation.x += (targetX - character.legR.rotation.x) * blend;
-    character.legR.rotation.z += (targetZ - character.legR.rotation.z) * blend;
+    character.legR.rotation.x = -0.92 * seatBlend;
+    character.legR.rotation.z = 0.045 * seatBlend;
   }
 }
