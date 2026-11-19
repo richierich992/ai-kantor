@@ -7,10 +7,10 @@ import { areConversationSlotsCompatible } from "./premium-social-life.js";
  */
 
 const ROLE_STATION_PREFERENCES = {
-  finance: { reading: 4, chess: 3, cafe: 2, lounge: 2, board: 2, garden: 1, pingpong: 1 },
-  content: { cafe: 3, arcade: 3, board: 3, lounge: 2, reading: 1, garden: 1, pingpong: 2 },
-  technology: { arcade: 2, chess: 2, reading: 2, pingpong: 2, cafe: 2, lounge: 1, board: 1 },
-  research: { reading: 4, garden: 3, chess: 2, board: 2, cafe: 1, lounge: 1, pingpong: 1 }
+  finance: { reading: 4, chess: 3, cafe: 2, lounge: 2, board: 2, garden: 1, pingpong: 2 },
+  content: { cafe: 3, arcade: 3, board: 3, lounge: 2, reading: 1, garden: 1, pingpong: 3 },
+  technology: { arcade: 2, chess: 2, reading: 2, pingpong: 3, cafe: 2, lounge: 1, board: 1 },
+  research: { reading: 4, garden: 3, chess: 2, board: 2, cafe: 1, lounge: 1, pingpong: 2 }
 };
 
 function roleGroup(agentId) {
@@ -25,31 +25,40 @@ function roleGroup(agentId) {
 export function chooseIdleStation(character, freeSlots = []) {
   if (!freeSlots.length) return null;
 
-  /* A nearby unoccupied seat facing an existing social guest gets priority.
-     This naturally forms pairs without pulling anyone away from a task. */
-  const conversationSeats = freeSlots.filter(slot => {
-    if (slot?.act !== "chat" || !slot?.st) return false;
+  /* Prefer the matching seat beside an active conversation or opposite an
+     active ping-pong player. This creates real pairs instead of splitting
+     guests between different tables. */
+  const pairedSeats = freeSlots.filter(slot => {
+    if (!slot?.st) return false;
+    const chatPair = slot.act === "chat";
+    const pingPongPair = slot.act === "swing" && slot.st.kind === "pingpong";
+    if (!chatPair && !pingPongPair) return false;
     return (slot.st.slots || []).some(other => {
       const peer = other?.occ;
-      return !!peer && peer !== character &&
-        peer.slot === other && peer.loc === other &&
-        peer.act === "chat" && !peer.busy && !peer.meeting &&
-        !(peer.path && peer.path.length) &&
-        areConversationSlotsCompatible(slot, other);
+      if (!other || other === slot || other.st !== slot.st || !peer || peer === character) return false;
+      if (peer.slot !== other || peer.loc !== other || peer.busy || peer.meeting ||
+          peer.r?.lock || (peer.path && peer.path.length)) return false;
+      if (chatPair) {
+        return other.act === "chat" && peer.act === "chat" &&
+          areConversationSlotsCompatible(slot, other);
+      }
+      return other.act === "swing" && peer.act === "swing";
     });
   });
-  if (conversationSeats.length) {
-    const seat = conversationSeats[Math.floor(Math.random() * conversationSeats.length)];
-    const peerSeat = (seat.st.slots || []).find(other =>
-      other?.occ && other.occ !== character &&
-      other.occ.slot === other && other.occ.loc === other &&
-      other.occ.act === "chat" && !other.occ.busy &&
-      !other.occ.meeting && !other.occ.r?.lock &&
-      !(other.occ.path && other.occ.path.length) &&
-      areConversationSlotsCompatible(seat, other)
-    );
-    /* Reserve the first guest long enough for the arriving agent to reach
-       the opposite seat, even when the walk crosses the whole office. */
+  if (pairedSeats.length) {
+    const seat = pairedSeats[Math.floor(Math.random() * pairedSeats.length)];
+    const peerSeat = (seat.st.slots || []).find(other => {
+      const peer = other?.occ;
+      if (!peer || peer === character || peer.slot !== other || peer.loc !== other ||
+          peer.busy || peer.meeting || peer.r?.lock || (peer.path && peer.path.length)) return false;
+      if (seat.act === "chat") {
+        return other.act === "chat" && peer.act === "chat" &&
+          areConversationSlotsCompatible(seat, other);
+      }
+      return seat.act === "swing" && seat.st.kind === "pingpong" &&
+        other.act === "swing" && peer.act === "swing";
+    });
+    /* Hold the first guest at the station until their partner arrives. */
     if (peerSeat?.occ) {
       peerSeat.occ.wait = Math.max(Number(peerSeat.occ.wait) || 0, 60);
     }
