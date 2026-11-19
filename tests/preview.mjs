@@ -511,10 +511,16 @@ async function openPreview(viewport, label) {
   const chessSeated = chessAfter?.chessSeatCount === 2 && chessAfter.seats.length === 2 &&
     chessAfter.seats.every(seat => seat.sit && seat.occupant?.act === "chat" &&
       Math.abs(seat.occupant.y - seat.rootY) < 0.06 && seat.occupant.y > 0.1);
+  const chessSideApproach = chessAfter?.seats?.every(seat => {
+    const dx = seat.approach[0] - seat.x, dz = seat.approach[1] - seat.z;
+    const forward = dx * Math.sin(seat.face) + dz * Math.cos(seat.face);
+    const lateral = dx * Math.cos(seat.face) - dz * Math.sin(seat.face);
+    return Math.abs(forward) < 0.25 && Math.abs(lateral) > 1.2;
+  });
   const chessPiecesMoving = chessAfter?.chessPieces?.ready === true &&
     (Math.abs(chessAfter.chessPieces.whiteZ || 0) > 0.06 ||
       Math.abs(chessAfter.chessPieces.blackZ || 0) > 0.06);
-  check(chessSeated && chessPiecesMoving,
+  check(chessSeated && chessSideApproach && chessPiecesMoving,
     label + ": chess station has two real chairs, seated players and moving board pieces; diagnostics=" +
       JSON.stringify(chessAfter));
   await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-social-games.png"), fullPage: true });
