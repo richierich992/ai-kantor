@@ -325,11 +325,15 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
       conversationEnabled: true,
       conversationStationKinds: ["lounge", "chess"],
       conversationLineCount: CONVERSATION_SCRIPTS.reduce((sum, script) => sum + script.length, 0),
-      activityCueCount: entries.filter(character => !!character.act || character.busy || character.meeting).length,
-      canPairSlots: areConversationSlotsCompatible,
-      get activeConversationCount() { return conversations.size; }
+      activityCueCount: entries.filter(character => !!character.act || character.busy || character.meeting).length
     };
   }
 
-  return { attach, update, diagnostics };
+  return {
+    attach,
+    update,
+    diagnostics,
+    canPairSlots: areConversationSlotsCompatible,
+    getActiveConversationCount: () => conversations.size
+  };
 }
