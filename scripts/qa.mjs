@@ -96,8 +96,11 @@ if (!html.includes("routeCmdBeforeLivingOffice")) fail("Cross-division meeting d
 if (!html.includes("characterSocialLife.update(dt,clk.elapsedTime)")) fail("Character social-life update loop missing");
 const socialLife = read("premium-social-life.js");
 if (!socialLife.includes("areConversationSlotsCompatible") ||
-    !socialLife.includes("CONVERSATION_SCRIPTS") ||
-    !socialLife.includes("conversationEnabled: true")) fail("Social Hub face-to-face conversation logic is missing");
+    !socialLife.includes("ROLE_CONVERSATIONS") ||
+    !socialLife.includes("CROSS_ROLE_CONVERSATIONS") ||
+    !socialLife.includes("CHESS_CONVERSATIONS") ||
+    !socialLife.includes("conversationRounds") ||
+    !socialLife.includes("conversationEnabled: true")) fail("Role-aware and station-specific Social Hub conversations are missing");
 const livingOffice = read("premium-living-office.js");
 if (!livingOffice.includes("areConversationSlotsCompatible(slot, other)") ||
     !livingOffice.includes("conversationSeats") ||
