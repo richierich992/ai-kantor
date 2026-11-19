@@ -91,8 +91,11 @@ async function openPreview(viewport, label) {
     actionsCount: document.querySelectorAll("#ui > header .r").length,
     livingOfficeReady: !!window.__livingOfficeQA,
     monitorCount: window.__livingOfficeQA?.monitorCount ?? null,
-    pageErrors: window.__qaPageErrors || []
+    statusText: document.querySelector("#status")?.textContent || "",
+    bodyText: document.body.innerText.slice(0, 500)
   }));
+  clockDiagnostics.pageErrors = report.pageErrors.filter(error => error.viewport === label);
+  clockDiagnostics.consoleErrors = report.consoleErrors.filter(error => error.viewport === label);
   check(clockDiagnostics.clockCount === 1 || label === "mobile",
     label + ": Jakarta office clock mounted for desktop; diagnostics=" + JSON.stringify(clockDiagnostics));
   const livingOffice = await page.evaluate(() => window.__livingOfficeQA ? ({
