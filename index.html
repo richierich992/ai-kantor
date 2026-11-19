@@ -1323,6 +1323,30 @@ function applyMockupOffice() {
     window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
     agentNavigation=createAgentNavigation({THREE,scene,characters:chars});
     window.__agentNavigationQA=agentNavigation?.rebuild?.()||null;
+    if(new URLSearchParams(location.search).get("qa")==="1" && agentNavigation){
+      window.__agentNavigationTest={
+        agentHome:id=>chars[id]?.r?.spot?.toArray?.()||null,
+        stations:()=>STN.map(st=>({kind:st.kind,x:st.x,z:st.z,slots:st.slots.map(slot=>[slot.x,0,slot.z])})),
+        plan:(start,waypoints,options={})=>{
+          const from=new THREE.Vector3(...start);
+          const targets=(waypoints||[]).map(value=>new THREE.Vector3(...value));
+          const route=agentNavigation.routePath(from,targets,options);
+          const points=[from,...route];
+          const segments=points.slice(0,-1).map((value,index)=>({
+            from:value.toArray(),to:points[index+1].toArray(),
+            clear:agentNavigation.lineClear(value,points[index+1])
+          }));
+          const state=agentNavigation.diagnostics();
+          return {
+            route:route.map(value=>value.toArray()),
+            segmentsClear:segments.every(segment=>segment.clear),
+            segments,
+            failed:!!state.lastRoute?.failed,
+            plannedPointCount:state.lastRoute?.plannedPointCount||0
+          };
+        }
+      };
+    }
     window.__mockupOfficeBootQA = {
       ...window.__mockupOfficeBootQA,
       completed: true,
