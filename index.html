@@ -1047,11 +1047,11 @@ boot = function() {
         camera: portraitView ? [65, 67, -7] : [0, 42, 78]
       },
       social: {
-        /* Center the lounge conversation area; portrait framing keeps both
-           seated agents on-screen while desktop still includes nearby games. */
-        fov: portraitView ? 58 : 48,
-        target: [-36.5, 1, 8.5],
-        camera: portraitView ? [-36.5, 19, 31] : [-33.5, 22, 36]
+        /* Close view of the west-side lounge so the two real avatars and their
+           dialogue are readable; portrait framing preserves both seats. */
+        fov: portraitView ? 42 : 32,
+        target: [-37.2, 1.2, 8.5],
+        camera: portraitView ? [-33.7, 14, 18] : [-33.7, 14, 18]
       }
     };
     const view = presets[preset] || presets.overview;
@@ -1061,6 +1061,9 @@ boot = function() {
       t: new THREE.Vector3(...view.target),
       c: new THREE.Vector3(...view.camera)
     };
+    if (new URLSearchParams(location.search).get("qa") === "1") {
+      window.__socialCameraQA = { preset, target: view.target.slice(), camera: view.camera.slice(), fov: view.fov };
+    }
     $('iso').textContent = '◇ Isometrik';
     $('iso').dataset.premiumIso = '0';
     if (premiumCameraDock) premiumCameraDock.setActive(preset);
