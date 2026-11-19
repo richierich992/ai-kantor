@@ -80,7 +80,7 @@ function createBubble(THREE, character) {
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(0.72, 0.45, 1);
   const badgeY = character.premiumBadge?.position?.y || character.tag?.position?.y || 2.6;
-  sprite.position.set(0.34, badgeY + 0.62, 0.04);
+  sprite.position.set(0.34, badgeY + 0.98, 0.04);
   sprite.renderOrder = 30;
   sprite.visible = false;
   sprite.userData.canvas = canvas;
@@ -141,7 +141,7 @@ function paintBubble(sprite, content, kind = "icon") {
     } else {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = '92px "Apple Color Emoji","Segoe UI Emoji",sans-serif';
+      ctx.font = value === "•••" ? 'bold 84px system-ui,sans-serif' : '92px "Apple Color Emoji","Segoe UI Emoji",sans-serif';
       ctx.fillStyle = "#ffffff";
       ctx.fillText(value, 256, 98);
     }
@@ -150,7 +150,7 @@ function paintBubble(sprite, content, kind = "icon") {
   sprite.userData.currentContent = value;
   sprite.userData.currentKind = kind;
   sprite.userData.texture.needsUpdate = true;
-  sprite.scale.set(kind === "text" ? 2.4 : 0.72, kind === "text" ? 0.92 : 0.45, 1);
+  sprite.scale.set(kind === "text" ? 2.4 : value === "•••" ? 0.92 : 0.72, kind === "text" ? 0.92 : value === "•••" ? 0.56 : 0.45, 1);
   sprite.visible = !!value;
 }
 
@@ -269,7 +269,7 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
         const speaker = turn.speaker === 0 ? conversation.a : conversation.b;
         const listener = turn.speaker === 0 ? conversation.b : conversation.a;
         cues.set(speaker, { kind: "text", content: turn.text });
-        cues.set(listener, { kind: "listen", content: "👂" });
+        cues.set(listener, { kind: "listen", content: "•••" });
       }
     }
 
@@ -298,9 +298,9 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
       if (bubble?.visible) {
         const pulse = 1 + 0.035 * Math.sin((elapsedSeconds || 0) * 5 + Number(character.r?.id || 0));
         const textBubble = bubble.userData.currentKind === "text";
-        bubble.scale.set((textBubble ? 2.4 : 0.72) * pulse,
-          (textBubble ? 0.92 : 0.45) * pulse, 1);
-        bubble.position.y = (character.premiumBadge?.position?.y || character.tag?.position?.y || 2.6) + 0.62 +
+        bubble.scale.set((textBubble ? 2.4 : bubble.userData.currentContent === "•••" ? 0.92 : 0.72) * pulse,
+          (textBubble ? 0.92 : bubble.userData.currentContent === "•••" ? 0.56 : 0.45) * pulse, 1);
+        bubble.position.y = (character.premiumBadge?.position?.y || character.tag?.position?.y || 2.6) + 0.98 +
           0.04 * Math.sin((elapsedSeconds || 0) * 2.4 + Number(character.r?.id || 0));
       }
 
