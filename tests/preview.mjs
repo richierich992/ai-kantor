@@ -206,6 +206,107 @@ async function openPreview(viewport, label) {
     socialAssets.arcadeInstances >= 8;
   check(socialAssetsReady,
     label + ": social GLB furniture is mounted in the office; diagnostics=" + JSON.stringify(socialAssets));
+  await page.waitForFunction(() => window.__agentNavigationQA?.ready === true &&
+    window.__agentNavigationQA.colliderCount > 20, null, { timeout: 15000 });
+  const worldNavigation = await page.evaluate(() => window.__agentNavigationQA);
+  report.navigation = report.navigation || {};
+  report.navigation[label] = worldNavigation;
+  check(worldNavigation.colliderCount > 20 && worldNavigation.blockedCellCount > 100,
+    label + ": real office geometry is registered as navigation obstacles; diagnostics=" + JSON.stringify(worldNavigation));
+
+  const obstacleRoute = await page.evaluate(async () => {
+    const { createAgentNavigation } = await import("./premium-navigation.js");
+    const THREE = await import("three");
+    const testScene = new THREE.Scene();
+    const obstacle = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 2, 1),
+      new THREE.MeshBasicMaterial({ color: 0x777777 })
+    );
+    obstacle.position.set(0, 1, 0);
+    testScene.add(obstacle);
+    const navigation = createAgentNavigation({
+      THREE, scene: testScene,
+      bounds: { minX: -4, maxX: 4, minZ: -4, maxZ: 4 },
+      cellSize: 0.25, clearance: 0.35
+    });
+    const diagnostics = navigation.rebuild();
+    const start = new THREE.Vector3(-2, 0, 0);
+    const goal = new THREE.Vector3(2, 0, 0);
+    const route = navigation.routePath(start, [goal]);
+    const points = [start, ...route];
+    const segmentsClear = points.slice(0, -1).every((point, index) =>
+      navigation.lineClear(point, points[index + 1]));
+    return {
+      diagnostics,
+      route: route.map(point => [point.x, point.y, point.z]),
+      detoursAroundObstacle: route.some(point => Math.abs(point.z) > 0.7),
+      segmentsClear,
+      reachesDestination: route.length > 0 && Math.hypot(route.at(-1).x - goal.x, route.at(-1).z - goal.z) < 0.4,
+      failed: navigation.diagnostics().lastRoute?.failed === true
+    };
+  });
+  check(obstacleRoute.diagnostics.colliderCount === 1 &&
+    obstacleRoute.detoursAroundObstacle && obstacleRoute.segmentsClear &&
+    obstacleRoute.reachesDestination && !obstacleRoute.failed,
+    label + ": avatar path detours around a blocking object without crossing its clearance zone; diagnostics=" +
+      JSON.stringify(obstacleRoute));
+
+  const realOfficeRoutes = await page.evaluate(() => {
+    const api = window.__agentNavigationTest;
+    if (!api) return { error: "real-office navigation QA hook unavailable" };
+    const stations = api.stations();
+    const cases = [
+      { agentId: 1, stationKind: "lounge" },
+      { agentId: 9, stationKind: "board" },
+      { agentId: 11, stationKind: "pingpong" },
+      { agentId: 13, stationKind: "chess" },
+      { agentId: 16, stationKind: "cafe", stationIndex: 1 }
+    ];
+    const routes = cases.map(item => {
+      const home = api.agentHome(item.agentId);
+      const matches = stations.filter(station => station.kind === item.stationKind);
+      const station = matches[item.stationIndex || 0];
+      if (!home || !station?.slots?.length) return { ...item, failed: true, reason: "missing home or station" };
+      const seat = station.slots[0];
+      const approachPlan = api.plan(home, [seat.approach]);
+      const reachedApproach = approachPlan.route.at(-1) || seat.approach;
+      const seatPlan = api.plan(reachedApproach, [seat.seat], { allowBlockedGoal: true });
+      const finalSegment = seatPlan.segments.at(-1);
+      const contactDistance = finalSegment
+        ? Math.hypot(finalSegment.to[0] - finalSegment.from[0], finalSegment.to[2] - finalSegment.from[2])
+        : 0;
+      const safeTravelSegments = approachPlan.segments.every(segment => segment.clear) &&
+        seatPlan.segments.slice(0, -1).every(segment => segment.clear);
+      return {
+        ...item,
+        home, approach: seat.approach, seat: seat.seat,
+        failed: approachPlan.failed || seatPlan.failed,
+        safeTravelSegments,
+        finalSeatContactClear: !finalSegment || finalSegment.clear,
+        finalContactDistance: contactDistance,
+        approachPointCount: approachPlan.route.length,
+        seatPointCount: seatPlan.route.length
+      };
+    });
+    const researchHome = api.agentHome(13);
+    const probes = [[37, 0, -17], [37, 0, -12], [25, 0, -10], [0, 0, -10]];
+    const researchExitProbes = probes.map(target => {
+      const plan = api.plan(researchHome, [target]);
+      return { target, failed: plan.failed, routePointCount: plan.route.length, route: plan.route };
+    });
+    return { routes, researchExitProbes };
+  });
+  const routeItems = realOfficeRoutes.routes || [];
+  const realOfficeRoutesReady = !realOfficeRoutes.error &&
+    routeItems.length >= 5 &&
+    routeItems.every(item => !item.failed && item.safeTravelSegments &&
+      item.approachPointCount > 0 && item.seatPointCount > 0 &&
+      (item.finalSeatContactClear || item.finalContactDistance <= 1.6));
+  report.navigationRoutes = report.navigationRoutes || {};
+  report.navigationRoutes[label] = realOfficeRoutes;
+  check(realOfficeRoutesReady,
+    label + ": real routes from five workstations to nearby Social Hub stations avoid obstacles, with only a short final seating contact allowed; diagnostics=" +
+      JSON.stringify(realOfficeRoutes));
 
   await page.waitForFunction(() => window.__pingPongAssetQA?.tables === 2, null, { timeout: 15000 });
   const pingPongAssetQA = await page.evaluate(() => window.__pingPongAssetQA);

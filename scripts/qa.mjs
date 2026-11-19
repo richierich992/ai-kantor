@@ -19,6 +19,7 @@ const modules = [
   "premium-social-life.js",
   "premium-polish.js",
   "premium-integration.js",
+  "premium-navigation.js",
   "isometric-office.js"
 ];
 
@@ -80,7 +81,8 @@ const requiredHooks = [
   "chooseIdleStation",
   "createCharacterSocialLife",
   "createPremiumPolish",
-  "createIntegrationDiagnostics"
+  "createIntegrationDiagnostics",
+  "createAgentNavigation"
 ];
 for (const hook of requiredHooks) {
   if (!html.includes(hook)) fail(`Missing integration hook: ${hook}`);
@@ -94,6 +96,18 @@ if (!html.includes("PREMIUM_LOW_POWER")) fail("Adaptive low-power profile missin
 if (!html.includes("livingOffice.update(dt,clk.elapsedTime)")) fail("Living Office update loop missing");
 if (!html.includes("routeCmdBeforeLivingOffice")) fail("Cross-division meeting dispatch hook missing");
 if (!html.includes("characterSocialLife.update(dt,clk.elapsedTime)")) fail("Character social-life update loop missing");
+const navigation = read("premium-navigation.js");
+if (!navigation.includes("findGridPath") ||
+    !navigation.includes("nearestWalkable") ||
+    !navigation.includes("clearance") ||
+    !navigation.includes("lineClear")) fail("Obstacle-aware pathfinding and avatar clearance are missing");
+if (!html.includes("agentNavigation.routePath(c.g.position") ||
+    !html.includes("agentNavigation.rebuild()") ||
+    !html.includes("window.__agentNavigationQA")) fail("Agent movement is not connected to live obstacle navigation");
+if (!html.includes("{id:'research_intelligence',box:[33,41,-26,-18]") ||
+    !html.includes("{id:'hr_admin',box:[33,41,-15,-7]")) fail("Research-to-HR walking corridor must retain at least a 3m gap");
+
+
 const socialLife = read("premium-social-life.js");
 if (!socialLife.includes("areConversationSlotsCompatible") ||
     !socialLife.includes("ROLE_CONVERSATIONS") ||

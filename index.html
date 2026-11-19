@@ -118,6 +118,7 @@ import { enhanceOfficeWorld } from './premium-world.js';
 import { decoratePremiumCharacter, animatePremiumCharacter } from './premium-character.js';
 import { enhanceSocialHub, updateSocialHub, animateSocialCharacter } from './premium-social.js';
 import { createCharacterSocialLife } from './premium-social-life.js';
+import { createAgentNavigation } from './premium-navigation.js';
 import { createPremiumPolish } from './premium-polish.js';
 import { createIntegrationDiagnostics } from './premium-integration.js';
 import { createLivingOffice, chooseIdleStation } from './premium-living-office.js';
@@ -194,13 +195,14 @@ const DL=[
  {id:'marketing_content',box:[-5,11,-26,-7],cells:[[9,-1,-22],[10,7,-22],[12,-1,-12],[14,7,-12]]},
  {id:'it_automation',box:[14,30,-26,-7],cells:[[11,18,-22],[15,26,-22],[16,18,-12]]},
  {id:'research_intelligence',box:[33,41,-26,-18],cells:[[13,37,-22]],single:1},
- {id:'hr_admin',box:[33,41,-17,-7],cells:[],single:1},
+ {id:'hr_admin',box:[33,41,-15,-7],cells:[],single:1},
 ];
 const DEP={};
 const W=8,DP=7,WH=3.4;
 
 let app,auth,db,oid,cur=null,autoOn=true,unsub=null,rend,cam,ctl,tg=null;
 let livingOffice = null;
+let agentNavigation = null;
 const scene=new THREE.Scene(),rooms={},chars={},picks=[],RL=[],zoneMeshes=[];
 
 /* ===== helper 3D ===== */
@@ -296,7 +298,7 @@ function go(c,tr,spot,face){
  else if(cu&&!cu.row&&tr&&!tr.row)p=[cu.appr.clone(),tr.appr.clone()];   // slot ke slot: langsung
  else if(cu&&!cu.row&&tr&&tr.row)p=[cu.appr.clone(),V3(Math.min(cu.appr.x,27.2),0,HALL_Z)].concat(pathIn(tr)); // slot ke meja: lewat koridor utama (hindari ruang meeting)
  else{p=pathOut(cu);if(tr&&!tr.row){const l=p[p.length-1];if(l&&l.x>27.2)p.push(V3(27.2,0,HALL_Z));p.push(tr.appr.clone())}else if(tr)p=p.concat(pathIn(tr))}
- p.push(spot);c.path=p.map(v=>v.clone());c.loc=tr;c.face=face;c.done=null}
+ p.push(spot);c.path=p.map(v=>v.clone());c.loc=tr;c.face=face;c.done=null;c.navAllowBlockedGoal=!!(tr&&tr.st)}
 /* Saat tidak bekerja: pergi ke social hub, lalu kembali ke meja. Tidak pergi bila sedang mengerjakan tugas / baru selesai (r.hold). */
 function roam(c,dt){
  if(c.busy)return;
@@ -321,9 +323,14 @@ function roam(c,dt){
 const turn=(c,a,k)=>{let d=a-c.g.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));c.g.rotation.y+=d*Math.min(1,k)};
 
 function step(c,dt){
+ if(agentNavigation&&c.path.length&&(c._navPathSource!==c.path||c._navVersion!==agentNavigation.version)){
+  const source=c.path.map(v=>v.clone());
+  c.path=agentNavigation.routePath(c.g.position,source,{allowBlockedGoal:!!c.navAllowBlockedGoal});
+  c._navPathSource=c.path;c._navVersion=agentNavigation.version;
+ }
  const p=c.path[0];let mvg=false;
  if(p){const dx=p.x-c.g.position.x,dz=p.z-c.g.position.z,d=Math.hypot(dx,dz);
-  if(d<.12){c.path.shift();if(!c.path.length&&c.done){const f=c.done;c.done=null;f()}}
+  if(d<.12){c.path.shift();if(!c.path.length&&c.done){const f=c.done;c.done=null;c.navAllowBlockedGoal=false;f()}}
   else{const s=Math.min(d,(c.stroll?1.6:3.4)*dt);c.g.position.x+=dx/d*s;c.g.position.z+=dz/d*s;turn(c,Math.atan2(dx,dz),dt*10);mvg=true}
  }else if(c.stroll&&!c.busy){c.si=(c.si+1)%c.stroll.length;c.path=[c.stroll[c.si].clone()]}
  else if(c.face!=null)turn(c,c.face,dt*8);
@@ -376,6 +383,7 @@ async function loadGLBs(){const L=new GLTFLoader();
    cafeInstances:placed.filter(n=>n==='social_cafe_station_v3').length,
    arcadeInstances:placed.filter(n=>n==='social_arcade_v3').length
   };
+  if(agentNavigation){agentNavigation.rebuild();window.__agentNavigationQA=agentNavigation.diagnostics()}
  }
 function put(n,parent,x,z,yaw=0,sc=1,y=0){const o=GLB[n]&&GLB[n].clone(true);if(!o)return null;o.position.set(x,y,z);o.rotation.y=yaw;o.scale.setScalar(sc);
  o.traverse(m=>{if(m.isMesh)m.castShadow=m.receiveShadow=true});parent.add(o);return o}
@@ -470,8 +478,8 @@ const PROP={
 };
 /* slot lokal: [dx,dz,hadap,duduk?,aktivitas,naik?,rute jalan-jalan]. hadap 0 = menghadap +z */
 const SLOT={
- pingpong:[[-2.2,0,PI/2,0,'swing'],[2.2,0,-PI/2,0,'swing']],
- chess:[[-1.2,0,PI/2,1,'chat'],[1.2,0,-PI/2,1,'chat']],
+ pingpong:[[-2.75,0,PI/2,0,'swing'],[2.75,0,-PI/2,0,'swing']],
+ chess:[[-1.85,0,PI/2,1,'chat'],[1.85,0,-PI/2,1,'chat']],
  lounge:[[-.7,-2.1,0,1,'chat'],[.7,-2.1,0,1,'chat'],[-.7,2.1,PI,1,'chat'],[.7,2.1,PI,1,'chat']],
  arcade:[[0,1.4,PI,0,'type']],
  cafe:[[-.8,1.5,PI,0,'chat'],[.8,1.5,PI,0,'chat']],
@@ -1313,6 +1321,32 @@ function applyMockupOffice() {
       setTarget: value => { tg = value; }
     });
     window.__mockupOfficeQA = mockupOffice?.diagnostics?.() || null;
+    agentNavigation=createAgentNavigation({THREE,scene,characters:chars});
+    window.__agentNavigationQA=agentNavigation?.rebuild?.()||null;
+    if(new URLSearchParams(location.search).get("qa")==="1" && agentNavigation){
+      window.__agentNavigationTest={
+        agentHome:id=>chars[id]?.r?.spot?.toArray?.()||null,
+        stations:()=>STN.map(st=>({kind:st.kind,x:st.x,z:st.z,slots:st.slots.map(slot=>({seat:[slot.x,0,slot.z],approach:slot.appr.toArray()}))})),
+        plan:(start,waypoints,options={})=>{
+          const from=new THREE.Vector3(...start);
+          const targets=(waypoints||[]).map(value=>new THREE.Vector3(...value));
+          const route=agentNavigation.routePath(from,targets,options);
+          const points=[from,...route];
+          const segments=points.slice(0,-1).map((value,index)=>({
+            from:value.toArray(),to:points[index+1].toArray(),
+            clear:agentNavigation.lineClear(value,points[index+1])
+          }));
+          const state=agentNavigation.diagnostics();
+          return {
+            route:route.map(value=>value.toArray()),
+            segmentsClear:segments.every(segment=>segment.clear),
+            segments,
+            failed:!!state.lastRoute?.failed,
+            plannedPointCount:state.lastRoute?.plannedPointCount||0
+          };
+        }
+      };
+    }
     window.__mockupOfficeBootQA = {
       ...window.__mockupOfficeBootQA,
       completed: true,
