@@ -421,6 +421,7 @@ async function loadGLBs(){const L=new GLTFLoader();
        approachForward:(slot.appr.x-slot.x)*Math.sin(slot.face)+(slot.appr.z-slot.z)*Math.cos(slot.face),
        occupant:slot.occ?{id:slot.occ.r.id,act:slot.occ.act,y:slot.occ.g.position.y,
         armL:slot.occ.armL?.rotation.y??null,armR:slot.occ.armR?.rotation.y??null,
+        armLX:slot.occ.armL?.rotation.x??null,armRX:slot.occ.armR?.rotation.x??null,
         legL:slot.occ.legL?.rotation.x??null,legR:slot.occ.legR?.rotation.x??null}:null
       })),
       chessSeatCount:station.chessSeatRig?.children?.length||0,
