@@ -559,14 +559,14 @@ function prepareChessBoard(o,station){
 }
 function dressHub(){
   const qaMode=new URLSearchParams(location.search).get('qa')==='1';
-  const chessQA=qaMode?{tableCount:0,seatCount:0,allVisible:true,seats:[]}:null;
+  const chessQA=qaMode?{tableCount:0,seatCount:0,piecePairCount:0,allVisible:true,seats:[]}:null;
   STN.forEach(st=>{const rep=GLBREP[st.kind];if(!rep||!rep.every(r=>GLB[r[0]]))return;
    st.g.visible=false;
    if(st.kind==='chess'){
     st.k.visible=true;st.chessSeatGroups=st.k.userData.chessSeatGroups||[];
     if(chessQA){st.k.updateMatrixWorld(true);chessQA.tableCount++;chessQA.seatCount+=st.chessSeatGroups.length;st.chessSeatGroups.forEach(seat=>{const p=seat.getWorldPosition(new THREE.Vector3());chessQA.seats.push({x:p.x,z:p.z,visible:st.k.visible&&seat.visible})});}
    }else if(st.k)st.k.visible=false;
-   rep.forEach(([n,dx,dz,ry,s])=>{const [wx,wz]=rot(st.yaw,dx,dz),o=put(n,scene,st.x+wx,st.z+wz,st.yaw+ry,s);if(o&&n==='ping_pong_table_v2')fixPingPong(o,st);if(o&&n==='chess_table_v2')prepareChessBoard(o,st)})
+   rep.forEach(([n,dx,dz,ry,s])=>{const [wx,wz]=rot(st.yaw,dx,dz),o=put(n,scene,st.x+wx,st.z+wz,st.yaw+ry,s);if(o&&n==='ping_pong_table_v2')fixPingPong(o,st);if(o&&n==='chess_table_v2'){prepareChessBoard(o,st);if(chessQA)chessQA.piecePairCount+=st.chessPieces?.length||0}})
   });
   if(chessQA)window.__chessSeatQA=chessQA;
  }
