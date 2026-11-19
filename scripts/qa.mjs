@@ -100,7 +100,9 @@ if (!socialLife.includes("areConversationSlotsCompatible") ||
     !socialLife.includes("conversationEnabled: true")) fail("Social Hub face-to-face conversation logic is missing");
 const livingOffice = read("premium-living-office.js");
 if (!livingOffice.includes("areConversationSlotsCompatible(slot, other)") ||
-    !livingOffice.includes("conversationSeats")) fail("Idle routing does not prioritize a conversation partner seat");
+    !livingOffice.includes("conversationSeats") ||
+    !livingOffice.includes("peerSeat.occ.wait = Math.max") ||
+    !livingOffice.includes("Number(peerSeat.occ.wait) || 0, 60")) fail("Idle routing does not prioritize and reserve a face-to-face conversation partner seat");
 const social = read("premium-social.js");
 if (!social.includes("pingPongPlayersAreReady") || !social.includes("players.length >= 2")) fail("Ping-pong rally must require two active players");
 if (!social.includes("updatePingPongBall(item, step)")) fail("Ping-pong ball idle/rally state update missing");
