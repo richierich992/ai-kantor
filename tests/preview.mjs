@@ -72,7 +72,9 @@ async function openPreview(viewport, label) {
   });
 
   await routeFirebase(page);
-  await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 60000 });
+  const previewURL = new URL(baseURL);
+  previewURL.searchParams.set("qa", "1");
+  await page.goto(previewURL.toString(), { waitUntil: "domcontentloaded", timeout: 60000 });
   check((await page.title()).includes("Kantor AI 3D"), label + ": document title");
   check(await page.locator("#login").isVisible(), label + ": login screen visible");
 
@@ -252,7 +254,26 @@ async function openPreview(viewport, label) {
   check(await cameraDock.locator('[data-preset="social"]').getAttribute("aria-pressed") === "true", label + ": Social Hub camera preset activates");
   /* Let the render loop finish its eased camera transition before visual capture. */
   await page.waitForTimeout(1500);
+  const stagedPair = await page.evaluate(() => window.__characterSocialQA?.stageDemoConversation?.() || { staged: false });
+  check(stagedPair.staged === true && stagedPair.station === "lounge" && stagedPair.agentIds?.length === 2,
+    label + ": real GLB agents are staged in opposite Social Hub lounge seats; diagnostics=" + JSON.stringify(stagedPair));
+  await page.waitForFunction(() => {
+    const state = window.__characterSocialQA?.demoConversationState?.();
+    return state?.activeCount === 1 && state.a?.visible && state.a.kind === "text" &&
+      !!state.a.content && state.b?.visible && state.b.content === "👂";
+  }, null, { timeout: 10000 });
+  const realFirstTurn = await page.evaluate(() => window.__characterSocialQA.demoConversationState());
+  check(realFirstTurn.a.kind === "text" && realFirstTurn.b.content === "👂",
+    label + ": real 3D avatar renders the first dialogue bubble and listening cue; diagnostics=" + JSON.stringify(realFirstTurn));
   await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-social-hub.png"), fullPage: true });
+  await page.waitForFunction(() => {
+    const state = window.__characterSocialQA?.demoConversationState?.();
+    return state?.activeCount === 1 && state.a?.content === "👂" &&
+      state.b?.kind === "text" && !!state.b.content;
+  }, null, { timeout: 5000 });
+  const realSecondTurn = await page.evaluate(() => window.__characterSocialQA.demoConversationState());
+  check(realSecondTurn.a.content === "👂" && realSecondTurn.b.kind === "text",
+    label + ": real 3D avatar conversation alternates to the second speaker; diagnostics=" + JSON.stringify(realSecondTurn));
   await cameraDock.locator('[data-preset="overview"]').click();
   check(await cameraDock.locator('[data-preset="overview"]').getAttribute("aria-pressed") === "true", label + ": overview camera preset restores");
   report.viewports[label] = {
