@@ -116,15 +116,19 @@ if (!socialLife.includes("areConversationSlotsCompatible") ||
     !socialLife.includes("conversationRounds") ||
     !socialLife.includes("conversationEnabled: true")) fail("Role-aware and station-specific Social Hub conversations are missing");
 const livingOffice = read("premium-living-office.js");
-if (!livingOffice.includes("areConversationSlotsCompatible(slot, other)") ||
-    !livingOffice.includes("conversationSeats") ||
+if (!livingOffice.includes("areConversationSlotsCompatible(seat, other)") ||
+    !livingOffice.includes("pairedSeats") ||
     !livingOffice.includes("peerSeat.occ.wait = Math.max") ||
-    !livingOffice.includes("Number(peerSeat.occ.wait) || 0, 60")) fail("Idle routing does not prioritize and reserve a face-to-face conversation partner seat");
+    !livingOffice.includes("Number(peerSeat.occ.wait) || 0, 60") ||
+    !livingOffice.includes("slot.st.kind === \"pingpong\"")) fail("Idle routing must pair chat guests and opposite ping-pong players at the same station");
 const social = read("premium-social.js");
 if (!social.includes("pingPongPlayersAreReady") || !social.includes("players.length >= 2")) fail("Ping-pong rally must require two active players");
 if (!social.includes("updatePingPongBall(item, step)")) fail("Ping-pong ball idle/rally state update missing");
+if (!social.includes("chessPlayersAreReady") || !social.includes("updateChessPieces(item, step)")) fail("Chess pieces must animate only when two players are seated");
 if (!html.includes("n.name==='line_long_top'") || !html.includes("n.name==='pingpong_ball'")) fail("Ping-pong center stripe and duplicate GLB ball are not hidden");
-if (["pingPongPlayersAreReady", "updatePingPongBall"].every(name => social.includes(name))) ok("Ping-pong idle state and two-player rally gating");
+if (["pingPongPlayersAreReady", "updatePingPongBall", "chessPlayersAreReady", "updateChessPieces"].every(name => social.includes(name))) ok("Ping-pong and chess station activity gating");
+if (!html.includes("sitLift:sit&&kind==='lounge'?.30:0") || !html.includes("chessSeatGroups=st.k.userData.chessSeatGroups")) fail("Lounge seated height or visible chess chair integration is missing");
+else ok("Lounge cushion alignment and chess chair integration");
 
 if (!html.includes("bootBeforeCharacterSocialLife")) fail("Character social-life boot hook missing");
 if (!html.includes('data-preset="cinematic"') && !html.includes("applyCameraPreset")) fail("Premium camera presets are not wired");
