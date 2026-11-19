@@ -356,9 +356,9 @@ export function enhanceIsometricOffice({THREE,scene,rooms,characters,zones=[],zo
  ];
  socialZones.forEach((z,i)=>{
   roundedSlab(THREE,scene,z.w,z.d,.10,.62,mat(THREE,0x344d58,{metalness:.38,roughness:.5}),z.x,-.004,z.z);
-  const rugTones=[0xf0e4d4,0xdceaf0,0xe7e1f2,0xdceee8];
+  const rugTones=[0xdcc4a5,0xb8d0d9,0xc9b9df,0xb5d2c6];
   roundedSlab(THREE,scene,z.w-.34,z.d-.34,.035,.48,mat(THREE,rugTones[i],{roughness:.78}),z.x,.09,z.z);
-  const stripe=mat(THREE,z.c,{emissive:z.c,emissiveIntensity:.18,metalness:.32,roughness:.35});
+  const stripe=mat(THREE,z.c,{emissive:z.c,emissiveIntensity:.28,metalness:.32,roughness:.32});
   bx(THREE,scene,z.w-1,.035,.045,z.x,.14,z.z-z.d/2+.35,stripe,false);
   bx(THREE,scene,z.w-1,.035,.045,z.x,.14,z.z+z.d/2-.35,stripe,false);
   const glow=new THREE.PointLight(z.c,.3,18,2);glow.position.set(z.x,3.7,z.z);scene.add(glow);
