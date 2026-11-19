@@ -97,7 +97,7 @@ if (!html.includes("characterSocialLife.update(dt,clk.elapsedTime)")) fail("Char
 const social = read("premium-social.js");
 if (!social.includes("pingPongPlayersAreReady") || !social.includes("players.length >= 2")) fail("Ping-pong rally must require two active players");
 if (!social.includes("updatePingPongBall(item, step)")) fail("Ping-pong ball idle/rally state update missing");
-if (!html.includes("n.name==='line_long_top'||n.name==='pingpong_ball'")) fail("Ping-pong center stripe and duplicate GLB ball are not hidden");
+if (!html.includes("n.name==='line_long_top'") || !html.includes("n.name==='pingpong_ball'")) fail("Ping-pong center stripe and duplicate GLB ball are not hidden");
 if (["pingPongPlayersAreReady", "updatePingPongBall"].every(name => social.includes(name))) ok("Ping-pong idle state and two-player rally gating");
 
 if (!html.includes("bootBeforeCharacterSocialLife")) fail("Character social-life boot hook missing");
