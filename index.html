@@ -1047,9 +1047,11 @@ boot = function() {
         camera: portraitView ? [65, 67, -7] : [0, 42, 78]
       },
       social: {
-        fov: portraitView ? 68 : 50,
-        target: portraitView ? [-4, 1, 8] : [-4, 1, 8],
-        camera: portraitView ? [48, 59, 8] : [-5, 48, 78]
+        /* Frame the west-side lounge and chess tables close enough to read
+           face-to-face character dialogue, including on portrait screens. */
+        fov: portraitView ? 62 : 48,
+        target: [-31.25, 1, 11],
+        camera: [-33, 23, 36]
       }
     };
     const view = presets[preset] || presets.overview;
