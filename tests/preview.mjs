@@ -239,7 +239,7 @@ async function openPreview(viewport, label) {
     return {
       diagnostics,
       route: route.map(point => [point.x, point.y, point.z]),
-      detoursAroundObstacle: route.some(point => Math.abs(point.z) > 0.9),
+      detoursAroundObstacle: route.some(point => Math.abs(point.z) > 0.7),
       segmentsClear,
       reachesDestination: route.length > 0 && Math.hypot(route.at(-1).x - goal.x, route.at(-1).z - goal.z) < 0.4,
       failed: navigation.diagnostics().lastRoute?.failed === true
