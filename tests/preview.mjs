@@ -108,7 +108,7 @@ async function openPreview(viewport, label) {
   const mockupReady = !!mockupOffice && mockupOffice.theme === "approved-isometric-open-office" &&
     mockupOffice.workstationCount >= 15 && mockupOffice.glassDivisionCount === 5 &&
     mockupOffice.meetingRoomReady && mockupOffice.receptionReady && mockupOffice.pantryReady &&
-    mockupOffice.collaborationTableCount === 4;
+    mockupOffice.collaborationTableCount === 4 && mockupOffice.socialCommunityTableReady;
   check(mockupReady,
     label + ": approved isometric office layout initializes; diagnostics=" + JSON.stringify(mockupState));
 
@@ -124,6 +124,61 @@ async function openPreview(viewport, label) {
     socialAssets.arcadeInstances >= 8;
   check(socialAssetsReady,
     label + ": social GLB furniture is mounted in the office; diagnostics=" + JSON.stringify(socialAssets));
+
+  await page.waitForFunction(() => window.__pingPongAssetQA?.tables === 2, null, { timeout: 15000 });
+  const pingPongAssetQA = await page.evaluate(() => window.__pingPongAssetQA);
+  check(pingPongAssetQA.centerLineHidden === 2 && pingPongAssetQA.embeddedBallHidden === 2,
+    label + ": ping-pong center lines and embedded model balls are hidden; diagnostics=" + JSON.stringify(pingPongAssetQA));
+
+  const pingPongBehavior = await page.evaluate(() => {
+    const api = window.__pingPongLogicQA;
+    if (!api) return { error: "ping-pong logic hook unavailable" };
+    const station = { x: 10, z: 20, yaw: 0, slots: [] };
+    const slotA = { st: station, x: 8, z: 20, occ: null };
+    const slotB = { st: station, x: 12, z: 20, occ: null };
+    station.slots = [slotA, slotB];
+    const makePlayer = slot => ({
+      act: "swing", busy: false, meeting: false, path: [],
+      slot, loc: slot,
+      g: { position: { x: slot.x, y: 0, z: slot.z } }
+    });
+    const noneReady = api.playersAreReady(station);
+    const playerA = makePlayer(slotA);
+    slotA.occ = playerA;
+    const oneReady = api.playersAreReady(station);
+    const playerB = makePlayer(slotB);
+    slotB.occ = playerB;
+    const bothReady = api.playersAreReady(station);
+    playerB.g.position.x += 2;
+    const separatedReady = api.playersAreReady(station);
+    playerB.g.position.x = slotB.x;
+
+    const ball = {
+      visible: true,
+      position: { x: -1, y: 0, z: -1, set(x, y, z) { this.x = x; this.y = y; this.z = z; } },
+      rotation: { x: 0, z: 0 }
+    };
+    const item = { station, ball, time: 7, wasPlaying: true, isResting: false };
+    slotA.occ = null; slotB.occ = null;
+    api.updateBall(item, 0.05);
+    const restA = [ball.position.x, ball.position.y, ball.position.z];
+    api.updateBall(item, 0.05);
+    const restB = [ball.position.x, ball.position.y, ball.position.z];
+    slotA.occ = playerA; slotB.occ = playerB;
+    const rallyStarted = api.updateBall(item, 0.05);
+    const rallyMoves = ball.position.y > 0.945;
+    playerA.path = [{ x: 0, z: 0 }];
+    const rallyStopsWhenPlayerLeaves = api.updateBall(item, 0.05) === false;
+    return {
+      noneReady, oneReady, bothReady, separatedReady,
+      idleStatic: restA.every((v, i) => Math.abs(v - restB[i]) < 0.0001),
+      rallyStarted, rallyMoves, rallyStopsWhenPlayerLeaves
+    };
+  });
+  check(!pingPongBehavior.error && !pingPongBehavior.noneReady && !pingPongBehavior.oneReady &&
+    pingPongBehavior.bothReady && !pingPongBehavior.separatedReady && pingPongBehavior.idleStatic &&
+    pingPongBehavior.rallyStarted && pingPongBehavior.rallyMoves && pingPongBehavior.rallyStopsWhenPlayerLeaves,
+    label + ": ping-pong ball stays still without two players and stops when a player leaves; diagnostics=" + JSON.stringify(pingPongBehavior));
 
   const canvasBox = await page.locator("#map canvas").boundingBox();
   check(!!canvasBox && canvasBox.width >= viewport.width * 0.7 && canvasBox.height > viewport.height * 0.45, label + ": 3D canvas has usable dimensions");
