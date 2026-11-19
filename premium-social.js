@@ -150,11 +150,12 @@ function createPingPongBall(THREE, scene, station) {
 export function pingPongPlayersAreReady(station) {
   const players = (station?.slots || []).filter(slot => {
     const player = slot?.occ;
-    return !!player &&
-      player.act === "swing" &&
-      !player.busy &&
-      !player.meeting &&
-      !(player.path?.length);
+    const position = player?.g?.position;
+    if (!player || slot?.st !== station || player.slot !== slot || player.loc !== slot) return false;
+    if (player.act !== "swing" || player.busy || player.meeting || player.path?.length) return false;
+    if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.z)) return false;
+    // A reserved slot or a character on the way is not a player at the table.
+    return Math.hypot(position.x - slot.x, position.z - slot.z) <= 0.65;
   });
   return players.length >= 2;
 }
@@ -259,6 +260,12 @@ function makeZoneSign(THREE, scene, title, subtitle, color, x, y, z, width = 4.5
 }
 
 export function enhanceSocialHub(THREE, scene, stations) {
+  if (typeof window !== "undefined") {
+    window.__pingPongLogicQA = {
+      playersAreReady: pingPongPlayersAreReady,
+      updateBall: updatePingPongBall
+    };
+  }
   if (scene.userData.premiumSocialPhase4) return null;
   scene.userData.premiumSocialPhase4 = true;
 
