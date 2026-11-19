@@ -294,8 +294,15 @@ export function createLivingOffice({
   clock.id = "living-clock";
   clock.className = "living-clock";
   clock.setAttribute("aria-label", "Waktu kantor WIB");
-  const headerActions = document.querySelector("#ui > header .r");
+  const headerActions = document.querySelector("#ui > header .r") ||
+    document.querySelector("#ui header .r") ||
+    document.querySelector("header .r");
+  const header = document.querySelector("#ui > header") ||
+    document.querySelector("#ui header") ||
+    document.querySelector("header");
   if (headerActions) headerActions.prepend(clock);
+  else if (header) header.appendChild(clock);
+  else document.body.appendChild(clock);
 
   function updateAmbience(force = false) {
     const now = jakartaTime();
