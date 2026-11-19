@@ -253,7 +253,17 @@ async function openPreview(viewport, label) {
   await cameraDock.locator('[data-preset="social"]').click();
   check(await cameraDock.locator('[data-preset="social"]').getAttribute("aria-pressed") === "true", label + ": Social Hub camera preset activates");
   /* Let the render loop finish its eased camera transition before visual capture. */
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(1800);
+  const socialCamera = await page.evaluate(() => ({
+    active: document.querySelector('[data-preset="social"]')?.getAttribute("aria-pressed") === "true",
+    preset: window.__socialCameraQA?.preset || "",
+    target: window.__socialCameraQA?.target || null,
+    fov: window.__socialCameraQA?.fov ?? null
+  }));
+  check(socialCamera.active && socialCamera.preset === "social" &&
+    Array.isArray(socialCamera.target) && socialCamera.target[0] === -37.2 &&
+    socialCamera.fov === (innerWidth / innerHeight < 0.85 ? 42 : 32),
+    label + ": Social Hub close-up camera preset is applied; diagnostics=" + JSON.stringify(socialCamera));
   const stagedPair = await page.evaluate(() => window.__characterSocialQA?.stageDemoConversation?.() || { staged: false });
   check(stagedPair.staged === true && stagedPair.station === "lounge" && stagedPair.agentIds?.length === 2,
     label + ": real GLB agents are staged in opposite Social Hub lounge seats; diagnostics=" + JSON.stringify(stagedPair));
