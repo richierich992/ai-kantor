@@ -198,8 +198,8 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
 
   function triggerGreeting(a, b, now) {
     const key = pairKey(a, b);
-    const last = cooldowns.get("g:" + key) || 0;
-    if (now - last < 42000) return;
+    const last = cooldowns.get("g:" + key);
+    if (last != null && now - last < 42000) return;
     if (a.busy || b.busy || a.meeting || b.meeting || a.r?.lock || b.r?.lock) return;
     if (a.slot && b.slot && a.slot === b.slot) return;
     if (moving(a) === moving(b)) return;
@@ -242,8 +242,8 @@ export function createCharacterSocialLife({ THREE, characters = {} }) {
 
         let conversation = conversations.get(key);
         if (!conversation) {
-          const last = cooldowns.get("c:" + key) || 0;
-          if (now - last < 60000) continue;
+          const last = cooldowns.get("c:" + key);
+          if (last != null && now - last < 60000) continue;
           const scriptIndex = Math.abs(Number(a.r?.id || 0) * 7 + Number(b.r?.id || 0) * 11) % CONVERSATION_SCRIPTS.length;
           conversation = {
             a, b, startedAt: now,
