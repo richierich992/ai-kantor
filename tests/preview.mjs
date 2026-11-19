@@ -485,6 +485,12 @@ async function openPreview(viewport, label) {
   check(bothBubblesFramed && bubblesSeparated,
     label + ": both real dialogue bubbles fit in the Social Hub camera frame without overlap or the desktop division panel; diagnostics=" +
     JSON.stringify({ camera: realFirstTurn.camera, bubbles: bubblePoints }));
+  const seatedPoseReady = [realFirstTurn.a, realFirstTurn.b].every(pose =>
+    pose && pose.positionY >= 0.42 && Math.abs(pose.sitLift - 0.30) < 0.001 &&
+    pose.legLeftX < -0.9 && pose.legRightX < -0.9);
+  check(seatedPoseReady,
+    label + ": real lounge avatars sit at cushion height with folded legs instead of standing behind the sofa; diagnostics=" +
+    JSON.stringify({ a: realFirstTurn.a, b: realFirstTurn.b }));
   await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-social-hub.png"), fullPage: true });
   await page.waitForFunction((expectedSpeaker) => {
     const state = window.__characterSocialQA?.demoConversationState?.();
