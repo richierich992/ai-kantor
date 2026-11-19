@@ -112,8 +112,18 @@ async function openPreview(viewport, label) {
   check(mockupReady,
     label + ": approved isometric office layout initializes; diagnostics=" + JSON.stringify(mockupState));
 
-
-
+  await page.waitForFunction(() => window.__isometricAssetsQA?.socialGlbCount === 5, null, { timeout: 15000 });
+  const socialAssets = await page.evaluate(() => window.__isometricAssetsQA);
+  const socialAssetsReady = socialAssets &&
+    socialAssets.socialGlbCount === 5 &&
+    socialAssets.arcadeStations >= 8 &&
+    socialAssets.sofaInstances >= 4 &&
+    socialAssets.pingPongInstances === 2 &&
+    socialAssets.chessInstances === 2 &&
+    socialAssets.cafeInstances === 2 &&
+    socialAssets.arcadeInstances >= 8;
+  check(socialAssetsReady,
+    label + ": social GLB furniture is mounted in the office; diagnostics=" + JSON.stringify(socialAssets));
 
   const canvasBox = await page.locator("#map canvas").boundingBox();
   check(!!canvasBox && canvasBox.width >= viewport.width * 0.7 && canvasBox.height > viewport.height * 0.45, label + ": 3D canvas has usable dimensions");
