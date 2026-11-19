@@ -102,18 +102,20 @@ async function openPreview(viewport, label) {
     const opposite = { st: station, x: 0, z: 2.1, face: Math.PI, act: "chat", occ: null };
     const sameDirection = { st: station, x: 0, z: 2.1, face: 0, act: "chat", occ: null };
     station.slots = [seated, opposite, sameDirection];
-    const peer = { slot: seated, loc: seated, act: "chat", path: [], busy: false, meeting: false, r: { id: 2 } };
+    const peer = { slot: seated, loc: seated, act: "chat", path: [], wait: 4, busy: false, meeting: false, r: { id: 2 } };
     seated.occ = peer;
     const pairedSeatChosen = api.chooseIdleStation({ r: { id: 1 } }, [sameDirection, opposite]) === opposite;
     return {
       faceToFace: api.canPairSlots(seated, opposite),
       sameDirectionRejected: !api.canPairSlots(seated, sameDirection),
-      pairedSeatChosen
+      pairedSeatChosen,
+      peerWaitReserved: peer.wait >= 60
     };
   });
   check(!conversationLogic.error && conversationLogic.faceToFace &&
-    conversationLogic.sameDirectionRejected && conversationLogic.pairedSeatChosen,
-    label + ": Social Hub routes a second idle character to a face-to-face conversation seat; diagnostics=" + JSON.stringify(conversationLogic));
+    conversationLogic.sameDirectionRejected && conversationLogic.pairedSeatChosen &&
+    conversationLogic.peerWaitReserved,
+    label + ": Social Hub selects a face-to-face seat and reserves the first guest while the partner arrives; diagnostics=" + JSON.stringify(conversationLogic));
   const polish = await page.evaluate(() => window.__premiumPolishQA);
   check(!!polish && polish.characterCount >= 10, label + ": premium character polish initializes");
   const integration = await page.evaluate(() => window.__integrationHealthQA);
