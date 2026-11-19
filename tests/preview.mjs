@@ -251,6 +251,47 @@ async function openPreview(viewport, label) {
     label + ": avatar path detours around a blocking object without crossing its clearance zone; diagnostics=" +
       JSON.stringify(obstacleRoute));
 
+  const realOfficeRoutes = await page.evaluate(() => {
+    const api = window.__agentNavigationTest;
+    if (!api) return { error: "real-office navigation QA hook unavailable" };
+    const stations = api.stations();
+    const cases = [
+      { agentId: 1, stationKind: "lounge" },
+      { agentId: 9, stationKind: "board" },
+      { agentId: 11, stationKind: "pingpong" },
+      { agentId: 13, stationKind: "chess" },
+      { agentId: 16, stationKind: "cafe", stationIndex: 1 }
+    ];
+    return cases.map(item => {
+      const home = api.agentHome(item.agentId);
+      const matches = stations.filter(station => station.kind === item.stationKind);
+      const station = matches[item.stationIndex || 0];
+      if (!home || !station?.slots?.length) return { ...item, failed: true, reason: "missing home or station" };
+      const seat = station.slots[0];
+      const plan = api.plan(home, [seat.approach, seat.seat], { allowBlockedGoal: true });
+      return {
+        ...item,
+        home,
+        approach: seat.approach,
+        seat: seat.seat,
+        failed: plan.failed,
+        segmentsClear: plan.segmentsClear,
+        routePointCount: plan.route.length,
+        route: plan.route,
+        segments: plan.segments
+      };
+    });
+  });
+  const realOfficeRoutesReady = !realOfficeRoutes.error &&
+    realOfficeRoutes.length >= 5 &&
+    realOfficeRoutes.every(item => !item.failed && item.segmentsClear && item.routePointCount > 0);
+  report.navigationRoutes = report.navigationRoutes || {};
+  report.navigationRoutes[label] = realOfficeRoutes;
+  check(realOfficeRoutesReady,
+    label + ": real workstation-to-Social-Hub routes for five agents avoid visible office obstacles; diagnostics=" +
+      JSON.stringify(realOfficeRoutes));
+
+
 
   await page.waitForFunction(() => window.__pingPongAssetQA?.tables === 2, null, { timeout: 15000 });
   const pingPongAssetQA = await page.evaluate(() => window.__pingPongAssetQA);
