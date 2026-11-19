@@ -399,6 +399,10 @@ async function loadGLBs(){const L=new GLTFLoader();
       c.act=slot.act;c.face=slot.face;c.sitting=!!slot.sit;c.yoff=slot.sit?slot.rootY-.14:0;c.wait=90;
       c.g.position.set(slot.x,slot.rootY,slot.z);c.g.rotation.y=slot.face;slot.occ=c;
      });
+     if(kind==='chess'){
+      const game=scene.userData.premiumSocialDecor?.chess?.find(item=>item.station===station);
+      if(game){game.pieces=null;game.startedAt=null;game.snapshot=null}
+     }
      return{staged:true,kind,agentIds:people.map(c=>c.r.id)};
     },
     inspect(kind){
