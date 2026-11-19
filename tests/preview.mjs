@@ -509,7 +509,7 @@ async function openPreview(viewport, label) {
     pingpongAfter.seats.length === 2 &&
     pingpongAfter.seats.every(seat => seat.occupant?.act === "swing" && Math.abs(seat.occupant.y - 0.14) < 0.08);
   const pingpongOnTable = pingpongAfter?.ball && pingpongAfter.ballSurfaceY != null &&
-    pingpongAfter.ball[1] >= pingpongAfter.ballSurfaceY - 0.01;
+    pingpongAfter.ball[1] >= pingpongAfter.ballSurfaceY + 0.06;
   check(pingpongPlayersReady && pingpongBallMoved && pingpongArmMoved && pingpongOnTable,
     label + ": two players trigger a visible ping-pong rally, paddle arm motion and a ball above the tabletop; diagnostics=" +
       JSON.stringify({ before: pingpongBefore, after: pingpongAfter }));
