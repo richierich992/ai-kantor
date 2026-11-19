@@ -261,8 +261,8 @@ async function openPreview(viewport, label) {
     fov: window.__socialCameraQA?.fov ?? null
   }));
   check(socialCamera.active && socialCamera.preset === "social" &&
-    Array.isArray(socialCamera.target) && socialCamera.target[0] === -37.2 &&
-    socialCamera.fov === (viewport.width / viewport.height < 0.85 ? 42 : 32),
+    Array.isArray(socialCamera.target) && socialCamera.target[0] === -36.5 &&
+    socialCamera.fov === (viewport.width / viewport.height < 0.85 ? 48 : 38),
     label + ": Social Hub close-up camera preset is applied; diagnostics=" + JSON.stringify(socialCamera));
   const stagedPair = await page.evaluate(() => window.__characterSocialQA?.stageDemoConversation?.() || { staged: false });
   check(stagedPair.staged === true && stagedPair.station === "lounge" && stagedPair.agentIds?.length === 2,
