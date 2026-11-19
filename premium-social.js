@@ -227,31 +227,32 @@ function updateChessAnimation(item, elapsedSeconds) {
 
   /* A small repeating e-pawn exchange makes the chess station visibly alive:
      white advances two squares, black answers, then both reset for another game. */
-  const cycle = ((elapsedSeconds - item.startedAt) % 10 + 10) % 10;
+  const cycle = ((elapsedSeconds - item.startedAt) % 9 + 9) % 9;
   const smooth = value => {
     const t = Math.max(0, Math.min(1, value));
     return t * t * (3 - 2 * t);
   };
   const move = (time, start, finish) => smooth((time - start) / (finish - start));
-  let whiteProgress = cycle >= 1.2 ? 1 : 0;
-  if (cycle >= 1.2 && cycle < 2.7) whiteProgress = move(cycle, 1.2, 2.7);
-  else if (cycle >= 7.1 && cycle < 8.6) whiteProgress = 1 - move(cycle, 7.1, 8.6);
+  /* Start the exchange quickly after agents sit down, then repeat smoothly. */
+  let whiteProgress = cycle >= 1.65 && cycle < 6.1 ? 1 : 0;
+  if (cycle >= 0.25 && cycle < 1.65) whiteProgress = move(cycle, 0.25, 1.65);
+  else if (cycle >= 6.1 && cycle < 7.5) whiteProgress = 1 - move(cycle, 6.1, 7.5);
 
-  let blackProgress = cycle >= 3.5 ? 1 : 0;
-  if (cycle >= 3.5 && cycle < 5.0) blackProgress = move(cycle, 3.5, 5.0);
-  else if (cycle >= 8.1 && cycle < 9.6) blackProgress = 1 - move(cycle, 8.1, 9.6);
+  let blackProgress = cycle >= 3.8 && cycle < 7.4 ? 1 : 0;
+  if (cycle >= 2.4 && cycle < 3.8) blackProgress = move(cycle, 2.4, 3.8);
+  else if (cycle >= 7.4 && cycle < 8.8) blackProgress = 1 - move(cycle, 7.4, 8.8);
 
-  const whiteMoving = (cycle >= 1.2 && cycle < 2.7) || (cycle >= 7.1 && cycle < 8.6);
-  const blackMoving = (cycle >= 3.5 && cycle < 5.0) || (cycle >= 8.1 && cycle < 9.6);
+  const whiteMoving = (cycle >= 0.25 && cycle < 1.65) || (cycle >= 6.1 && cycle < 7.5);
+  const blackMoving = (cycle >= 2.4 && cycle < 3.8) || (cycle >= 7.4 && cycle < 8.8);
   const setPiece = (nodes, shift, hop) => nodes.forEach(node => {
     node.position.x = 0;
     node.position.z = shift;
     node.position.y = hop;
   });
   setPiece(item.pieces.white, 0.27 * whiteProgress,
-    whiteMoving ? Math.sin(move(cycle, cycle < 2.7 ? 1.2 : 7.1, cycle < 2.7 ? 2.7 : 8.6) * Math.PI) * 0.1 : 0);
+    whiteMoving ? Math.sin(move(cycle, cycle < 1.65 ? 0.25 : 6.1, cycle < 1.65 ? 1.65 : 7.5) * Math.PI) * 0.1 : 0);
   setPiece(item.pieces.black, -0.27 * blackProgress,
-    blackMoving ? Math.sin(move(cycle, cycle < 5.0 ? 3.5 : 8.1, cycle < 5.0 ? 5.0 : 9.6) * Math.PI) * 0.1 : 0);
+    blackMoving ? Math.sin(move(cycle, cycle < 3.8 ? 2.4 : 7.4, cycle < 3.8 ? 3.8 : 8.8) * Math.PI) * 0.1 : 0);
   item.snapshot = {
     cycle,
     whiteZ: item.pieces.white[0].position.z,
