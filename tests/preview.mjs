@@ -521,7 +521,11 @@ async function openPreview(viewport, label) {
 
   const chessStage = await page.evaluate(() => window.__socialActivityQA?.stagePair("chess") || { staged: false });
   check(chessStage.staged === true, label + ": two real avatars can take the chess seats; diagnostics=" + JSON.stringify(chessStage));
-  await page.waitForTimeout(1800);
+  await page.waitForFunction(() => {
+    const pieces = window.__socialActivityQA?.inspect("chess")?.chessPieces;
+    return pieces?.ready === true &&
+      (Math.abs(pieces.whiteZ || 0) > 0.06 || Math.abs(pieces.blackZ || 0) > 0.06);
+  }, null, { timeout: 6000 });
   const chessAfter = await page.evaluate(() => window.__socialActivityQA?.inspect("chess"));
   const chessSeated = chessAfter?.chessSeatCount === 2 && chessAfter.seats.length === 2 &&
     chessAfter.seats.every(seat => seat.sit && seat.occupant?.act === "chat" &&
