@@ -174,7 +174,8 @@ export function updatePingPongBall(item, dt) {
   if (!playing) {
     if (!item.isResting) {
       const [rx, rz] = rotated(station.yaw || 0, -0.9, 0.24);
-      ball.position.set(station.x + rx, 0.945, station.z + rz);
+      const surfaceY = Number.isFinite(station.ballSurfaceY) ? station.ballSurfaceY : 1.331;
+      ball.position.set(station.x + rx, surfaceY + 0.105, station.z + rz);
       ball.rotation.x = 0;
       ball.rotation.z = 0;
       item.isResting = true;
@@ -196,13 +197,68 @@ export function updatePingPongBall(item, dt) {
     Math.sin(item.time) * 0.98,
     Math.sin(item.time * 0.75) * 0.2
   );
+  const surfaceY = Number.isFinite(station.ballSurfaceY) ? station.ballSurfaceY : 1.331;
   ball.position.set(
     station.x + rx,
-    0.98 + Math.abs(Math.sin(item.time * 1.75)) * 0.58,
+    surfaceY + 0.105 + Math.abs(Math.sin(item.time * 1.75)) * 0.52,
     station.z + rz
   );
   ball.rotation.x += step * 4;
   ball.rotation.z += step * 2.7;
+  return true;
+}
+
+function chessPawnPair(root, side, file) {
+  const base = root?.getObjectByName(side + "_pawn_base_" + file);
+  const head = root?.getObjectByName(side + "_pawn_head_" + file);
+  return base && head ? [base, head] : null;
+}
+
+function updateChessAnimation(item, elapsedSeconds) {
+  const root = item.station?.chessVisual;
+  if (!root) return false;
+  if (!item.pieces) {
+    const white = chessPawnPair(root, "white", 4);
+    const black = chessPawnPair(root, "black", 4);
+    if (!white || !black) return false;
+    item.pieces = { white, black };
+    item.startedAt = elapsedSeconds;
+  }
+
+  /* A small repeating e-pawn exchange makes the chess station visibly alive:
+     white advances two squares, black answers, then both reset for another game. */
+  const cycle = ((elapsedSeconds - item.startedAt) % 9 + 9) % 9;
+  const smooth = value => {
+    const t = Math.max(0, Math.min(1, value));
+    return t * t * (3 - 2 * t);
+  };
+  const move = (time, start, finish) => smooth((time - start) / (finish - start));
+  /* Start the exchange quickly after agents sit down, then repeat smoothly. */
+  let whiteProgress = cycle >= 1.65 && cycle < 6.1 ? 1 : 0;
+  if (cycle >= 0.25 && cycle < 1.65) whiteProgress = move(cycle, 0.25, 1.65);
+  else if (cycle >= 6.1 && cycle < 7.5) whiteProgress = 1 - move(cycle, 6.1, 7.5);
+
+  let blackProgress = cycle >= 3.8 && cycle < 7.4 ? 1 : 0;
+  if (cycle >= 2.4 && cycle < 3.8) blackProgress = move(cycle, 2.4, 3.8);
+  else if (cycle >= 7.4 && cycle < 8.8) blackProgress = 1 - move(cycle, 7.4, 8.8);
+
+  const whiteMoving = (cycle >= 0.25 && cycle < 1.65) || (cycle >= 6.1 && cycle < 7.5);
+  const blackMoving = (cycle >= 2.4 && cycle < 3.8) || (cycle >= 7.4 && cycle < 8.8);
+  const setPiece = (nodes, shift, hop) => nodes.forEach(node => {
+    node.position.x = 0;
+    node.position.z = shift;
+    node.position.y = hop;
+  });
+  setPiece(item.pieces.white, 0.27 * whiteProgress,
+    whiteMoving ? Math.sin(move(cycle, cycle < 1.65 ? 0.25 : 6.1, cycle < 1.65 ? 1.65 : 7.5) * Math.PI) * 0.1 : 0);
+  setPiece(item.pieces.black, -0.27 * blackProgress,
+    blackMoving ? Math.sin(move(cycle, cycle < 3.8 ? 2.4 : 7.4, cycle < 3.8 ? 3.8 : 8.8) * Math.PI) * 0.1 : 0);
+  item.snapshot = {
+    cycle,
+    whiteZ: item.pieces.white[0].position.z,
+    blackZ: item.pieces.black[0].position.z,
+    ready: true
+  };
   return true;
 }
 
@@ -273,6 +329,9 @@ export function enhanceSocialHub(THREE, scene, stations) {
   const pingPong = [];
   const steam = [];
   const labels = [];
+  const chess = (stations || []).filter(s => s.kind === "chess").map((station, index) => ({
+    station, startedAt: null, phase: index * 1.7, pieces: null, snapshot: null
+  }));
   const arcadeStations = (stations || []).filter(s => s.kind === "arcade");
   const firstArcade = arcadeStations[0];
 
@@ -345,7 +404,16 @@ export function enhanceSocialHub(THREE, scene, stations) {
     baseY: 5.9, phase: 2.9
   });
 
-  scene.userData.premiumSocialDecor = { decor, pingPong, steam, labels };
+  scene.userData.premiumSocialDecor = { decor, pingPong, chess, steam, labels };
+  if (typeof window !== "undefined") {
+    window.__chessAnimationQA = {
+      snapshot: () => chess.map(item => ({
+        x: item.station.x, z: item.station.z, ready: !!item.snapshot?.ready,
+        whiteZ: item.snapshot?.whiteZ ?? null, blackZ: item.snapshot?.blackZ ?? null,
+        cycle: item.snapshot?.cycle ?? null
+      }))
+    };
+  }
   return scene.userData.premiumSocialDecor;
 }
 
@@ -373,6 +441,7 @@ export function updateSocialHub(scene, dt, elapsedSeconds) {
   });
 
   state.pingPong.forEach(item => updatePingPongBall(item, step));
+  state.chess?.forEach(item => updateChessAnimation(item, t));
 
   state.steam.forEach(group => {
     group.particles.forEach(particle => {
@@ -401,16 +470,26 @@ export function animateSocialCharacter(character, dt) {
   const act = inSlot ? character.act : null;
 
   let leftY = 0, rightY = 0, leftZ = 0, rightZ = 0;
-  if (act === "chat") {
+  const chessPlayer = act === "chat" && character.slot?.st?.kind === "chess";
+  if (chessPlayer) {
+    const reach = Math.max(0, Math.sin(t * 2.2));
+    rightY = 0.22 + reach * 0.34;
+    rightZ = -0.18 - reach * 0.16;
+    leftY = -0.16 + Math.sin(t * 1.15 + 1.2) * 0.1;
+    leftZ = -0.08;
+  } else if (act === "chat") {
     const gesture = Math.max(0, Math.sin(t * 1.7));
     rightY = 0.14 + gesture * 0.22;
     rightZ = -0.12 - gesture * 0.12;
     leftY = -0.06 + Math.sin(t * 0.85 + 1.2) * 0.07;
   } else if (act === "swing") {
-    leftY = -0.16 + Math.sin(t * 8.2) * 0.12;
-    rightY = 0.16 - Math.sin(t * 8.2) * 0.12;
-    leftZ = -0.05;
-    rightZ = 0.05;
+    /* A deliberate paddle stroke with visible shoulder, wrist and follow-through
+       motion. character.t is the agent's own continuous activity clock. */
+    const stroke = Math.sin(t * 0.85);
+    leftY = -0.2 + stroke * 0.18;
+    rightY = 0.22 - stroke * 0.38;
+    leftZ = -0.08 + Math.cos(t * 0.42) * 0.05;
+    rightZ = 0.08 + Math.max(0, stroke) * 0.28;
   } else if (act === "type") {
     leftY = -0.1 + Math.sin(t * 12) * 0.035;
     rightY = 0.1 + Math.cos(t * 12) * 0.035;
@@ -424,19 +503,42 @@ export function animateSocialCharacter(character, dt) {
   }
 
   if (character.armL) {
-    character.armL.rotation.y += (leftY - character.armL.rotation.y) * blend;
-    character.armL.rotation.z += (leftZ - character.armL.rotation.z) * blend;
+    if (act === "swing") {
+      character.armL.rotation.y = leftY;
+      character.armL.rotation.z = leftZ;
+      character.armL.rotation.x = -0.92 + Math.sin(t * 0.85 + 0.95) * 0.22;
+    } else {
+      character.armL.rotation.y += (leftY - character.armL.rotation.y) * blend;
+      character.armL.rotation.z += (leftZ - character.armL.rotation.z) * blend;
+    }
   }
   if (character.armR) {
-    character.armR.rotation.y += (rightY - character.armR.rotation.y) * blend;
-    character.armR.rotation.z += (rightZ - character.armR.rotation.z) * blend;
+    if (act === "swing") {
+      const stroke = Math.sin(t * 0.85);
+      character.armR.rotation.y = rightY;
+      character.armR.rotation.z = rightZ;
+      character.armR.rotation.x = -0.96 + Math.cos(t * 0.85) * 0.42;
+    } else {
+      character.armR.rotation.y += (rightY - character.armR.rotation.y) * blend;
+      character.armR.rotation.z += (rightZ - character.armR.rotation.z) * blend;
+    }
   }
 
-  if (inSlot && character.yoff < -0.12) {
-    if (character.legL) character.legL.rotation.z += (-0.035 - character.legL.rotation.z) * blend;
-    if (character.legR) character.legR.rotation.z += (0.035 - character.legR.rotation.z) * blend;
-  } else {
-    if (character.legL) character.legL.rotation.z += (0 - character.legL.rotation.z) * blend;
-    if (character.legR) character.legR.rotation.z += (0 - character.legR.rotation.z) * blend;
+  const seated = inSlot && !!character.slot?.sit;
+  /* The base walking step resets leg pivots every frame. Keep the seat
+     transition progress on the character, then write an absolute pose after
+     that base step so the knees can actually reach the seated angle. */
+  const seatProgress = Number(character._socialSeatProgress) || 0;
+  character._socialSeatProgress = seated
+    ? Math.min(1, seatProgress + Math.min(0.06, Math.max(0, dt || 0)) * 6)
+    : Math.max(0, seatProgress - Math.min(0.06, Math.max(0, dt || 0)) * 8);
+  const seatBlend = character._socialSeatProgress;
+  if (character.legL) {
+    character.legL.rotation.x = -0.92 * seatBlend;
+    character.legL.rotation.z = -0.045 * seatBlend;
+  }
+  if (character.legR) {
+    character.legR.rotation.x = -0.92 * seatBlend;
+    character.legR.rotation.z = 0.045 * seatBlend;
   }
 }
