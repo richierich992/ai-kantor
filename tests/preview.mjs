@@ -308,6 +308,15 @@ async function openPreview(viewport, label) {
     label + ": real routes from five workstations to nearby Social Hub stations avoid obstacles, with only a short final seating contact allowed; diagnostics=" +
       JSON.stringify(realOfficeRoutes));
 
+  const walkingGait = await page.evaluate(() => window.__agentNavigationTest?.walkGait?.(1) || { available: false });
+  const walkingGaitReady = walkingGait.available && walkingGait.distance > 0.5 &&
+    walkingGait.leftHipRange > 0.9 && walkingGait.rightHipRange > 0.9 &&
+    walkingGait.kneeRig && walkingGait.leftKneeRange > 0.35 && walkingGait.rightKneeRange > 0.35;
+  report.walkingGait = report.walkingGait || {};
+  report.walkingGait[label] = walkingGait;
+  check(walkingGaitReady,
+    label + ": real avatar walking gait swings both hips and bends both knees; diagnostics=" + JSON.stringify(walkingGait));
+
   await page.waitForFunction(() => window.__pingPongAssetQA?.tables === 2, null, { timeout: 15000 });
   const pingPongAssetQA = await page.evaluate(() => window.__pingPongAssetQA);
   check(pingPongAssetQA.centerLineHidden === 2 && pingPongAssetQA.embeddedBallHidden === 2,
@@ -519,6 +528,18 @@ async function openPreview(viewport, label) {
     label + ": two players trigger a visible ping-pong rally, paddle arm motion and a ball above the tabletop; diagnostics=" +
       JSON.stringify({ before: pingpongBefore, after: pingpongAfter }));
 
+  const chessIdleBefore = await page.evaluate(() => window.__socialActivityQA?.inspect("chess"));
+  await page.waitForTimeout(900);
+  const chessIdleAfter = await page.evaluate(() => window.__socialActivityQA?.inspect("chess"));
+  const idlePiecesStill = chessIdleBefore?.chessPieces?.ready === false &&
+    chessIdleAfter?.chessPieces?.ready === false &&
+    Math.abs(chessIdleBefore.chessPieces.whiteZ || 0) < 0.001 &&
+    Math.abs(chessIdleBefore.chessPieces.blackZ || 0) < 0.001 &&
+    Math.abs(chessIdleAfter.chessPieces.whiteZ || 0) < 0.001 &&
+    Math.abs(chessIdleAfter.chessPieces.blackZ || 0) < 0.001;
+  check(idlePiecesStill,
+    label + ": chess pieces remain still without two seated players; diagnostics=" +
+      JSON.stringify({ before: chessIdleBefore?.chessPieces, after: chessIdleAfter?.chessPieces }));
   const chessStage = await page.evaluate(() => window.__socialActivityQA?.stagePair("chess") || { staged: false });
   check(chessStage.staged === true, label + ": two real avatars can take the chess seats; diagnostics=" + JSON.stringify(chessStage));
   await page.waitForFunction(() => {
@@ -529,7 +550,8 @@ async function openPreview(viewport, label) {
   const chessAfter = await page.evaluate(() => window.__socialActivityQA?.inspect("chess"));
   const chessSeated = chessAfter?.chessSeatCount === 2 && chessAfter.seats.length === 2 &&
     chessAfter.seats.every(seat => seat.sit && seat.occupant?.act === "chat" &&
-      Math.abs(seat.occupant.y - seat.rootY) < 0.06 && seat.occupant.y > 0.1);
+      Math.abs(seat.occupant.y - seat.rootY) < 0.06 && Math.abs(seat.rootY - 0.64) < 0.005 &&
+      seat.occupant.y > 0.7);
   const chessSideApproach = chessAfter?.seats?.every(seat => {
     const dx = seat.approach[0] - seat.x, dz = seat.approach[1] - seat.z;
     const forward = dx * Math.sin(seat.face) + dz * Math.cos(seat.face);
@@ -540,7 +562,7 @@ async function openPreview(viewport, label) {
     (Math.abs(chessAfter.chessPieces.whiteZ || 0) > 0.06 ||
       Math.abs(chessAfter.chessPieces.blackZ || 0) > 0.06);
   check(chessSeated && chessSideApproach && chessPiecesMoving,
-    label + ": chess station has two real chairs, seated players and moving board pieces; diagnostics=" +
+    label + ": chess station has two real chairs at cushion height, seated players and moving board pieces; diagnostics=" +
       JSON.stringify(chessAfter));
   await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-social-games.png"), fullPage: true });
 
