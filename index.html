@@ -1398,6 +1398,38 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(p21.methodology||'')+'<br>'+esc(p21.note||'')+' Data belum dikurangi biaya dan pajak; strategi dengan kurang dari 5 trade tidak diberi peringkat terbaik/terendah.</small></div>';
  }
 
+
+ const p22=P.adaptiveLearning;
+ if(localStorage.getItem('admin_token')&&sh([2,3,4,5])&&p22){
+  const f2=x=>x==null?'—':Number(x).toFixed(2);
+  const alpha=x=>x==null?'—':(x>0?'+':'')+Number(x).toFixed(2)+' pp';
+  h+='<h4>🧠 P22 — Adaptive Trading Strategy Intelligence <small>('+esc(p22.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dnote">P22 menguji strategi berdasarkan transaksi closed yang benar-benar dicatat, regime pasar saat entry, dan benchmark IHSG selama holding period yang cocok. Analisis ini tidak mengubah Rules, sinyal, atau posisi secara otomatis.</div>';
+  h+='<div class="dchips"><span class="chip">Trade closed dianalisis <b>'+nf(p22.closedCount)+'</b></span><span class="chip">Posisi aktif <b>'+nf(p22.openCount)+'</b></span><span class="chip">Cakupan regime <b>'+pc(p22.regimeCoveragePct)+'</b></span><span class="chip">Benchmark IHSG cocok <b>'+pc(p22.benchmarkCoveragePct)+'</b></span></div>';
+  h+='<h4>Performa berdasarkan kondisi pasar saat entry</h4>';
+  if(p22.byRegime&&p22.byRegime.length){
+   h+='<div style="overflow-x:auto"><table><tr><th>Regime saat entry</th><th>Trade</th><th>Win rate</th><th>Profit factor</th><th>Rata-rata return</th><th>Expectancy</th><th>Excess vs IHSG</th></tr>';
+   p22.byRegime.forEach(x=>{h+='<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.trades)+'</td><td>'+pc(x.winRatePct)+'</td><td>'+f2(x.profitFactor)+'</td><td><span class="bdg '+pcCls(x.averageTradeReturnPct)+'">'+pc(x.averageTradeReturnPct)+'</span></td><td>'+rpi(x.expectancyIdr)+'</td><td>'+alpha(x.averageExcessReturnPp)+'</td></tr>';});
+   h+='</table></div>';
+  }else h+='<div class="dnote">Belum ada transaksi untuk dikelompokkan menurut regime.</div>';
+  h+='<h4>Strategi × regime</h4>';
+  if(p22.byStrategyRegime&&p22.byStrategyRegime.length)h+='<div style="overflow-x:auto"><table><tr><th>Strategi • regime</th><th>Trade</th><th>Win rate</th><th>Rata-rata return</th><th>Expectancy</th><th>Excess vs IHSG</th></tr>'+p22.byStrategyRegime.map(x=>'<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.trades)+'</td><td>'+pc(x.winRatePct)+'</td><td>'+pc(x.averageTradeReturnPct)+'</td><td>'+rpi(x.expectancyIdr)+'</td><td>'+alpha(x.averageExcessReturnPp)+'</td></tr>').join('')+'</table></div>';
+  else h+='<div class="dnote">Belum ada kategori strategi × regime.</div>';
+  h+='<h4>Transaksi aktual vs backtest P11</h4>';
+  if(p22.actualVsBacktest&&p22.actualVsBacktest.length)h+='<div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Trade aktual</th><th>Rata-rata return aktual</th><th>Sampel backtest</th><th>Win rate backtest</th><th>Rata-rata backtest 10 sesi</th><th>Selisih</th></tr>'+p22.actualVsBacktest.map(x=>'<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+nf(x.actualTrades)+'</td><td>'+pc(x.actualAvgReturnPct)+'</td><td>'+nf(x.backtestSamples)+'</td><td>'+pc(x.backtestWinRatePct)+'</td><td>'+pc(x.backtestAvgReturn10Pct)+'</td><td><span class="bdg '+pcCls(x.gapPp)+'">'+alpha(x.gapPp)+'</span></td></tr>').join('')+'</table></div>';
+  else h+='<div class="dnote">Belum ada ticker yang memiliki transaksi aktual dan sampel backtest 10 sesi yang sama.</div>';
+  h+='<div class="dnote">Catatan: holding period aktual bisa berbeda dari horizon backtest 10 sesi. Tabel ini untuk mendeteksi perbedaan sampel, bukan membuktikan bahwa suatu strategi gagal atau berhasil.</div>';
+  if(p22.earlyWarnings&&p22.earlyWarnings.length){
+   h+='<h4>Peringatan perubahan performa</h4><div class="dnote">'+p22.earlyWarnings.map(x=>'⚠ <b>'+esc(x.strategy)+'</b>: '+esc(x.message)+' (periode sebelumnya '+nf(x.priorTrades)+' trade; 5 terbaru dibandingkan)').join('<br>')+'</div>';
+  }
+  if(p22.insights&&p22.insights.length)h+='<h4>Temuan analisis</h4><div class="dnote">'+p22.insights.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+  if(p22.byMonth&&p22.byMonth.length)h+='<h4>Riwayat performa bulanan</h4><div style="overflow-x:auto"><table><tr><th>Bulan exit</th><th>Trade</th><th>Win rate</th><th>Rata-rata return</th><th>P/L bruto</th><th>Excess vs IHSG</th></tr>'+p22.byMonth.map(x=>'<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.trades)+'</td><td>'+pc(x.winRatePct)+'</td><td>'+pc(x.averageTradeReturnPct)+'</td><td>'+rpi(x.totalPnl)+'</td><td>'+alpha(x.averageExcessReturnPp)+'</td></tr>').join('')+'</table></div>';
+  if(p22.recent&&p22.recent.length)h+='<h4>Transaksi terbaru dan kondisi saat entry</h4><div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Strategi</th><th>Tanggal entry</th><th>Regime</th><th>Return trade</th><th>Return IHSG</th><th>Excess</th><th>Holding</th></tr>'+p22.recent.slice(0,15).map(x=>'<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.strategyTag)+'</td><td>'+esc(x.entryDate)+'</td><td>'+esc(x.regime)+'</td><td>'+pc(x.returnPct)+'</td><td>'+pc(x.ihsgReturnPct)+'</td><td>'+alpha(x.alphaPp)+'</td><td>'+nf(x.holdingDays)+' hari</td></tr>').join('')+'</table></div>';
+  if(p22.warnings&&p22.warnings.length)h+='<div class="dnote" style="margin-top:8px">'+p22.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p22RefreshAdaptive" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:#fff;font-weight:800;cursor:pointer">Perbarui analisis adaptif</button><span id="p22AdaptiveMsg" class="dnote">Data historis P15/ScreenHist • transaksi aktual P20/P21 • cache 10 menit.</span></div>';
+  h+='<div class="dnote"><small>'+esc(p22.methodology||'')+'<br>'+esc(p22.note||'')+'</small></div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1610,6 +1642,25 @@ if(!window.__p21PerformanceBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p21PerformanceMsg');if(done)done.textContent=j.message||'P21 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+/* ===== P22: refresh adaptive strategy intelligence melalui ADMIN_TOKEN ===== */
+if(!window.__p22AdaptiveBound){
+ window.__p22AdaptiveBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p22RefreshAdaptive'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p22AdaptiveMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menganalisis…';if(msg)msg.textContent='Menghubungkan jurnal transaksi, regime historis, IHSG, dan backtest…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'trade_adaptive_refresh',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Analisis adaptif gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p22AdaptiveMsg');if(done)done.textContent=j.message||'Analisis adaptif diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Perbarui analisis adaptif';}
  });
 }
 
