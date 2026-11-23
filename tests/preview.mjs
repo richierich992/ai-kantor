@@ -487,16 +487,20 @@ async function openPreview(viewport, label) {
     label + ": both real dialogue bubbles fit in the Social Hub camera frame without overlap or the desktop division panel; diagnostics=" +
     JSON.stringify({ camera: realFirstTurn.camera, bubbles: bubblePoints }));
   await page.screenshot({ path: path.join(outDir, "kantor-ai-" + label + "-social-hub.png"), fullPage: true });
-  await page.waitForFunction((expectedSpeaker) => {
+  const secondTurnHandle = await page.waitForFunction((expectedSpeaker) => {
     const state = window.__characterSocialQA?.demoConversationState?.();
     const aSpeaks = state?.a?.visible && state.a.kind === "text" && !!state.a.content;
     const bSpeaks = state?.b?.visible && state.b.kind === "text" && !!state.b.content;
     const aListens = state?.a?.visible && state.a.content === "•••";
     const bListens = state?.b?.visible && state.b.content === "•••";
-    return state?.activeCount === 1 &&
+    const alternated = state?.activeCount === 1 &&
       (expectedSpeaker === "a" ? bSpeaks && aListens : aSpeaks && bListens);
+    return alternated ? state : false;
   }, firstSpeaker, { timeout: 12000 });
-  const realSecondTurn = await page.evaluate(() => window.__characterSocialQA.demoConversationState());
+  /* Keep the exact frame in which the other avatar took the turn. A later
+     read can land after the next 4.5s line and falsely report no alternation. */
+  const realSecondTurn = await secondTurnHandle.jsonValue();
+  await secondTurnHandle.dispose();
   check((firstSpeaker === "a" && realSecondTurn.b.kind === "text" && realSecondTurn.a.content === "•••") ||
     (firstSpeaker === "b" && realSecondTurn.a.kind === "text" && realSecondTurn.b.content === "•••"),
     label + ": real 3D avatars alternate to the other speaker; diagnostics=" + JSON.stringify(realSecondTurn));
