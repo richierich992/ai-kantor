@@ -133,7 +133,7 @@ if (!social.includes("updateChessAnimation") || !social.includes("chessPawnPair"
 }
 if (!html.includes("function createChessSeats") || !html.includes("st.chessSeatRig") ||
     !html.includes("Math.sin(face)*1.45") || !html.includes("kind==='lounge'?.56") ||
-    !html.includes("kind==='chess'?.64")) {
+    !html.includes("kind==='chess'?.78")) {
   fail("Chess chair height, chess seat alignment, lounge front approach or seated root height are missing");
 }
 if (!html.includes("knee_pivot") || !html.includes("c.kneeL.rotation.x") ||
