@@ -1610,6 +1610,30 @@ function pfHtml(){
   if(p27.warnings&&p27.warnings.length)h+='<div class="dnote" style="margin-top:8px">'+p27.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
  }
 
+
+ const p28=P.marketRegimeRisk;
+ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p28){
+  const m=p28.market||{},r=p28.recommendation||{},pRisk=p28.portfolioRisk||{};
+  const regimeTone=m.regimeBucket==='BULLISH'?'ok':m.regimeBucket==='BEARISH'?'err':m.regimeBucket==='UNKNOWN'?'warn':'idle';
+  const p28pct=x=>x==null?'—':Number(x).toFixed(2)+'%';
+  const p28num=x=>x==null?'—':Number(x).toFixed(2);
+  const p28money=x=>x==null?'—':rpi(x);
+  h+='<h4>🌦️ P28 — Market Regime Adaptive Risk Engine <small>('+esc(p28.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dnote">P28 menggabungkan arah IHSG, breadth ScreenUniverse, volatilitas dan drawdown indeks dengan status risiko P27. Sistem memberi batas risiko yang lebih defensif saat pasar melemah, volatilitas tinggi, atau data belum memadai. Rekomendasi ini hanya skenario/advisory: tidak mengubah aturan screener, strategi aktif, atau mengirim order.</div>';
+  h+='<div class="dchips"><span class="chip">Regime <b><span class="bdg '+regimeTone+'">'+esc(m.regimeBucket||'UNKNOWN')+'</span></b></span><span class="chip">IHSG <b>'+esc(m.regimeLabel||'Belum cukup data')+'</b></span><span class="chip">Tanggal indeks <b>'+esc(m.date||'—')+'</b></span><span class="chip">Usia data <b>'+(m.ageDays==null?'—':nf(m.ageDays)+' hari')+'</b></span><span class="chip">Data <b>'+(m.fresh?'FRESH':'STALE / BELUM ADA')+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">IHSG 5 sesi <b>'+p28pct(m.return5Pct)+'</b></span><span class="chip">IHSG 20 sesi <b>'+p28pct(m.return20Pct)+'</b></span><span class="chip">Vol IHSG 20 sesi (annualized) <b>'+p28pct(m.volatility20Pct)+'</b></span><span class="chip">Drawdown 20 sesi <b>'+p28pct(m.drawdown20Pct)+'</b></span><span class="chip">Breadth advancer 20 sesi <b>'+p28pct(m.advPct20)+'</b></span></div>';
+  h+='<h4>Overlay risiko berdasarkan kondisi pasar</h4>';
+  h+='<div class="dchips"><span class="chip">Status risiko P27 <b>'+esc(r.portfolioRiskStatus||pRisk.riskStatus||'INSUFFICIENT')+'</b></span><span class="chip">Risk multiplier <b>'+p28num(r.riskMultiplier)+'×</b></span><span class="chip">Risiko/posisi saran <b>'+p28pct(r.recommendedRiskPerTradePct)+'</b></span><span class="chip">Eksposur maksimum saran <b>'+p28pct(r.recommendedMaxExposurePct)+'</b></span><span class="chip">Posisi aktif maksimum <b>'+nf(r.recommendedMaxConcurrent||0)+'</b></span></div>';
+  const sc=r.scenarios||{};
+  h+='<div style="overflow-x:auto"><table><tr><th>Skenario</th><th>Multiplier dasar</th><th>Batas eksposur</th></tr>';
+  [['BULLISH','Bullish'],['SIDEWAYS','Sideways'],['BEARISH','Bearish'],['UNKNOWN','Data belum cukup']].forEach(k=>{const z=sc[k[0]]||{};h+='<tr><td><b>'+k[1]+'</b></td><td>'+p28num(z.riskMultiplier)+'×</td><td>'+p28pct(z.maxExposurePct)+'</td></tr>';});
+  h+='</table></div>';
+  h+='<div class="dnote">'+esc(r.rationale||'Belum ada alasan rekomendasi.')+'</div>';
+  if((p28.warnings||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p28.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p28RefreshRegimeRisk" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh analisis regime & risiko</button><span id="p28RegimeRiskMsg" class="dnote">S40 otomatis 16:59 WIB • snapshot harian di RegimeRiskSnapshots.</span></div>';
+  h+='<div class="dnote"><small>'+esc(r.note||p28.note||'')+'</small></div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1959,6 +1983,26 @@ if(!window.__p27RiskIntelligenceBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p27RiskMsg');if(done)done.textContent=j.message||'P27 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent=refresh?'Refresh analisis risiko':'Terapkan bobot saran ke simulasi P26';}
+ });
+}
+
+
+/* ===== P28: refresh market regime adaptive risk ===== */
+if(!window.__p28MarketRegimeRiskBound){
+ window.__p28MarketRegimeRiskBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p28RefreshRegimeRisk'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p28RegimeRiskMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menghitung regime…';
+  if(msg)msg.textContent='Membaca IHSG dan breadth, mengukur volatilitas/drawdown, lalu menggabungkan status risiko P27…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'market_regime_risk_refresh',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P28 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p28RegimeRiskMsg');if(done)done.textContent=j.message||'P28 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh analisis regime & risiko';}
  });
 }
 
