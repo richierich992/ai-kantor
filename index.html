@@ -1492,6 +1492,45 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(p24.note||'P/L bruto satu lot; belum termasuk biaya, pajak, spread dan slippage.')+'</small></div>';
  }
 
+
+ const p25=P.paperPortfolio;
+ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p25){
+  const p25Money=x=>x==null?'—':rpi(x);
+  const p25Pct=x=>x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+'%';
+  const p25cfg=p25.config||{};
+  h+='<h4>💼 P25 — Realistic Paper Portfolio <small>('+esc(p25.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dnote">P25 mengubah hasil paper trade P24 menjadi simulasi portofolio bermodal: posisi dibulatkan ke lot 100 lembar, dibatasi risiko per transaksi, kas, batas per posisi, eksposur total, dan jumlah posisi aktif. Fee serta slippage dapat disesuaikan di bawah; semua angka bersifat simulasi dan tidak mengirim order. Mengubah asumsi akan menghitung ulang seluruh riwayat P24 sebagai skenario dengan parameter saat ini.</div>';
+  h+='<div class="dchips"><span class="chip">Modal awal <b>'+p25Money(p25.startingCapital)+'</b></span><span class="chip">Ekuitas bersih <b>'+p25Money(p25.endingEquity)+'</b></span><span class="chip">Return bersih <b><span class="bdg '+(Number(p25.totalReturnPct)>=0?'ok':'err')+'">'+p25Pct(p25.totalReturnPct)+'</span></b></span><span class="chip">IHSG <b>'+p25Pct(p25.benchmark&&p25.benchmark.returnPct)+'</b></span><span class="chip">Alpha vs IHSG <b>'+(p25.alphaPp==null?'—':(Number(p25.alphaPp)>=0?'+':'')+Number(p25.alphaPp).toFixed(2)+' pp')+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Posisi aktif <b>'+nf(p25.openCount||0)+'</b></span><span class="chip">Closed <b>'+nf(p25.closedCount||0)+'</b></span><span class="chip">Sinyal tertahan limit <b>'+nf(p25.blockedCount||0)+'</b></span><span class="chip">Kas tersedia <b>'+p25Money(p25.cash)+'</b></span><span class="chip">Nilai pasar terbuka <b>'+p25Money(p25.openMarketValue)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Net realized P/L <b>'+p25Money(p25.realizedNetPnl)+'</b></span><span class="chip">Floating net P/L <b>'+p25Money(p25.unrealizedNetPnl)+'</b></span><span class="chip">Total fee <b>'+p25Money(p25.totalFees)+'</b></span><span class="chip">Estimasi slippage <b>'+p25Money(p25.estimatedSlippage)+'</b></span><span class="chip">Max drawdown <b>'+p25Pct(p25.maxDrawdownPct)+'</b></span><span class="chip">Eksposur puncak <b>'+p25Pct(p25.maxExposurePct)+'</b></span></div>';
+  const cv=p25.curve||[];
+  if(cv.length>1){
+   const vv=cv.map(x=>Number(x.equity)||0),mn=Math.min.apply(null,vv),mx=Math.max.apply(null,vv),span=mx-mn||1;
+   const pts=vv.map((v,i)=>((i/(vv.length-1))*660+10).toFixed(1)+','+(130-((v-mn)/span)*110).toFixed(1)).join(' ');
+   h+='<h4>Kurva ekuitas bersih (setelah estimasi biaya)</h4><div style="padding:8px;border:1px solid rgba(140,160,200,.25);border-radius:10px;background:rgba(10,20,40,.28)"><svg viewBox="0 0 680 145" role="img" aria-label="Kurva ekuitas paper portfolio" style="width:100%;height:auto;display:block"><line x1="10" y1="130" x2="670" y2="130" stroke="rgba(150,170,210,.25)" stroke-width="1"/><polyline points="'+pts+'" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="dnote">Rentang '+esc(cv[0].date||'—')+' sampai '+esc(cv[cv.length-1].date||'—')+' • titik kurva adalah snapshot akhir sesi yang tersedia.</div></div>';
+  }
+  if(p25.recent&&p25.recent.length){
+   h+='<h4>Alokasi paper trade terbaru</h4><div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Tanggal entry</th><th>Ukuran</th><th>Status portofolio</th><th>Entry efektif</th><th>Net P/L</th><th>Catatan</th></tr>';
+   p25.recent.slice(0,15).forEach(x=>{const st=x.portfolioStatus==='CLOSED'?'Closed':x.portfolioStatus==='OPEN'?'Aktif':x.portfolioStatus==='SKIPPED'?'Tidak dialokasikan':x.status||'Menunggu';h+='<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.entryDate||'—')+'</td><td>'+(x.lots?nf(x.lots)+' lot ('+nf(x.qtyShares)+' lbr)':'—')+'</td><td><span class="bdg '+(x.portfolioStatus==='CLOSED'?'ok':x.portfolioStatus==='SKIPPED'?'warn':'idle')+'">'+esc(st)+'</span></td><td>'+(x.entryExecPrice==null?'—':p25Money(x.entryExecPrice))+'</td><td>'+(x.netPnl==null?(x.unrealizedNetPnl==null?'—':p25Money(x.unrealizedNetPnl)+' floating'):p25Money(x.netPnl))+'</td><td>'+esc(x.reason||'')+'</td></tr>';});
+   h+='</table></div>';
+  }
+  h+='<h4>Asumsi portofolio virtual</h4><div class="dnote">Nilai default adalah contoh awal, bukan rekomendasi atau tarif resmi. Sesuaikan fee dengan broker dan pengaturan risiko yang dipakai.</div>';
+  const p25Field=(id,label,val,min,max,step)=>'<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">'+label+'<input id="'+id+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+(val==null?'':Number(val))+'" style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
+  h+='<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0">';
+  h+=p25Field('p25Capital','Modal awal (IDR)',p25cfg.startingCapitalIdr,1000000,1000000000000,1000000);
+  h+=p25Field('p25Risk','Risiko maksimum per posisi (%)',p25cfg.riskPerTradePct,0.1,3,0.1);
+  h+=p25Field('p25MaxPosition','Batas satu posisi (%)',p25cfg.maxPositionPct,1,50,1);
+  h+=p25Field('p25MaxExposure','Batas eksposur total (%)',p25cfg.maxExposurePct,10,100,1);
+  h+=p25Field('p25MaxConcurrent','Maksimum posisi aktif',p25cfg.maxConcurrentPositions,1,20,1);
+  h+=p25Field('p25BuyFee','Fee beli (%)',p25cfg.buyFeePct,0,1,0.01);
+  h+=p25Field('p25SellFee','Fee jual (%)',p25cfg.sellFeePct,0,1,0.01);
+  h+=p25Field('p25BuySlip','Slippage beli (%)',p25cfg.buySlippagePct,0,1,0.01);
+  h+=p25Field('p25SellSlip','Slippage jual (%)',p25cfg.sellSlippagePct,0,1,0.01);
+  h+='</div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p25SaveConfig" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:#fff;font-weight:800;cursor:pointer">Simpan asumsi</button><button id="p25RefreshPortfolio" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Proses ulang & refresh portofolio</button><span id="p25PortfolioMsg" class="dnote">Perhitungan hanya memakai transaksi P24 yang sudah mendapat entry.</span></div>';
+  if(p25.warnings&&p25.warnings.length)h+='<div class="dnote" style="margin-top:8px">'+p25.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div class="dnote"><small>'+esc(p25.note||'')+'</small></div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1762,6 +1801,34 @@ if(!window.__p24PaperForwardBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p24ForwardMsg');if(done)done.textContent=j.message||'P24 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Proses & refresh paper trading';}
+ });
+}
+
+
+/* ===== P25: simpan asumsi dan refresh realistic paper portfolio ===== */
+if(!window.__p25PaperPortfolioBound){
+ window.__p25PaperPortfolioBound=true;
+ document.addEventListener('click',async function(ev){
+  const save=ev.target&&ev.target.closest?ev.target.closest('#p25SaveConfig'):null;
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p25RefreshPortfolio'):null;
+  const btn=save||refresh;if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p25PortfolioMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  let payload;
+  if(save){
+   const read=id=>{const el=$(id);return el&&el.value.trim()!==''?Number(el.value):NaN;};
+   const config={startingCapitalIdr:read('p25Capital'),riskPerTradePct:read('p25Risk'),maxPositionPct:read('p25MaxPosition'),maxExposurePct:read('p25MaxExposure'),maxConcurrentPositions:read('p25MaxConcurrent'),buyFeePct:read('p25BuyFee'),sellFeePct:read('p25SellFee'),buySlippagePct:read('p25BuySlip'),sellSlippagePct:read('p25SellSlip')};
+   if(Object.keys(config).some(k=>!isFinite(config[k]))){if(msg)msg.textContent='Isi semua asumsi dengan angka yang valid.';return;}
+   payload={action:'paper_portfolio_config_save',token:token,config:config};
+  }else payload={action:'paper_portfolio_refresh',token:token};
+  btn.disabled=true;btn.textContent=save?'Menyimpan…':'Memproses…';
+  if(msg)msg.textContent=save?'Memvalidasi dan menyimpan asumsi simulasi…':'Memproses ulang entry, biaya, ukuran lot, ekuitas dan benchmark IHSG…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P25 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p25PortfolioMsg');if(done)done.textContent=j.message||'P25 berhasil diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent=save?'Simpan asumsi':'Proses ulang & refresh portofolio';}
  });
 }
 
