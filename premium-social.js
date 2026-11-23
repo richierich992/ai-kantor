@@ -560,12 +560,25 @@ export function animateSocialCharacter(character, dt) {
     ? Math.min(1, seatProgress + Math.min(0.06, Math.max(0, dt || 0)) * 6)
     : Math.max(0, seatProgress - Math.min(0.06, Math.max(0, dt || 0)) * 8);
   const seatBlend = character._socialSeatProgress;
+  /* Blend into a seated pose only while seated or easing out of a seat.
+     When walking, preserve the live hip swing from the base locomotion step;
+     writing an absolute zero pose here used to cancel that gait every frame. */
   if (character.legL) {
-    character.legL.rotation.x = -0.92 * seatBlend;
+    const walkingHip = character.legL.rotation.x;
+    character.legL.rotation.x = walkingHip * (1 - seatBlend) - 0.92 * seatBlend;
     character.legL.rotation.z = -0.045 * seatBlend;
   }
   if (character.legR) {
-    character.legR.rotation.x = -0.92 * seatBlend;
+    const walkingHip = character.legR.rotation.x;
+    character.legR.rotation.x = walkingHip * (1 - seatBlend) - 0.92 * seatBlend;
     character.legR.rotation.z = 0.045 * seatBlend;
+  }
+  if (character.kneeL) {
+    const walkingKnee = character.kneeL.rotation.x;
+    character.kneeL.rotation.x = walkingKnee * (1 - seatBlend) + 0.72 * seatBlend;
+  }
+  if (character.kneeR) {
+    const walkingKnee = character.kneeR.rotation.x;
+    character.kneeR.rotation.x = walkingKnee * (1 - seatBlend) + 0.72 * seatBlend;
   }
 }
