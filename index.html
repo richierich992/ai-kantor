@@ -1218,6 +1218,25 @@ function pfHtml(){
   h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p16RefreshFundamental" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">'+(fu||ca?'Perbarui fundamental & aksi korporasi':'Jalankan analisis P16 pertama')+'</button><span id="p16FundamentalMsg" class="dnote">Sumber data: input manual dari dokumen resmi. FundamentalData & CorporateActions.</span></div>';
   h+='<div class="dnote"><small>Growth membandingkan periode fiskal yang sama tahun sebelumnya. ROE/ROA adalah rasio laba periode terhadap rata-rata ekuitas/aset, tidak diannualisasi. PER memakai EPS TTM; PBV memakai ekuitas dibagi saham beredar. Skor P16 adalah heuristik umum, bukan peringkat resmi atau rekomendasi transaksi. Estimasi dividen bruto hanya memakai lot pada sheet Portfolio saat ini dan tidak menjamin jumlah yang akan diterima.</small></div>';
  }
+ const de=P.decisionEngine;
+ if(localStorage.getItem('admin_token')&&sh([2,3,4,5])){
+  const compVal=x=>!x||x.score==null?'—':x.score+'/100';
+  const ppVal=x=>x==null?'—':(x>0?'+':'')+Number(x).toFixed(1)+' pp';
+  const decisionClass=x=>x==='WATCH'?'ok':x==='HIGH_RISK'?'err':String(x||'').indexOf('REVIEW')===0?'warn':'idle';
+  h+='<h4>🧭 P17 — Investment Decision Engine <small>('+esc(de&&de.generatedAt||'—')+' WIB)</small></h4>';
+  if(de&&de.ready){
+   const k=de.counts||{};
+   h+='<div class="dchips"><span class="chip">Emiten dianalisis <b>'+nf(de.count)+'</b></span><span class="chip">Layak dipantau <b>'+nf(k.watch)+'</b></span><span class="chip">Menunggu <b>'+nf(k.wait)+'</b></span><span class="chip">Risiko tinggi <b>'+nf(k.highRisk)+'</b></span><span class="chip">Perlu ditinjau <b>'+nf(k.review)+'</b></span><span class="chip">Data terbatas <b>'+nf(k.insufficient)+'</b></span></div>';
+   h+='<div class="dnote">'+esc(de.methodology||'')+'</div>';
+   h+='<div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Hasil pemantauan</th><th>Skor</th><th>Confidence</th><th>Teknikal</th><th>Backtest</th><th>Pasar vs IHSG</th><th>Fundamental</th><th>Risiko</th><th>Sektor</th></tr>'+(de.items||[]).map(x=>{const c=x.components||{},r=x.risk||{},bt=x.backtest||{},fu=x.fundamental||{},m=x.market||{};return '<tr><td><b>'+esc(x.ticker)+'</b></td><td><span class="bdg '+decisionClass(x.decisionCode)+'">'+esc(x.decision)+'</span></td><td><b>'+(x.score==null?'—':x.score+'/100')+'</b></td><td>'+nf(x.coveragePct)+'% • '+esc(x.confidence||'—')+'</td><td>'+compVal(c.technical)+'</td><td>'+(bt.trades?nf(bt.trades)+'x • '+(bt.winRate==null?'—':bt.winRate+'% win')+' • '+(bt.avgR==null?'—':bt.avgR+'R'):'—')+'</td><td>'+ppVal(m.relative20Pct)+'</td><td>'+(fu.grade||'—')+(fu.period?' • '+esc(fu.period):'')+'</td><td>'+(r.volatilityPct==null?'—':r.volatilityPct+'% vol')+(r.maxDrawdownPct==null?'':' • '+r.maxDrawdownPct+'% DD')+'</td><td>'+(x.sector?esc(x.sector.name):'—')+'</td></tr>';}).join('')+'</table></div>';
+   h+='<h4>Alasan dan data yang perlu dilengkapi</h4>'+(de.items||[]).slice(0,10).map(x=>'<div class="dlist"><div><b>'+esc(x.ticker)+' — '+esc(x.decision)+'</b><br>'+(x.reasons||[]).map(v=>'• '+esc(v)).join('<br>')+((x.missing||[]).length?'<br><small style="color:#f4c978">Belum tersedia: '+(x.missing||[]).map(esc).join('; ')+'</small>':'')+((x.corporateActions||[]).length?'<br><small>Aksi korporasi: '+x.corporateActions.map(a=>esc(a.actionLabel+' • '+a.status+(a.nextDate?' • '+a.nextDate:''))).join('; ')+'</small>':'')+'</div></div>').join('');
+  }else{
+   h+='<div class="dnote">Belum ada saham portofolio atau kandidat screener untuk dianalisis. Jalankan screener dan perbarui snapshot portofolio terlebih dahulu.</div>';
+  }
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p17RefreshDecision" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">'+(de&&de.ready?'Perbarui analisis keputusan':'Jalankan Investment Decision Engine')+'</button><span id="p17DecisionMsg" class="dnote">Analisis privat • hasil bukan instruksi beli/jual.</span></div>';
+  if(de&&de.warnings&&de.warnings.length)h+='<div class="dnote">'+de.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div class="dnote"><small>'+esc(de&&de.note||'Skor komposit dan confidence hanya menggunakan komponen yang tersedia. Tidak ada order otomatis.')+'</small></div>';
+ }
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1290,6 +1309,24 @@ if(!window.__p16RefreshBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p16FundamentalMsg');if(done)done.textContent=j.message||'Fundamental dan aksi korporasi diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Perbarui fundamental & aksi korporasi';}
+ });
+}
+
+/* ===== P17: refresh Investment Decision Engine melalui ADMIN_TOKEN ===== */
+if(!window.__p17RefreshBound){
+ window.__p17RefreshBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p17RefreshDecision'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p17DecisionMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menganalisis…';if(msg)msg.textContent='Menggabungkan screener, backtest, risiko, pasar, fundamental, dan aksi korporasi…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'refresh_investment_decisions',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Analisis keputusan gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p17DecisionMsg');if(done)done.textContent=j.message||'Investment Decision Engine diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Perbarui analisis keputusan';}
  });
 }
 
