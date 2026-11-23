@@ -1128,7 +1128,7 @@ function pfHtml(){
  }
  const ds=P.decisionSupport;
  if(sh([2,3,4,5])&&ds){
-  const tw=ds.targetWeights||{};
+  const tw=ds.targetWeights||{};const ppText=n=>n==null?'—':(n>0?'+':'')+Number(n).toFixed(1)+' pp';
   const targetInput=(key,label)=>'<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">'+label+' (%)<input id="p13Target_'+key.replace(/[^a-z]/gi,'')+'" type="number" min="0" max="100" step="0.1" value="'+(tw[key]==null?'':tw[key])+'" placeholder="0–100" style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
   h+='<h4>🎯 P13 — Target alokasi & rebalancing</h4>';
   h+='<div class="dnote">'+esc(ds.note||'Tetapkan target alokasi sendiri. Total seluruh target wajib 100%.')+' Ambang evaluasi deviasi: ±'+nf(ds.bandPct||5)+' poin persentase.</div>';
@@ -1136,7 +1136,7 @@ function pfHtml(){
   h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0"><button id="p13SaveTargets" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">Simpan target</button><span id="p13TargetMsg" class="dnote">'+(ds.configured?'Target tersimpan.':'Belum ada target tersimpan.')+'</span></div>';
   if(ds.ready&&ds.configured){
    h+='<div class="dchips"><span class="chip">Kelas yang perlu ditinjau <b>'+nf(ds.reviewCount||0)+'</b></span><span class="chip">Deviasi terbesar <b>'+pc(ds.largestDeviationPp)+'</b></span></div>';
-   h+='<table><tr><th>Kelas aset</th><th>Aktual</th><th>Target</th><th>Deviasi</th><th>Selisih nilai</th><th>Status</th></tr>'+(ds.rows||[]).map(r=>'<tr><td><b>'+esc(r.assetClass)+'</b></td><td>'+pc(r.actualPct)+'</td><td>'+pc(r.targetPct)+'</td><td><span class="bdg '+(Math.abs(r.deviationPp)>ds.bandPct?'warn':'ok')+'">'+(r.deviationPp>0?'+':'')+pc(r.deviationPp)+'</span></td><td>'+rpi(r.adjustmentValue)+'</td><td>'+esc(r.status)+'</td></tr>').join('')+'</table>';
+   h+='<table><tr><th>Kelas aset</th><th>Aktual</th><th>Target</th><th>Deviasi</th><th>Selisih nilai</th><th>Status</th></tr>'+(ds.rows||[]).map(r=>'<tr><td><b>'+esc(r.assetClass)+'</b></td><td>'+pc(r.actualPct)+'</td><td>'+pc(r.targetPct)+'</td><td><span class="bdg '+(Math.abs(r.deviationPp)>ds.bandPct?'warn':'ok')+'">'+ppText(r.deviationPp)+'</span></td><td>'+rpi(r.adjustmentValue)+'</td><td>'+esc(r.status)+'</td></tr>').join('')+'</table>';
   }
   if(ds.recommendations&&ds.recommendations.length)h+='<div class="dnote" style="margin-top:8px">'+ds.recommendations.map(x=>'• '+esc(x)).join('<br>')+'</div>';
   h+='<div class="dnote"><small>Selisih nominal adalah estimasi berdasarkan nilai snapshot saat ini, bukan instruksi beli/jual. Pertimbangkan profil risiko, tujuan, pajak, biaya, likuiditas, dan lot minimum sebelum transaksi.</small></div>';
@@ -1168,7 +1168,7 @@ if(!window.__p13PortfolioTargetsBound){
    targets[item[0]]=Math.round(n*10)/10;sum+=targets[item[0]];
   }
   sum=Math.round(sum*10)/10;
-  if(Math.abs(sum-100)>0.1){if(msg)msg.textContent='Total target harus 100%. Saat ini '+sum.toFixed(1)+'%.';return;}
+  if(Math.abs(sum-100)>0.001){if(msg)msg.textContent='Total target harus 100%. Saat ini '+sum.toFixed(1)+'%.';return;}
   if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
   btn.disabled=true;btn.textContent='Menyimpan…';if(msg)msg.textContent='Menyimpan target…';
   try{
