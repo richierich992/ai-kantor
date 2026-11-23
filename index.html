@@ -1634,6 +1634,38 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(r.note||p28.note||'')+'</small></div>';
  }
 
+
+ const p29=P.portfolioGuardian;
+ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p29){
+  const statusTone=p29.portfolioRiskStatus==='HIGH'?'err':p29.portfolioRiskStatus==='ELEVATED'?'warn':p29.portfolioRiskStatus==='NORMAL'?'ok':'idle';
+  const p29pct=x=>x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+'%';
+  const p29num=x=>x==null?'—':Number(x).toFixed(2);
+  const p29money=x=>x==null?'—':rpi(x);
+  const p29classes=p29.classes||[],p29stress=p29.stressScenarios||[],p29hist=p29.history||{},p29gold=p29.gold||{};
+  h+='<h4>🧭 P29 — AI Portfolio Risk Guardian <small>('+esc(p29.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dnote">P29 menyatukan eksposur saham, reksa dana, kripto, emas fisik yang dicatat manual, dan kas IDR. Korelasi memakai snapshot harian yang dikumpulkan sejak P29 dipasang. Stress test adalah simulasi hipotetis, bukan prediksi/VaR. Sistem hanya mengirim peringatan dan tidak melakukan rebalancing atau order.</div>';
+  h+='<div class="dchips"><span class="chip">Status risiko <b><span class="bdg '+statusTone+'">'+esc(p29.portfolioRiskStatus||'INSUFFICIENT')+'</span></b></span><span class="chip">Total valuasi <b>'+p29money(p29.totalValue)+'</b></span><span class="chip">Kelas terbesar <b>'+esc(p29.maxClass||'—')+' '+p29num(p29.maxClassPct)+'%</b></span><span class="chip">Kripto <b>'+p29num(p29.cryptoPct)+'%</b></span><span class="chip">Top 3 aset <b>'+p29num(p29.top3Pct)+'%</b></span><span class="chip">Stress krisis berat <b>'+p29pct(p29.severeStressPct)+'</b></span></div>';
+  h+='<h4>Alokasi lintas kelas aset</h4><div style="overflow-x:auto"><table><tr><th>Kelas aset</th><th>Nilai</th><th>Bobot</th></tr>';
+  p29classes.forEach(x=>{h+='<tr><td><b>'+esc(x.assetClass)+'</b></td><td>'+p29money(x.value)+'</td><td>'+p29num(x.weightPct)+'%</td></tr>';});
+  h+='</table></div>';
+  h+='<h4>Stress test portofolio</h4><div class="dnote">Perubahan nilai dihitung pada bobot snapshot saat ini. Kas IDR diasumsikan tetap; skenario tidak memperhitungkan korelasi intrahari, likuiditas, biaya, pajak, atau perubahan kepemilikan.</div><div style="overflow-x:auto"><table><tr><th>Skenario</th><th>Dampak IDR</th><th>Dampak total</th><th>Cakupan valuasi</th></tr>';
+  p29stress.forEach(x=>{h+='<tr><td><b>'+esc(x.label)+'</b></td><td>'+p29money(x.deltaIdr)+'</td><td><span class="bdg '+(Number(x.impactPct)<0?'err':'ok')+'">'+p29pct(x.impactPct)+'</span></td><td>'+p29num(x.coveragePct)+'%</td></tr>';});
+  h+='</table></div>';
+  h+='<h4>Korelasi antar kelas aset — histori forward P29</h4><div class="dnote">Cakupan kelas dengan minimal 10 return harian: '+(p29hist.historyCoveragePct==null?'—':p29hist.historyCoveragePct+'%')+' • kelas berhistori '+nf(p29hist.classesWithHistory||0)+' dari '+nf(p29hist.currentRiskClasses||0)+' • pairwise perlu minimal 10 sesi bersama; 30 sesi lebih baik untuk tinjauan awal.</div><div style="overflow-x:auto"><table><tr><th>Pasangan aset</th><th>Korelasi</th><th>Sesi bersama</th><th>Status sampel</th></tr>';
+  (p29hist.pairs||[]).forEach(x=>{h+='<tr><td>'+esc(x.a)+' ↔ '+esc(x.b)+'</td><td>'+(x.correlation==null?'—':p29num(x.correlation))+'</td><td>'+nf(x.observations)+'</td><td>'+esc(x.status)+'</td></tr>';});
+  if(!(p29hist.pairs||[]).length)h+='<tr><td colspan="4">Belum ada histori lintas aset yang cukup. Snapshot mulai terkumpul setelah P29 dipasang dan dijalankan.</td></tr>';
+  h+='</table></div>';
+  h+='<h4>Kualitas dan kesegaran sumber data</h4><div style="overflow-x:auto"><table><tr><th>Sumber</th><th>Status</th><th>Detail</th></tr>';
+  (p29.dataSources||[]).forEach(x=>{const tone=x.status==='FRESH'||x.status==='AVAILABLE'?'ok':x.status==='MISSING'?'err':'warn';h+='<tr><td><b>'+esc(x.id)+'</b></td><td><span class="bdg '+tone+'">'+esc(x.status)+'</span></td><td>'+esc(x.detail||'')+'</td></tr>';});
+  h+='</table></div>';
+  h+='<h4>Emas fisik yang tercatat</h4><div class="dchips"><span class="chip">Gram <b>'+p29num(p29gold.grams)+'</b></span><span class="chip">Harga Antam 1 gr <b>'+p29money(p29gold.pricePerGram)+'</b></span><span class="chip">Estimasi nilai <b>'+p29money(p29gold.value)+'</b></span><span class="chip">Tanggal harga <b>'+esc(p29gold.quoteDate||'—')+'</b></span></div>';
+  h+='<div class="dnote">Untuk memasukkan emas fisik, isi sheet <b>GoldHold</b>: Nama, Gram, ModalTotal, UpdatedAt, Catatan. Contoh: Antam, 10, 15000000, 2026-11-23, LM 10 gram. Harga saat ini dibaca dari harga Antam 1 gram; nilai dan P/L adalah estimasi.</div>';
+  if((p29.positions||[]).length){h+='<h4>Posisi terbesar yang terlihat</h4><div style="overflow-x:auto"><table><tr><th>Aset</th><th>Kelas</th><th>Nilai</th><th>Bobot</th></tr>';p29.positions.slice(0,8).forEach(x=>{h+='<tr><td><b>'+esc(x.name)+'</b></td><td>'+esc(x.assetClass)+'</td><td>'+p29money(x.value)+'</td><td>'+p29num(x.weightPct)+'%</td></tr>';});h+='</table></div>';}
+  if((p29.warnings||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p29.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p29RefreshGuardian" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh pengawas risiko portofolio</button><span id="p29GuardianMsg" class="dnote">Snapshot otomatis mengikuti S40 pukul 16:59 WIB setelah pembaruan P28. P29 menyimpan histori kelas aset harian.</span></div>';
+  h+='<div class="dnote"><small>'+esc(p29.methodology||'')+'</small></div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2003,6 +2035,26 @@ if(!window.__p28MarketRegimeRiskBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p28RegimeRiskMsg');if(done)done.textContent=j.message||'P28 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh analisis regime & risiko';}
+ });
+}
+
+
+/* ===== P29: authenticated cross-asset portfolio risk guardian ===== */
+if(!window.__p29PortfolioGuardianBound){
+ window.__p29PortfolioGuardianBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p29RefreshGuardian'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p29GuardianMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Memeriksa semua aset…';
+  if(msg)msg.textContent='Memperbarui nilai portofolio, harga emas, stress scenario, histori forward, dan peringatan risiko…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'portfolio_guardian_refresh',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P29 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p29GuardianMsg');if(done)done.textContent=j.message||'P29 berhasil diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh pengawas risiko portofolio';}
  });
 }
 
