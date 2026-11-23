@@ -334,9 +334,11 @@ function step(c,dt){
   else{const s=Math.min(d,(c.stroll?1.6:3.4)*dt);c.g.position.x+=dx/d*s;c.g.position.z+=dz/d*s;turn(c,Math.atan2(dx,dz),dt*10);mvg=true}
  }else if(c.stroll&&!c.busy){c.si=(c.si+1)%c.stroll.length;c.path=[c.stroll[c.si].clone()]}
  else if(c.face!=null)turn(c,c.face,dt*8);
- const A=c.act,fast=!mvg&&(A==='run'||A==='lift'||A==='swing'||A==='shoot');
- c.t+=dt*(mvg||fast?9:1);const s=mvg?Math.sin(c.t)*.7:0,ty=!mvg&&(c.work||A==='type');
- if(c.legL)c.legL.rotation.x=A==='run'&&!mvg?Math.sin(c.t)*.8:s;if(c.legR)c.legR.rotation.x=A==='run'&&!mvg?-Math.sin(c.t)*.8:-s;
+ const A=c.act,walking=mvg||A==='run',fast=!mvg&&(A==='run'||A==='lift'||A==='swing'||A==='shoot');
+ c.t+=dt*(mvg||fast?10.5:1);const stride=walking?Math.sin(c.t):0,s=walking?stride*.98:0,ty=!mvg&&(c.work||A==='type');
+ if(c.legL)c.legL.rotation.x=s;if(c.legR)c.legR.rotation.x=-s;
+ if(c.kneeL)c.kneeL.rotation.x=walking?Math.max(0,Math.cos(c.t))*.62:0;
+ if(c.kneeR)c.kneeR.rotation.x=walking?Math.max(0,-Math.cos(c.t))*.62:0;
  let aL=Math.sin(c.t)*.04,aR=-Math.sin(c.t)*.04;
  if(mvg){aL=-s;aR=s}
  else if(A==='swing'){aL=-.9+Math.sin(c.t*.9)*.5;aR=-.9+Math.cos(c.t*.9)*.5}
@@ -347,7 +349,7 @@ function step(c,dt){
  else if(A==='stretch'){aL=aR=-2.7+Math.sin(c.t*.6)*.25}
  else if(ty){aL=-1.2+Math.sin(c.t*14)*.12;aR=-1.2+Math.cos(c.t*14)*.12}
  if(c.armL)c.armL.rotation.x=aL;if(c.armR)c.armR.rotation.x=aR;
- c.g.position.y=.14+(c.yoff||0)+(mvg?Math.abs(Math.sin(c.t))*.1:0);
+ c.g.position.y=.14+(c.yoff||0)+(mvg?Math.abs(Math.sin(c.t))*.13:0);
  roam(c,dt);
 }
 
@@ -437,12 +439,29 @@ function put(n,parent,x,z,yaw=0,sc=1,y=0){const o=GLB[n]&&GLB[n].clone(true);if(
 function mkAvatar(n){const src=GLB['avatar_ai_'+n];if(!src)return null;const root=src.clone(true);root.updateMatrixWorld(true);
  const grp=a=>a.map(k=>root.getObjectByName(k)).filter(Boolean);
  const piv=(ms,dy)=>{if(!ms.length)return null;const b=new THREE.Box3();ms.forEach(m=>b.expandByObject(m));if(b.isEmpty())return null;const p=new THREE.Group();p.position.set((b.min.x+b.max.x)/2,b.max.y-dy,(b.min.z+b.max.z)/2);root.add(p);p.updateMatrixWorld(true);ms.forEach(m=>p.attach(m));return p};
- const side=k=>({leg:piv(grp([k+'_shoe',k+'_sole',k+'_leg',k+'_leg_top',k+'_leg_bottom']),0),arm:piv(grp([k+'_sleeve_upper',k+'_elbow',k+'_sleeve_lower',k+'_hand',k+'_cuff']),.08)});
+ const legRig=k=>{
+  const hip=piv(grp([k+'_shoe',k+'_sole',k+'_leg',k+'_leg_top',k+'_leg_bottom']),0);
+  if(!hip)return{hip:null,knee:null};
+  const lower=grp([k+'_leg_bottom',k+'_shoe',k+'_sole']);
+  let knee=null;
+  if(lower.length){
+   hip.updateMatrixWorld(true);
+   const bounds=new THREE.Box3();lower.forEach(part=>bounds.expandByObject(part));
+   if(!bounds.isEmpty()){
+    const kneeWorld=new THREE.Vector3((bounds.min.x+bounds.max.x)/2,bounds.max.y,(bounds.min.z+bounds.max.z)/2);
+    knee=new THREE.Group();knee.name=k+'_knee_pivot';
+    knee.position.copy(hip.worldToLocal(kneeWorld.clone()));hip.add(knee);hip.updateMatrixWorld(true);
+    lower.forEach(part=>knee.attach(part));
+   }
+  }
+  return{hip,knee};
+ };
+ const side=k=>({leg:legRig(k),arm:piv(grp([k+'_sleeve_upper',k+'_elbow',k+'_sleeve_lower',k+'_hand',k+'_cuff']),.08)});
  const l=side('L'),r=side('R');root.traverse(m=>{if(m.isMesh)m.castShadow=true});
- return{root,legL:l.leg,legR:r.leg,armL:l.arm,armR:r.arm}}
+ return{root,legL:l.leg.hip,legR:r.leg.hip,kneeL:l.leg.knee,kneeR:r.leg.knee,armL:l.arm,armR:r.arm}}
 function swapChar(c){const a=mkAvatar(AVN[c.r.id]||'analyst')||mkAvatar(AVN_OLD[c.r.id]||'analyst');if(!a)return;
  while(c.g.children.length)c.g.remove(c.g.children[0]);
- c.g.add(a.root);if(c.tag)c.g.add(c.tag);c.legL=a.legL;c.legR=a.legR;c.armL=a.armL;c.armR=a.armR;c.g.scale.setScalar(1.05)}
+ c.g.add(a.root);if(c.tag)c.g.add(c.tag);c.legL=a.legL;c.legR=a.legR;c.kneeL=a.kneeL;c.kneeR=a.kneeR;c.armL=a.armL;c.armR=a.armR;c.g.scale.setScalar(1.05)}
 function dress(r){const g=r.g,y=.14,col=new THREE.Color(r.col).lerp(new THREE.Color(1,1,1),.55);
  if(!GLB.desk_workstation&&!GLB.meeting_table)return;r.furn.forEach(m=>m.visible=false);
  if(r.meet){put('meeting_table',g,0,.2,0,1.3,y);[[-1.1,-1.3,0],[0,-1.3,0],[1.1,-1.3,0],[-1.1,1.7,PI],[0,1.7,PI],[1.1,1.7,PI],[-2.5,.2,PI/2],[2.5,.2,-PI/2]].forEach(([x,z,a])=>put('office_chair',g,x,z,a,1,y));return}
@@ -554,7 +573,7 @@ function addStation(kind,x,z,yaw=0){
    : kind==='chess'
     ? V3(sx+Math.cos(face)*1.35,0,sz-Math.sin(face)*1.35)
     : V3(sx+ox,0,sz+oz);
-  const rootY=kind==='lounge'?.56:kind==='chess'?.20:(kind==='reading'||kind==='garden')?.30:.14+(dy||0);
+  const rootY=kind==='lounge'?.56:kind==='chess'?.78:(kind==='reading'||kind==='garden')?.30:.14+(dy||0);
   st.slots.push({st,x:sx,z:sz,face,sit,act,dy:dy||0,rootY,occ:null,appr,
    route:(route||[]).map(([a,b])=>{const [rx,rz]=rot(yaw,a,b);return V3(x+rx,0,z+rz)})})
  });
@@ -1426,7 +1445,44 @@ function applyMockupOffice() {
     if(new URLSearchParams(location.search).get("qa")==="1" && agentNavigation){
       window.__agentNavigationTest={
         agentHome:id=>chars[id]?.r?.spot?.toArray?.()||null,
-        stations:()=>STN.map(st=>({kind:st.kind,x:st.x,z:st.z,slots:st.slots.map(slot=>({seat:[slot.x,0,slot.z],approach:slot.appr.toArray()}))})),
+        stations:()=>STN.map(st=>({kind:st.kind,x:st.x,z:st.z,slots:st.slots.map(slot=>({seat:[slot.x,0,slot.z],approach:slot.appr.toArray(),sit:!!slot.sit,rootY:slot.rootY??null,act:slot.act,face:slot.face}))})),
+        walkGait:id=>{
+          const c=chars[id];if(!c?.legL||!c?.legR)return{available:false,reason:"Avatar leg pivots are missing"};
+          const objects=[c.legL,c.legR,c.kneeL,c.kneeR,c.armL,c.armR].filter(Boolean);
+          const saved={
+            position:c.g.position.clone(),rotation:c.g.rotation.clone(),path:c.path,stroll:c.stroll,si:c.si,done:c.done,
+            navPathSource:c._navPathSource,navVersion:c._navVersion,navAllowBlockedGoal:c.navAllowBlockedGoal,
+            t:c.t,wait:c.wait,yoff:c.yoff,act:c.act,face:c.face,work:c.work,busy:c.busy,meeting:c.meeting,
+            socialSeatProgress:c._socialSeatProgress,
+            objects:objects.map(object=>({object,rotation:object.rotation.clone()}))
+          };
+          try{
+            const start=c.g.position.clone(),target=new THREE.Vector3(start.x+3.5,0,start.z);
+            c.path=[target];c._navPathSource=c.path;c._navVersion=agentNavigation?.version??0;
+            c.navAllowBlockedGoal=false;c.stroll=null;c.done=null;c.wait=10000;c.yoff=0;c.act=null;c.face=null;c.work=false;c.busy=false;c.meeting=false;
+            const leftHip=[],rightHip=[],leftKnee=[],rightKnee=[];
+            for(let i=0;i<16;i++){
+              step(c,.035);
+              leftHip.push(c.legL.rotation.x);rightHip.push(c.legR.rotation.x);
+              leftKnee.push(c.kneeL?.rotation.x??0);rightKnee.push(c.kneeR?.rotation.x??0);
+            }
+            const range=values=>Math.max(...values)-Math.min(...values);
+            return{
+              available:true,
+              distance:Math.hypot(c.g.position.x-start.x,c.g.position.z-start.z),
+              leftHipRange:range(leftHip),rightHipRange:range(rightHip),
+              leftKneeRange:range(leftKnee),rightKneeRange:range(rightKnee),
+              kneeRig:!!c.kneeL&&!!c.kneeR,
+              samples:16
+            };
+          }finally{
+            c.g.position.copy(saved.position);c.g.rotation.copy(saved.rotation);c.path=saved.path;c.stroll=saved.stroll;c.si=saved.si;c.done=saved.done;
+            c._navPathSource=saved.navPathSource;c._navVersion=saved.navVersion;c.navAllowBlockedGoal=saved.navAllowBlockedGoal;
+            c.t=saved.t;c.wait=saved.wait;c.yoff=saved.yoff;c.act=saved.act;c.face=saved.face;c.work=saved.work;c.busy=saved.busy;c.meeting=saved.meeting;
+            c._socialSeatProgress=saved.socialSeatProgress;
+            saved.objects.forEach(item=>item.object.rotation.copy(item.rotation));
+          }
+        },
         plan:(start,waypoints,options={})=>{
           const from=new THREE.Vector3(...start);
           const targets=(waypoints||[]).map(value=>new THREE.Vector3(...value));
