@@ -1098,6 +1098,34 @@ function pfHtml(){
  const c=P.crypto;
  if(sh([5])&&c){h+=`<h4>₿ Aset Indodax <small>(${esc(c.t)} WIB • sumber: ${c.via==='API'?'API Indodax (lihat saja)':'sheet manual'})</small></h4><div class="dlist"><div>Total <b>${rpi(c.nilai)}</b>${c.unpriced&&c.unpriced.length?' • ⚠ tanpa harga IDR: '+esc(c.unpriced.join(', ')):''}</div></div>
   <table><tr><th>Aset</th><th>Jumlah</th><th>Nilai</th><th>P/L</th></tr>${c.rows.map(r=>`<tr><td><b>${esc(r.a)}</b></td><td>${esc(String(r.q))}</td><td>${rpi(r.v)}</td><td>${r.pp==null?'—':`<span class="bdg ${pcCls(r.pp)}">${pc(r.pp)}</span>`}</td></tr>`).join('')}</table>`}
+ const pi=P.intelligence;
+ if(sh([2,3,4,5])&&pi&&pi.ready){
+  const co=pi.concentration||{},fr=pi.freshness||{};
+  const ageLabel=m=>m==null?'—':(m>=1440?Math.floor(m/1440)+' hari '+Math.floor((m%1440)/60)+' jam':m>=60?Math.floor(m/60)+' jam '+(m%60)+' mnt':m+' mnt');
+  const frText=x=>x&&x.status?x.status:'belum ada data';
+  const frClass=x=>!x||x.status==='belum ada data'?'idle':x.status==='tersedia'?'ok':'warn';
+  h+=`<h4>🧭 P12 — Portfolio Intelligence <small>(snapshot ${esc(pi.generatedAt||'—')} WIB)</small></h4>
+  <div class="dchips">
+   <span class="chip">Total valuasi <b>${rpi(pi.totalValue)}</b></span>
+   <span class="chip">Posisi <b>${nf(pi.positionCount)}</b></span>
+   <span class="chip">P/L bermodal tercatat <b>${rpi(pi.knownPnl)}</b> (${pc(pi.knownReturnPct)})</span>
+   <span class="chip">Cakupan modal <b>${pc(pi.pnlCoveragePct)}</b></span>
+  </div>
+  <div class="dlist"><div><b>Konsentrasi: <span class="bdg ${co.level==='Tinggi'?'warn':co.level==='Sedang'?'idle':'ok'}">${esc(co.level||'—')}</span></b> • posisi terbesar ${pc(co.maxPositionPct)} • 3 posisi teratas ${pc(co.top3Pct)} • kelas terbesar ${esc(co.topClass||'—')} ${pc(co.topClassPct)}</div></div>
+  <h4>Alokasi per kelas aset</h4>
+  <table><tr><th>Kelas aset</th><th>Nilai</th><th>Alokasi</th><th>P/L diketahui</th><th>Return</th><th>Cakupan modal</th></tr>
+  ${(pi.allocation||[]).map(a=>`<tr><td><b>${esc(a.assetClass)}</b></td><td>${rpi(a.value)}</td><td><b>${pc(a.weightPct)}</b></td><td>${a.pnl==null?'—':rpi(a.pnl)}</td><td><span class="bdg ${pcCls(a.returnPct)}">${pc(a.returnPct)}</span></td><td>${pc(a.pnlCoveragePct)}</td></tr>`).join('')}</table>
+  <h4>Kontribusi per aset <small>(maks. 12 posisi bernilai terbesar)</small></h4>
+  <table><tr><th>Aset</th><th>Kelas</th><th>Nilai</th><th>Bobot</th><th>P/L</th><th>Return</th><th>Kontribusi</th></tr>
+  ${(pi.assets||[]).slice(0,12).map(a=>`<tr><td><b>${esc(a.name)}</b></td><td>${esc(a.assetClass)}</td><td>${rpi(a.value)}</td><td>${pc(a.weightPct)}</td><td>${a.pnl==null?'—':rpi(a.pnl)}</td><td><span class="bdg ${pcCls(a.returnPct)}">${pc(a.returnPct)}</span></td><td>${a.contributionPp==null?'—':pc(a.contributionPp)+' pp'}</td></tr>`).join('')}</table>
+  <h4>Kondisi pembaruan data</h4>
+  <div class="dchips">
+   <span class="chip ${frClass(fr.stocks)}">Saham: ${esc(frText(fr.stocks))} • ${ageLabel(fr.stocks&&fr.stocks.ageMin)}</span>
+   <span class="chip ${frClass(fr.bibit)}">Bibit: ${esc(frText(fr.bibit))} • input tertua ${fr.bibit&&fr.bibit.maxInputAgeDays!=null?fr.bibit.maxInputAgeDays+' hari':'—'}</span>
+   <span class="chip ${frClass(fr.crypto)}">Kripto: ${esc(frText(fr.crypto))} • ${ageLabel(fr.crypto&&fr.crypto.ageMin)}</span>
+  </div>
+  <div class="dnote">${(pi.insights||[]).map(x=>'• '+esc(x)).join('<br>')}<br><small>Return gabungan hanya menghitung aset dengan modal tercatat. Kontribusi ditampilkan dalam percentage point terhadap total modal yang tercatat; indikator konsentrasi adalah ambang heuristik P12, bukan ukuran risiko formal.</small></div>`;
+ }
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
