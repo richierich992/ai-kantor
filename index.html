@@ -857,7 +857,7 @@ async function backendRead(kind,signal){
  if(!j||!j.ok)throw new Error((j&&j.error)||'Respons backend tidak valid');return j;
 }
 async function bGet(){return backendRead('status')}
-async function bScr(){const j=await backendRead('screener');return (j&&j.screener)||null}
+async function bScr(){const j=await backendRead('screener');return j&&j.screener?Object.assign({private:!!j.private},j.screener):null}
 async function bPost(o){const u=bkUrl(),t=localStorage.getItem('admin_token');if(!u)throw new Error('URL backend belum diisi');if(!t)throw new Error('Token admin belum diisi (⚙ Sumber AI)');
  const r=await fetch(u,{method:'POST',body:JSON.stringify({...o,token:t})}),j=await r.json();if(!j.ok)throw new Error(j.error||'Gagal');return j}
 const stCls={OK:'ok',RUNNING:'run',ERROR:'err',RETRY:'warn',MENUNGGU:'idle',BELUM_ADA_TUGAS:'idle',SUCCESS:'ok',FAILED:'err',QUEUED:'warn',CANCELLED:'idle'},stTxt={BELUM_ADA_TUGAS:'belum ada tugas',MENUNGGU:'menunggu'};
@@ -1132,7 +1132,7 @@ $('cmdi').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.prev
 /* ===== Layar ruang Trading Saham: hasil screener + area beli / stop loss / take profit ===== */
 {const d1=D.find(x=>x.id===1),old=d1.g;let sc={t:0,v:null};
  const scrLive=async()=>{if(sc.v&&Date.now()-sc.t<120000)return sc.v;
-  try{sc={t:Date.now(),v:await bScr()}}catch(e){}return sc.v}
+  try{sc={t:Date.now(),v:await bScr()}}catch(e){}return sc.v};
  d1.g=async()=>{const s=await scrLive();if(!s)return old?await old():'Screener belum ada hasil';
   const n=x=>Math.round(+x).toLocaleString('id-ID'),L=['Screener '+s.tanggal+' • '+s.lolos.length+'/'+s.dievaluasi+' lolos'];
   s.lolos.slice(0,3).forEach(x=>{L.push(x.kode+' '+n(x.harga)+(s.private&&+x.sl>0?' • Beli '+n(x.buyLo)+(x.buyLo!==x.buyHi?'–'+n(x.buyHi):''):''));if(s.private&&+x.sl>0)L.push('   SL '+n(x.sl)+' • TP '+n(x.tp1)+'–'+n(x.tp2))});
