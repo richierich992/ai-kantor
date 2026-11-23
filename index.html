@@ -1126,6 +1126,21 @@ function pfHtml(){
   </div>
   <div class="dnote">${(pi.insights||[]).map(x=>'• '+esc(x)).join('<br>')}<br><small>Return gabungan hanya menghitung aset dengan modal tercatat. Kontribusi ditampilkan dalam percentage point terhadap total modal yang tercatat; indikator konsentrasi adalah ambang heuristik P12, bukan ukuran risiko formal.</small></div>`;
  }
+ const ds=P.decisionSupport;
+ if(sh([2,3,4,5])&&ds){
+  const tw=ds.targetWeights||{};const ppText=n=>n==null?'—':(n>0?'+':'')+Number(n).toFixed(1)+' pp';
+  const targetInput=(key,label)=>'<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">'+label+' (%)<input id="p13Target_'+key.replace(/[^a-z]/gi,'')+'" type="number" min="0" max="100" step="0.1" value="'+(tw[key]==null?'':tw[key])+'" placeholder="0–100" style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
+  h+='<h4>🎯 P13 — Target alokasi & rebalancing</h4>';
+  h+='<div class="dnote">'+esc(ds.note||'Tetapkan target alokasi sendiri. Total seluruh target wajib 100%.')+' Ambang evaluasi deviasi: ±'+nf(ds.bandPct||5)+' poin persentase.</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0">'+targetInput('Saham','Saham')+targetInput('Reksa dana','Reksa dana')+targetInput('Kripto','Kripto')+targetInput('Kas/IDR','Kas / IDR')+'</div>';
+  h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0"><button id="p13SaveTargets" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">Simpan target</button><span id="p13TargetMsg" class="dnote">'+(ds.configured?'Target tersimpan.':'Belum ada target tersimpan.')+'</span></div>';
+  if(ds.ready&&ds.configured){
+   h+='<div class="dchips"><span class="chip">Kelas yang perlu ditinjau <b>'+nf(ds.reviewCount||0)+'</b></span><span class="chip">Deviasi terbesar <b>'+ppText(ds.largestDeviationPp)+'</b></span></div>';
+   h+='<table><tr><th>Kelas aset</th><th>Aktual</th><th>Target</th><th>Deviasi</th><th>Selisih nilai</th><th>Status</th></tr>'+(ds.rows||[]).map(r=>'<tr><td><b>'+esc(r.assetClass)+'</b></td><td>'+pc(r.actualPct)+'</td><td>'+pc(r.targetPct)+'</td><td><span class="bdg '+(Math.abs(r.deviationPp)>ds.bandPct?'warn':'ok')+'">'+ppText(r.deviationPp)+'</span></td><td>'+rpi(r.adjustmentValue)+'</td><td>'+esc(r.status)+'</td></tr>').join('')+'</table>';
+  }
+  if(ds.recommendations&&ds.recommendations.length)h+='<div class="dnote" style="margin-top:8px">'+ds.recommendations.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+  h+='<div class="dnote"><small>Selisih nominal adalah estimasi berdasarkan nilai snapshot saat ini, bukan instruksi beli/jual. Pertimbangkan profil risiko, tujuan, pajak, biaya, likuiditas, dan lot minimum sebelum transaksi.</small></div>';
+ }
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1136,6 +1151,34 @@ function pfHtml(){
 {const _r=renderDash;renderDash=function(){_r();if(PF||!localStorage.getItem('admin_token'))$('dbody').insertAdjacentHTML('beforeend',pfHtml());};}
 {const _l=loadDash;loadDash=async function(){await _l();if(document.hidden||acting||Date.now()-pfT<60000)return;pfT=Date.now();
   const x=await bPf();if(x){PF=x;const b=$('dbody'),y=b.scrollTop;renderDash();b.scrollTop=y;}};}
+
+/* ===== P13: simpan target alokasi secara privat melalui ADMIN_TOKEN ===== */
+if(!window.__p13PortfolioTargetsBound){
+ window.__p13PortfolioTargetsBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p13SaveTargets'):null;
+  if(!btn)return;
+  const msg=$('p13TargetMsg'),token=localStorage.getItem('admin_token'),url=bkUrl();
+  const labels=[['Saham','Saham'],['Reksa dana','Reksadana'],['Kripto','Kripto'],['Kas/IDR','KasIDR']];
+  const targets={};let sum=0;
+  for(const item of labels){
+   const el=$('p13Target_'+item[1]);
+   const n=el&&el.value.trim()!==''?Number(el.value):NaN;
+   if(!isFinite(n)||n<0||n>100){if(msg)msg.textContent='Isi semua target dengan angka 0–100%.';return;}
+   targets[item[0]]=Math.round(n*10)/10;sum+=targets[item[0]];
+  }
+  sum=Math.round(sum*10)/10;
+  if(Math.abs(sum-100)>0.001){if(msg)msg.textContent='Total target harus 100%. Saat ini '+sum.toFixed(1)+'%.';return;}
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menyimpan…';if(msg)msg.textContent='Menyimpan target…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'portfolio_targets_save',token:token,targets:targets})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Gagal menyimpan target.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p13TargetMsg');if(done)done.textContent='Target berhasil disimpan.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Simpan target';}
+ });
+}
 
 /* --- Perintah ke divisi: router AI memilih divisi, lalu tiap divisi menjawab di ruangannya --- */
 const RT_KW=[[/toko ?crypto|tokocrypto|bot (trading|crypto)/i,6],[/indodax|bitcoin|btc|kripto|crypto/i,5],[/dividen/i,3],[/portofolio|portfolio|invest/i,2],[/screener|trading|saham|ihsg/i,1],[/bibit|reksa ?dana/i,4],[/emas|antam|logam mulia/i,7],[/catat|keuangan|pengeluaran|pemasukan/i,8],[/video|reels|shorts|tiktok|capcut/i,9],[/desain|grafis|poster|logo|thumbnail|canva/i,10],[/kode|coding|script|bug|program/i,11],[/produk|jualan|toko online|promo/i,12],[/viral|trend|tren|berita/i,13],[/resep|masak|minuman|kuliner/i,14],[/upload|pipeline|sosmed|monitoring konten/i,16]];
