@@ -1553,7 +1553,7 @@ function pfHtml(){
   }else h+='<div class="dnote">Belum ada ringkasan profil.</div>';
   const bl=p26.blend||{};
   h+='<h4>Portofolio gabungan berdasarkan bobot sleeve</h4>';
-  h+='<div class="dchips"><span class="chip">Modal gabungan <b>'+p26money(bl.startingCapital)+'</b></span><span class="chip">Ekuitas bersih <b>'+p26money(bl.endingEquity)+'</b></span><span class="chip">Return bersih <b><b>'+p26pct(bl.totalReturnPct)+'</b></b></span><span class="chip">IHSG <b>'+p26pct(bl.benchmark&&bl.benchmark.returnPct)+'</b></span><span class="chip">Alpha <b>'+p26pp(bl.alphaPp)+'</b></span><span class="chip">Max DD <b>'+p26dd(bl.maxDrawdownPct)+'</b></span><span class="chip">Total fee <b>'+p26money(bl.totalFees)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Modal gabungan <b>'+p26money(bl.startingCapital)+'</b></span><span class="chip">Ekuitas bersih <b>'+p26money(bl.endingEquity)+'</b></span><span class="chip">Return bersih <b><b>'+p26pct(bl.totalReturnPct)+'</b></b></span><span class="chip">IHSG <b>'+p26pct(bl.benchmark&&bl.benchmark.returnPct)+'</b></span><span class="chip">Alpha <b>'+p26pp(bl.alphaPp)+'</b></span><span class="chip">Max DD 90 sesi <b>'+p26dd(bl.maxDrawdownPct)+'</b></span><span class="chip">Total fee <b>'+p26money(bl.totalFees)+'</b></span></div>';
   const cv=bl.curve||[];
   if(cv.length>1){
    const vv=cv.map(x=>Number(x.equity)||0),mn=Math.min.apply(null,vv),mx=Math.max.apply(null,vv),span=mx-mn||1;
