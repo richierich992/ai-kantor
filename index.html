@@ -1135,7 +1135,7 @@ function pfHtml(){
   h+='<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0">'+targetInput('Saham','Saham')+targetInput('Reksa dana','Reksa dana')+targetInput('Kripto','Kripto')+targetInput('Kas/IDR','Kas / IDR')+'</div>';
   h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0"><button id="p13SaveTargets" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">Simpan target</button><span id="p13TargetMsg" class="dnote">'+(ds.configured?'Target tersimpan.':'Belum ada target tersimpan.')+'</span></div>';
   if(ds.ready&&ds.configured){
-   h+='<div class="dchips"><span class="chip">Kelas yang perlu ditinjau <b>'+nf(ds.reviewCount||0)+'</b></span><span class="chip">Deviasi terbesar <b>'+pc(ds.largestDeviationPp)+'</b></span></div>';
+   h+='<div class="dchips"><span class="chip">Kelas yang perlu ditinjau <b>'+nf(ds.reviewCount||0)+'</b></span><span class="chip">Deviasi terbesar <b>'+ppText(ds.largestDeviationPp)+'</b></span></div>';
    h+='<table><tr><th>Kelas aset</th><th>Aktual</th><th>Target</th><th>Deviasi</th><th>Selisih nilai</th><th>Status</th></tr>'+(ds.rows||[]).map(r=>'<tr><td><b>'+esc(r.assetClass)+'</b></td><td>'+pc(r.actualPct)+'</td><td>'+pc(r.targetPct)+'</td><td><span class="bdg '+(Math.abs(r.deviationPp)>ds.bandPct?'warn':'ok')+'">'+ppText(r.deviationPp)+'</span></td><td>'+rpi(r.adjustmentValue)+'</td><td>'+esc(r.status)+'</td></tr>').join('')+'</table>';
   }
   if(ds.recommendations&&ds.recommendations.length)h+='<div class="dnote" style="margin-top:8px">'+ds.recommendations.map(x=>'• '+esc(x)).join('<br>')+'</div>';
