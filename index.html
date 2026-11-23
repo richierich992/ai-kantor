@@ -1430,6 +1430,34 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(p22.methodology||'')+'<br>'+esc(p22.note||'')+'</small></div>';
  }
 
+
+ const p23=P.strategyValidation;
+ if(localStorage.getItem('admin_token')&&sh([2,3,4,5])&&p23){
+  const p23pf=x=>x==null?'—':Number(x).toFixed(2);
+  const p23r=x=>x==null?'—':Number(x).toFixed(2)+'R';
+  const p23status=p23.statusCode==='PASS'?'ok':p23.statusCode==='FAIL'?'err':p23.statusCode==='REVIEW'?'warn':'idle';
+  h+='<h4>🧪 P23 — Walk-Forward Strategy Validation <small>('+esc(p23.generatedAt||'belum dijalankan')+' WIB)</small></h4>';
+  h+='<div class="dnote">Konfigurasi hanya dipilih memakai data train, lalu dievaluasi pada periode berikutnya yang belum dipakai untuk pemilihan. P23 tidak mengubah Rules aktif dan tidak menjalankan order.</div>';
+  h+='<div class="dchips"><span class="chip">Status <b><span class="bdg '+p23status+'">'+esc(p23.status||'Belum dijalankan')+'</span></b></span><span class="chip">Ticker memadai <b>'+nf(p23.eligibleTickers||0)+'/'+nf(p23.universeTickers||0)+'</b></span><span class="chip">Fold tersedia <b>'+nf(p23.foldsAvailable||0)+'</b></span><span class="chip">Fold terpilih <b>'+nf(p23.selectedFolds||0)+'</b></span><span class="chip">Profil dominan <b>'+esc(p23.selectedProfile||'—')+'</b></span></div>';
+  if(p23.hasRun){
+   const o=p23.oosStats||{},tr=p23.trainStats||{};
+   h+='<div class="dchips"><span class="chip">OOS trades <b>'+nf(o.trades||0)+'</b></span><span class="chip">Win rate OOS <b>'+pc(o.winRatePct)+'</b></span><span class="chip">Average R OOS <b>'+p23r(o.averageR)+'</b></span><span class="chip">Profit factor OOS <b>'+p23pf(o.profitFactor)+'</b></span><span class="chip">Stabilitas fold positif <b>'+pc(p23.stabilityPct)+'</b></span><span class="chip">Konsistensi profil terpilih <b>'+pc(p23.selectionStablePct)+'</b></span><span class="chip">Max DD OOS <b>'+p23r(o.maxDrawdownR)+'</b></span></div>';
+   h+='<div class="dnote">Train gabungan: '+nf(tr.trades||0)+' trade • average '+p23r(tr.averageR)+' • PF '+p23pf(tr.profitFactor)+'<br>Perubahan average R train → OOS: '+(p23.degradationPct==null?'—':Number(p23.degradationPct).toFixed(1)+'%')+'. Angka positif berarti performa out-of-sample melemah.</div>';
+   h+='<h4>Perbandingan sensitivitas profil</h4><div style="overflow-x:auto"><table><tr><th>Profil</th><th>Fold dipilih</th><th>Train trades</th><th>Train avg R</th><th>Train PF</th><th>OOS trades</th><th>OOS avg R</th><th>OOS PF</th></tr>';
+   (p23.sensitivity||[]).forEach(x=>{h+='<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.selectedFolds)+'/'+nf(x.folds)+'</td><td>'+nf(x.train&&x.train.trades||0)+'</td><td>'+p23r(x.train&&x.train.averageR)+'</td><td>'+p23pf(x.train&&x.train.profitFactor)+'</td><td>'+nf(x.outOfSample&&x.outOfSample.trades||0)+'</td><td>'+p23r(x.outOfSample&&x.outOfSample.averageR)+'</td><td>'+p23pf(x.outOfSample&&x.outOfSample.profitFactor)+'</td></tr>';});
+   h+='</table></div>';
+   h+='<h4>Hasil tiap fold yang terpilih dari train</h4>';
+   if(p23.folds&&p23.folds.length)h+='<div style="overflow-x:auto"><table><tr><th>Fold</th><th>Profil dipilih</th><th>Train trades</th><th>Train avg R</th><th>OOS trades</th><th>OOS win rate</th><th>OOS avg R</th><th>OOS PF</th><th>OOS max DD</th></tr>'+p23.folds.map(x=>'<tr><td><b>'+nf(x.fold)+'</b></td><td>'+esc(x.profile)+'</td><td>'+nf(x.trainTrades)+'</td><td>'+p23r(x.trainAvgR)+'</td><td>'+nf(x.testTrades)+'</td><td>'+pc(x.testWinRatePct)+'</td><td>'+p23r(x.testAvgR)+'</td><td>'+p23pf(x.testPF)+'</td><td>'+p23r(x.testMaxDrawdownR)+'</td></tr>').join('')+'</table></div>';
+   else h+='<div class="dnote">Belum ada fold dengan jumlah trade training minimum untuk memilih profil.</div>';
+   if(p23.insights&&p23.insights.length)h+='<h4>Temuan validasi</h4><div class="dnote">'+p23.insights.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+  }else{
+   h+='<div class="dnote">Validasi pertama belum dijalankan. Jalankan P23 untuk memproses data OHLCV ScreenHist dan menyimpan fold ke sheet StrategyValidation.</div>';
+  }
+  if(p23.warnings&&p23.warnings.length)h+='<div class="dnote" style="margin-top:8px">'+p23.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p23RunWalkForward" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:#fff;font-weight:800;cursor:pointer">'+(p23.hasRun?'Jalankan ulang walk-forward':'Jalankan walk-forward pertama')+'</button><span id="p23WalkForwardMsg" class="dnote">S36 otomatis 16:50 WIB • tabel detail fold disimpan di StrategyValidation.</span></div>';
+  h+='<div class="dnote"><small>'+esc(p23.assumptions||'Train 50 bar, test 20 bar, buffer exit 10 bar; hanya profil dengan minimal 5 trade train dapat dipilih.')+'<br>'+esc(p23.methodology||'')+'<br>'+esc(p23.note||'')+'</small></div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1661,6 +1689,25 @@ if(!window.__p22AdaptiveBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p22AdaptiveMsg');if(done)done.textContent=j.message||'Analisis adaptif diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Perbarui analisis adaptif';}
+ });
+}
+
+
+/* ===== P23: jalankan walk-forward validation melalui ADMIN_TOKEN ===== */
+if(!window.__p23WalkForwardBound){
+ window.__p23WalkForwardBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p23RunWalkForward'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p23WalkForwardMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menguji…';if(msg)msg.textContent='Menghitung train/test fold terpisah, membandingkan profil dan menyimpan hasil…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'trade_walkforward_refresh',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Walk-forward validation gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p23WalkForwardMsg');if(done)done.textContent=j.message||'P23 selesai dijalankan.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Jalankan ulang walk-forward';}
  });
 }
 
