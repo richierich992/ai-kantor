@@ -1458,6 +1458,40 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(p23.assumptions||'Train 50 bar, test 20 bar, buffer exit 10 bar; hanya profil dengan minimal 5 trade train dapat dipilih.')+'<br>'+esc(p23.methodology||'')+'<br>'+esc(p23.note||'')+'</small></div>';
  }
 
+
+ const p24=P.paperForwardValidation;
+ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p24){
+  const p24r=x=>x==null?'—':Number(x).toFixed(2)+'R';
+  const p24pf=x=>x==null?'—':String(x);
+  const p24pc=x=>x==null?'—':Number(x).toFixed(1)+'%';
+  const p24status=x=>({WAIT_ENTRY:'Menunggu entry',OPEN:'Aktif',CLOSED:'Closed',NO_FILL:'Tidak terisi',EXPIRED:'Kedaluwarsa',INVALID:'Level tidak valid'}[x]||x||'—');
+  const p24cls=x=>x==='CLOSED'?'ok':x==='OPEN'?'warn':x==='NO_FILL'||x==='EXPIRED'?'idle':'';
+  const ps=p24.stats||{};
+  h+='<h4>🧪 P24 — Paper Trading & Forward Validation <small>('+esc(p24.generatedAt||'belum dijalankan')+' WIB)</small></h4>';
+  h+='<div class="dnote">Sinyal yang direkam berasal dari P17 berstatus <b>Layak dipantau</b> dan level Buy Zone/SL/TP1 dari screener P10. Entry baru boleh terjadi pada sesi bursa berikutnya dan hanya bila Buy Zone tersentuh. Profil dominan P23 disimpan hanya sebagai konteks validasi historis—bukan strategi live yang dipakai P24. Semua posisi virtual; tidak ada order sungguhan.</div>';
+  h+='<div class="dchips"><span class="chip">Total sinyal <b>'+nf(p24.totalSignals||0)+'</b></span><span class="chip">Entry terisi <b>'+nf(p24.filledCount||0)+'</b></span><span class="chip">Menunggu entry <b>'+nf(p24.pendingEntryCount||0)+'</b></span><span class="chip">Aktif <b>'+nf(p24.openCount||0)+'</b></span><span class="chip">Closed <b>'+nf(p24.closedCount||0)+'</b></span><span class="chip">Tidak terisi <b>'+nf(p24.noFillCount||0)+'</b></span></div>';
+  if(p24.hasRun){
+   h+='<div class="dchips"><span class="chip">Win rate <b>'+p24pc(ps.winRatePct)+'</b></span><span class="chip">Average R <b>'+p24r(ps.averageR)+'</b></span><span class="chip">Profit factor <b>'+p24pf(ps.profitFactor)+'</b></span><span class="chip">Max drawdown <b>'+p24r(ps.maxDrawdownR)+'</b></span><span class="chip">P/L bruto virtual 1 lot <b>'+rpi(ps.totalGrossPnl||0)+'</b></span></div>';
+   if(p24.byGrade&&Object.keys(p24.byGrade).length){
+    h+='<h4>Forward result berdasarkan grade screener</h4><div style="overflow-x:auto"><table><tr><th>Grade</th><th>Closed</th><th>Win rate</th><th>Average R</th><th>Profit factor</th></tr>';
+    Object.keys(p24.byGrade).sort().forEach(g=>{const x=p24.byGrade[g]||{};h+='<tr><td><b>'+esc(g)+'</b></td><td>'+nf(x.trades||0)+'</td><td>'+p24pc(x.winRatePct)+'</td><td>'+p24r(x.averageR)+'</td><td>'+p24pf(x.profitFactor)+'</td></tr>';});
+    h+='</table></div>';
+   }
+   if(p24.byP23Profile&&p24.byP23Profile.length){
+    h+='<h4>Forward result menurut konteks profil dominan historis P23</h4><div style="overflow-x:auto"><table><tr><th>Profil P23</th><th>Closed</th><th>Win rate</th><th>Average R</th><th>PF</th></tr>';
+    p24.byP23Profile.forEach(x=>{const z=x.stats||{};h+='<tr><td><b>'+esc(x.profile)+'</b></td><td>'+nf(z.trades||0)+'</td><td>'+p24pc(z.winRatePct)+'</td><td>'+p24r(z.averageR)+'</td><td>'+p24pf(z.profitFactor)+'</td></tr>';});
+    h+='</table></div>';
+   }
+   if(p24.recent&&p24.recent.length){
+    h+='<h4>Paper trade terbaru</h4><div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Sinyal</th><th>Grade</th><th>Status</th><th>Entry</th><th>Exit</th><th>Hasil</th></tr>';
+    p24.recent.slice(0,15).forEach(x=>{h+='<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.signalDate)+'</td><td>'+esc(x.qualityGrade||'—')+'</td><td><span class="bdg '+p24cls(x.status)+'">'+esc(p24status(x.status))+'</span></td><td>'+(x.entryPrice==null?'—':rpi(x.entryPrice))+'</td><td>'+(x.exitPrice==null?'—':rpi(x.exitPrice))+'</td><td>'+(x.realizedR==null?(x.status==='OPEN'?'Floating '+p24r(x.unrealizedR):esc(x.exitReason||'—')):p24r(x.realizedR)+' • '+p24pc(x.returnPct))+'</td></tr>';});
+    h+='</table></div>';
+   }
+  }else h+='<div class="dnote">Belum ada sinyal paper trading. P24 akan mulai merekam setelah screener dan P17 selesai pada tanggal bursa yang sama.</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p24RefreshForward" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:#fff;font-weight:800;cursor:pointer">Proses & refresh paper trading</button><span id="p24ForwardMsg" class="dnote">S37 otomatis 16:55 WIB • entry sesi berikutnya • evaluasi 10 sesi.</span></div>';
+  h+='<div class="dnote"><small>'+esc(p24.note||'P/L bruto satu lot; belum termasuk biaya, pajak, spread dan slippage.')+'</small></div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1708,6 +1742,26 @@ if(!window.__p23WalkForwardBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p23WalkForwardMsg');if(done)done.textContent=j.message||'P23 selesai dijalankan.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Jalankan ulang walk-forward';}
+ });
+}
+
+
+/* ===== P24: proses forward paper trading melalui ADMIN_TOKEN ===== */
+if(!window.__p24PaperForwardBound){
+ window.__p24PaperForwardBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p24RefreshForward'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p24ForwardMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Memproses…';
+  if(msg)msg.textContent='Merekam sinyal terbaru, memeriksa candle sesi berikutnya, dan memperbarui paper trade…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'trade_paper_forward_refresh',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P24 forward validation gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p24ForwardMsg');if(done)done.textContent=j.message||'P24 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Proses & refresh paper trading';}
  });
 }
 
