@@ -214,6 +214,19 @@ function chessPawnPair(root, side, file) {
   return base && head ? [base, head] : null;
 }
 
+export function chessPlayersAreReady(station) {
+  if (station?.kind !== "chess") return false;
+  const players = (station.slots || []).filter(slot => {
+    const player = slot?.occ;
+    const position = player?.g?.position;
+    if (!slot?.sit || slot?.st !== station || !player || player.slot !== slot || player.loc !== slot) return false;
+    if (player.act !== "chat" || player.busy || player.meeting || player.path?.length) return false;
+    if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.z)) return false;
+    return Math.hypot(position.x - slot.x, position.z - slot.z) <= 0.65;
+  });
+  return players.length >= 2;
+}
+
 function updateChessAnimation(item, elapsedSeconds) {
   const root = item.station?.chessVisual;
   if (!root) return false;
@@ -221,19 +234,32 @@ function updateChessAnimation(item, elapsedSeconds) {
     const white = chessPawnPair(root, "white", 4);
     const black = chessPawnPair(root, "black", 4);
     if (!white || !black) return false;
-    item.pieces = { white, black };
-    item.startedAt = elapsedSeconds;
+    item.pieces = {
+      white,
+      black,
+      whiteBase: white.map(node => node.position.clone()),
+      blackBase: black.map(node => node.position.clone())
+    };
   }
 
-  /* A small repeating e-pawn exchange makes the chess station visibly alive:
-     white advances two squares, black answers, then both reset for another game. */
+  const restore = (nodes, bases) => nodes.forEach((node, index) => node.position.copy(bases[index]));
+  if (!chessPlayersAreReady(item.station)) {
+    item.startedAt = null;
+    restore(item.pieces.white, item.pieces.whiteBase);
+    restore(item.pieces.black, item.pieces.blackBase);
+    item.snapshot = { ready: false, whiteZ: 0, blackZ: 0, cycle: null };
+    return false;
+  }
+
+  if (!Number.isFinite(item.startedAt)) item.startedAt = elapsedSeconds;
+  /* The demonstration exchange starts only after two real agents have arrived
+     at opposite chairs. Leaving either chair pauses the game and resets pieces. */
   const cycle = ((elapsedSeconds - item.startedAt) % 9 + 9) % 9;
   const smooth = value => {
     const t = Math.max(0, Math.min(1, value));
     return t * t * (3 - 2 * t);
   };
   const move = (time, start, finish) => smooth((time - start) / (finish - start));
-  /* Start the exchange quickly after agents sit down, then repeat smoothly. */
   let whiteProgress = cycle >= 1.65 && cycle < 6.1 ? 1 : 0;
   if (cycle >= 0.25 && cycle < 1.65) whiteProgress = move(cycle, 0.25, 1.65);
   else if (cycle >= 6.1 && cycle < 7.5) whiteProgress = 1 - move(cycle, 6.1, 7.5);
@@ -244,19 +270,19 @@ function updateChessAnimation(item, elapsedSeconds) {
 
   const whiteMoving = (cycle >= 0.25 && cycle < 1.65) || (cycle >= 6.1 && cycle < 7.5);
   const blackMoving = (cycle >= 2.4 && cycle < 3.8) || (cycle >= 7.4 && cycle < 8.8);
-  const setPiece = (nodes, shift, hop) => nodes.forEach(node => {
-    node.position.x = 0;
-    node.position.z = shift;
-    node.position.y = hop;
+  const setPiece = (nodes, bases, shift, hop) => nodes.forEach((node, index) => {
+    node.position.x = bases[index].x;
+    node.position.y = bases[index].y + hop;
+    node.position.z = bases[index].z + shift;
   });
-  setPiece(item.pieces.white, 0.27 * whiteProgress,
+  setPiece(item.pieces.white, item.pieces.whiteBase, 0.27 * whiteProgress,
     whiteMoving ? Math.sin(move(cycle, cycle < 1.65 ? 0.25 : 6.1, cycle < 1.65 ? 1.65 : 7.5) * Math.PI) * 0.1 : 0);
-  setPiece(item.pieces.black, -0.27 * blackProgress,
+  setPiece(item.pieces.black, item.pieces.blackBase, -0.27 * blackProgress,
     blackMoving ? Math.sin(move(cycle, cycle < 3.8 ? 2.4 : 7.4, cycle < 3.8 ? 3.8 : 8.8) * Math.PI) * 0.1 : 0);
   item.snapshot = {
     cycle,
-    whiteZ: item.pieces.white[0].position.z,
-    blackZ: item.pieces.black[0].position.z,
+    whiteZ: item.pieces.white[0].position.z - item.pieces.whiteBase[0].z,
+    blackZ: item.pieces.black[0].position.z - item.pieces.blackBase[0].z,
     ready: true
   };
   return true;
@@ -407,6 +433,7 @@ export function enhanceSocialHub(THREE, scene, stations) {
   scene.userData.premiumSocialDecor = { decor, pingPong, chess, steam, labels };
   if (typeof window !== "undefined") {
     window.__chessAnimationQA = {
+      playersAreReady: chessPlayersAreReady,
       snapshot: () => chess.map(item => ({
         x: item.station.x, z: item.station.z, ready: !!item.snapshot?.ready,
         whiteZ: item.snapshot?.whiteZ ?? null, blackZ: item.snapshot?.blackZ ?? null,
