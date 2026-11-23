@@ -573,7 +573,7 @@ function addStation(kind,x,z,yaw=0){
    : kind==='chess'
     ? V3(sx+Math.cos(face)*1.35,0,sz-Math.sin(face)*1.35)
     : V3(sx+ox,0,sz+oz);
-  const rootY=kind==='lounge'?.56:kind==='chess'?.64:(kind==='reading'||kind==='garden')?.30:.14+(dy||0);
+  const rootY=kind==='lounge'?.56:kind==='chess'?.78:(kind==='reading'||kind==='garden')?.30:.14+(dy||0);
   st.slots.push({st,x:sx,z:sz,face,sit,act,dy:dy||0,rootY,occ:null,appr,
    route:(route||[]).map(([a,b])=>{const [rx,rz]=rot(yaw,a,b);return V3(x+rx,0,z+rz)})})
  });
