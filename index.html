@@ -1574,6 +1574,42 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(p26.note||'')+'</small></div>';
  }
 
+
+ const p27=P.riskIntelligence;
+ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p27){
+  const p27pct=x=>x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+'%';
+  const p27num=x=>x==null?'—':Number(x).toFixed(2);
+  const p27pp=x=>x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+' pp';
+  const p27money=x=>x==null?'—':rpi(x);
+  const p27rstat=p27.riskStatus==='HIGH'?'err':p27.riskStatus==='ELEVATED'?'warn':p27.riskStatus==='NORMAL'?'ok':'idle';
+  const p27names={CONSERVATIVE:'Conservative',BALANCED:'Balanced',MOMENTUM:'Momentum'};
+  const p27rec=p27.recommendation||{},p27pr=p27.portfolioRisk||{};
+  h+='<h4>🛡️ P27 — Portfolio Risk Intelligence & Dynamic Allocation <small>('+esc(p27.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dnote">P27 mengukur volatilitas, downside risk, korelasi, drawdown, dan kontribusi risiko dari tiga shadow sleeve P26. Rekomendasi bobot menggunakan minimum-variance dengan batas 5–60% per sleeve. Ini simulasi advisory; tidak mengubah Rules, screener live, atau mengirim order.</div>';
+  h+='<div class="dchips"><span class="chip">Status risiko <b><span class="bdg '+p27rstat+'">'+esc(p27.riskStatus||'INSUFFICIENT')+'</span></b></span><span class="chip">Sesi bersama <b>'+nf(p27.commonSessions||0)+'</b></span><span class="chip">Trade closed gabungan <b>'+nf(p27.totalClosed||0)+'</b></span><span class="chip">Korelasi rata-rata <b>'+p27num(p27.averageCorrelation)+'</b></span><span class="chip">Overlap sinyal <b>'+p27pct(p27.overlap&&p27.overlap.overlapPct)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Volatilitas tahunan <b>'+p27pct(p27pr.volatilityPct)+'</b></span><span class="chip">Downside volatility <b>'+p27pct(p27pr.downsideVolPct)+'</b></span><span class="chip">Sharpe proxy <b>'+p27num(p27pr.sharpeProxy)+'</b></span><span class="chip">Diversification ratio <b>'+p27num(p27pr.diversificationRatio)+'</b></span><span class="chip">Max DD 90 sesi <b>'+p27pct(p27.blendedDrawdown)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Worst day <b>'+p27pct(p27pr.worstDayPct)+'</b></span><span class="chip">Worst 5 sesi <b>'+p27pct(p27pr.worst5SessionsPct)+'</b></span><span class="chip">Maks. overlap profil <b>'+nf(p27.overlap&&p27.overlap.maxProfilesSameTickerDate||0)+'/3</b></span></div>';
+  h+='<h4>Risiko tiap strategi dan kontribusi terhadap risiko gabungan</h4><div style="overflow-x:auto"><table><tr><th>Profil</th><th>Closed</th><th>Vol tahunan</th><th>Downside vol</th><th>Max DD</th><th>Sharpe*</th><th>Korelasi rata-rata</th><th>Bobot aktif</th><th>Bobot saran</th><th>Kontribusi risiko</th></tr>';
+  (p27.profiles||[]).forEach(x=>{const z=x.risk||{};h+='<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.closedCount||0)+'</td><td>'+p27pct(z.volatilityPct)+'</td><td>'+p27pct(z.downsideVolPct)+'</td><td>'+p27pct(z.maxDrawdownPct)+'</td><td>'+p27num(z.sharpeProxy)+'</td><td>'+p27num(x.averageCorrelation)+'</td><td>'+p27pct(x.currentWeightPct)+'</td><td><b>'+(x.recommendedWeightPct==null?'—':Number(x.recommendedWeightPct).toFixed(0)+'%')+'</b></td><td>'+p27pct(x.riskContributionPct)+'</td></tr>';});
+  h+='</table></div>';
+  const cr=p27.correlation||{},p27keys=['CONSERVATIVE','BALANCED','MOMENTUM'];
+  h+='<h4>Matriks korelasi antarstrategi</h4><div style="overflow-x:auto"><table><tr><th>Profil</th><th>Conservative</th><th>Balanced</th><th>Momentum</th></tr>';
+  p27keys.forEach(a=>{h+='<tr><td><b>'+p27names[a]+'</b></td>';p27keys.forEach(b=>{const v=cr[a]&&cr[a][b];h+='<td>'+(v==null?'—':Number(v).toFixed(2)+(a!==b&&Number(v)>=0.75?' ⚠':''))+'</td>';});h+='</tr>';});
+  h+='</table></div>';
+  h+='<div class="dnote">Korelasi ≥0,75 diberi tanda ⚠ karena dua strategi dapat memiliki gerakan return yang sangat mirip. Korelasi dihitung dari tanggal bersama, bukan dari jumlah sinyal yang sama.</div>';
+  h+='<h4>Rekomendasi alokasi dinamis</h4>';
+  if(p27rec.status==='AVAILABLE'&&p27rec.weights){
+   h+='<div class="dchips"><span class="chip">Conservative <b>'+nf(p27rec.weights.CONSERVATIVE)+'%</b></span><span class="chip">Balanced <b>'+nf(p27rec.weights.BALANCED)+'%</b></span><span class="chip">Momentum <b>'+nf(p27rec.weights.MOMENTUM)+'%</b></span><span class="chip">Vol estimasi <b>'+p27pct(p27rec.volatilityPct)+'</b></span></div>';
+   h+='<div class="dnote">'+esc(p27rec.method||'')+' Hasil ini meminimalkan volatilitas historis dalam batas bobot, bukan memaksimalkan return masa depan. Klik tombol di bawah hanya akan mengganti bobot simulasi P26; sinyal live tetap sama.</div>';
+   h+='<button id="p27ApplyAllocation" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:#fff;font-weight:800;cursor:pointer">Terapkan bobot saran ke simulasi P26</button>';
+  }else{
+   h+='<div class="dnote">Belum ada rekomendasi bobot yang memenuhi gerbang data. Syarat: minimal '+nf(p27rec.minCommonSessions||30)+' sesi return bersama, '+nf(p27rec.minClosedPerProfile||10)+' transaksi closed dan '+nf(p27rec.minActiveSessions||10)+' sesi aktif pada setiap profil. Saat syarat belum terpenuhi, bobot P26 yang sekarang tetap dipakai.</div>';
+  }
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p27RefreshRisk" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh analisis risiko</button><span id="p27RiskMsg" class="dnote">S39 otomatis 16:59 WIB • snapshot harian disimpan di RiskSnapshots.</span></div>';
+  h+='<div class="dnote"><small>*Sharpe/Sortino proxy memakai risk-free 0%. Volatilitas tahunan dihitung dari return harian × √252. Risiko historis bukan prediksi. '+esc(p27.note||'')+'</small></div>';
+  if(p27.warnings&&p27.warnings.length)h+='<div class="dnote" style="margin-top:8px">'+p27.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1901,6 +1937,28 @@ if(!window.__p26StrategyComparisonBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p26StrategyMsg');if(done)done.textContent=j.message||'P26 berhasil diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent=save?'Simpan bobot gabungan':'Proses & refresh shadow forward';}
+ });
+}
+
+
+/* ===== P27: refresh risk intelligence dan penerapan bobot saran secara eksplisit ===== */
+if(!window.__p27RiskIntelligenceBound){
+ window.__p27RiskIntelligenceBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p27RefreshRisk'):null;
+  const apply=ev.target&&ev.target.closest?ev.target.closest('#p27ApplyAllocation'):null;
+  const btn=refresh||apply;if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p27RiskMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent=refresh?'Menghitung risiko…':'Menerapkan bobot…';
+  if(msg)msg.textContent=refresh?'Menyelaraskan return harian tiga profil, korelasi, drawdown dan risk contribution…':'Memvalidasi kembali gerbang data dan menyimpan bobot minimum-variance ke simulasi P26…';
+  try{
+   const action=refresh?'risk_intelligence_refresh':'risk_allocation_apply';
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:action,token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P27 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p27RiskMsg');if(done)done.textContent=j.message||'P27 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent=refresh?'Refresh analisis risiko':'Terapkan bobot saran ke simulasi P26';}
  });
 }
 
