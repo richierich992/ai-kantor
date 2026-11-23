@@ -127,6 +127,7 @@ if (!html.includes("n.name==='line_long_top'") || !html.includes("n.name==='ping
 if (["pingPongPlayersAreReady", "updatePingPongBall"].every(name => social.includes(name))) ok("Ping-pong idle state and two-player rally gating");
 if (!social.includes("updateChessAnimation") || !social.includes("chessPawnPair") ||
     !social.includes("chessPlayersAreReady") || !social.includes("restore(item.pieces.white") ||
+    !social.includes("walkingHip * (1 - seatBlend)") || !social.includes("walkingKnee * (1 - seatBlend)") ||
     !social.includes("station.ballSurfaceY") || !social.includes("surfaceY + 0.105")) {
   fail("Chess must stay idle until both players arrive and ping-pong ball must stay at tabletop height");
 }
