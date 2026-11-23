@@ -126,12 +126,18 @@ if (!social.includes("updatePingPongBall(item, step)")) fail("Ping-pong ball idl
 if (!html.includes("n.name==='line_long_top'") || !html.includes("n.name==='pingpong_ball'")) fail("Ping-pong center stripe and duplicate GLB ball are not hidden");
 if (["pingPongPlayersAreReady", "updatePingPongBall"].every(name => social.includes(name))) ok("Ping-pong idle state and two-player rally gating");
 if (!social.includes("updateChessAnimation") || !social.includes("chessPawnPair") ||
+    !social.includes("chessPlayersAreReady") || !social.includes("restore(item.pieces.white") ||
     !social.includes("station.ballSurfaceY") || !social.includes("surfaceY + 0.105")) {
-  fail("Visible chess-piece animation and tabletop-height ping-pong ball are missing");
+  fail("Chess must stay idle until both players arrive and ping-pong ball must stay at tabletop height");
 }
 if (!html.includes("function createChessSeats") || !html.includes("st.chessSeatRig") ||
-    !html.includes("Math.sin(face)*1.45") || !html.includes("kind==='lounge'?.56")) {
-  fail("Chess chairs, correct lounge front approach or seated root height are missing");
+    !html.includes("Math.sin(face)*1.45") || !html.includes("kind==='lounge'?.56") ||
+    !html.includes("kind==='chess'?.64")) {
+  fail("Chess chair height, chess seat alignment, lounge front approach or seated root height are missing");
+}
+if (!html.includes("knee_pivot") || !html.includes("c.kneeL.rotation.x") ||
+    !html.includes("c.kneeR.rotation.x") || !html.includes("leftHipRange")) {
+  fail("Visible articulated walking gait with alternating knees is missing");
 }
 if (!livingOffice.includes("pairedActivitySeats") ||
     !livingOffice.includes("peerSeat.occ.wait = Math.max(Number(peerSeat.occ.wait) || 0, 90)")) {
@@ -140,8 +146,10 @@ if (!livingOffice.includes("pairedActivitySeats") ||
 const preview = read("tests/preview.mjs");
 if (!preview.includes("lounge avatars sit at cushion height") ||
     !preview.includes("visible ping-pong rally") ||
-    !preview.includes("moving board pieces")) {
-  fail("Browser preview does not validate the reported Social Hub defects");
+    !preview.includes("moving board pieces") ||
+    !preview.includes("chess pieces remain still without two seated players") ||
+    !preview.includes("real avatar walking gait swings both hips and bends both knees")) {
+  fail("Browser preview does not validate chess idle gating, walking gait and Social Hub defects");
 }
 
 if (!html.includes("bootBeforeCharacterSocialLife")) fail("Character social-life boot hook missing");
