@@ -1453,6 +1453,7 @@ function applyMockupOffice() {
             position:c.g.position.clone(),rotation:c.g.rotation.clone(),path:c.path,stroll:c.stroll,si:c.si,done:c.done,
             navPathSource:c._navPathSource,navVersion:c._navVersion,navAllowBlockedGoal:c.navAllowBlockedGoal,
             t:c.t,wait:c.wait,yoff:c.yoff,act:c.act,face:c.face,work:c.work,busy:c.busy,meeting:c.meeting,
+            socialSeatProgress:c._socialSeatProgress,
             objects:objects.map(object=>({object,rotation:object.rotation.clone()}))
           };
           try{
@@ -1461,7 +1462,7 @@ function applyMockupOffice() {
             c.navAllowBlockedGoal=false;c.stroll=null;c.done=null;c.wait=10000;c.yoff=0;c.act=null;c.face=null;c.work=false;c.busy=false;c.meeting=false;
             const leftHip=[],rightHip=[],leftKnee=[],rightKnee=[];
             for(let i=0;i<16;i++){
-              stepBeforePremium(c,.035);
+              step(c,.035);
               leftHip.push(c.legL.rotation.x);rightHip.push(c.legR.rotation.x);
               leftKnee.push(c.kneeL?.rotation.x??0);rightKnee.push(c.kneeR?.rotation.x??0);
             }
@@ -1478,6 +1479,7 @@ function applyMockupOffice() {
             c.g.position.copy(saved.position);c.g.rotation.copy(saved.rotation);c.path=saved.path;c.stroll=saved.stroll;c.si=saved.si;c.done=saved.done;
             c._navPathSource=saved.navPathSource;c._navVersion=saved.navVersion;c.navAllowBlockedGoal=saved.navAllowBlockedGoal;
             c.t=saved.t;c.wait=saved.wait;c.yoff=saved.yoff;c.act=saved.act;c.face=saved.face;c.work=saved.work;c.busy=saved.busy;c.meeting=saved.meeting;
+            c._socialSeatProgress=saved.socialSeatProgress;
             saved.objects.forEach(item=>item.object.rotation.copy(item.rotation));
           }
         },
