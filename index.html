@@ -1468,7 +1468,7 @@ function pfHtml(){
   const p24cls=x=>x==='CLOSED'?'ok':x==='OPEN'?'warn':x==='NO_FILL'||x==='EXPIRED'?'idle':'';
   const ps=p24.stats||{};
   h+='<h4>🧪 P24 — Paper Trading & Forward Validation <small>('+esc(p24.generatedAt||'belum dijalankan')+' WIB)</small></h4>';
-  h+='<div class="dnote">Sinyal yang direkam berasal dari P17 berstatus <b>Layak dipantau</b> dan level Buy Zone/SL/TP1 dari screener P10. Entry baru boleh terjadi pada sesi bursa berikutnya dan hanya bila Buy Zone tersentuh. Semua posisi virtual; tidak ada order sungguhan.</div>';
+  h+='<div class="dnote">Sinyal yang direkam berasal dari P17 berstatus <b>Layak dipantau</b> dan level Buy Zone/SL/TP1 dari screener P10. Entry baru boleh terjadi pada sesi bursa berikutnya dan hanya bila Buy Zone tersentuh. Profil dominan P23 disimpan hanya sebagai konteks validasi historis—bukan strategi live yang dipakai P24. Semua posisi virtual; tidak ada order sungguhan.</div>';
   h+='<div class="dchips"><span class="chip">Total sinyal <b>'+nf(p24.totalSignals||0)+'</b></span><span class="chip">Entry terisi <b>'+nf(p24.filledCount||0)+'</b></span><span class="chip">Menunggu entry <b>'+nf(p24.pendingEntryCount||0)+'</b></span><span class="chip">Aktif <b>'+nf(p24.openCount||0)+'</b></span><span class="chip">Closed <b>'+nf(p24.closedCount||0)+'</b></span><span class="chip">Tidak terisi <b>'+nf(p24.noFillCount||0)+'</b></span></div>';
   if(p24.hasRun){
    h+='<div class="dchips"><span class="chip">Win rate <b>'+p24pc(ps.winRatePct)+'</b></span><span class="chip">Average R <b>'+p24r(ps.averageR)+'</b></span><span class="chip">Profit factor <b>'+p24pf(ps.profitFactor)+'</b></span><span class="chip">Max drawdown <b>'+p24r(ps.maxDrawdownR)+'</b></span><span class="chip">P/L bruto virtual 1 lot <b>'+rpi(ps.totalGrossPnl||0)+'</b></span></div>';
@@ -1478,7 +1478,7 @@ function pfHtml(){
     h+='</table></div>';
    }
    if(p24.byP23Profile&&p24.byP23Profile.length){
-    h+='<h4>Forward result berdasarkan profil P23 saat sinyal direkam</h4><div style="overflow-x:auto"><table><tr><th>Profil P23</th><th>Closed</th><th>Win rate</th><th>Average R</th><th>PF</th></tr>';
+    h+='<h4>Forward result menurut konteks profil dominan historis P23</h4><div style="overflow-x:auto"><table><tr><th>Profil P23</th><th>Closed</th><th>Win rate</th><th>Average R</th><th>PF</th></tr>';
     p24.byP23Profile.forEach(x=>{const z=x.stats||{};h+='<tr><td><b>'+esc(x.profile)+'</b></td><td>'+nf(z.trades||0)+'</td><td>'+p24pc(z.winRatePct)+'</td><td>'+p24r(z.averageR)+'</td><td>'+p24pf(z.profitFactor)+'</td></tr>';});
     h+='</table></div>';
    }
