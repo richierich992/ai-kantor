@@ -1577,7 +1577,7 @@ function pfHtml(){
 
  const p27=P.riskIntelligence;
  if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p27){
-  const p27pct=x=>x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+'%';
+  const p27pct=x=>x==null?'—':Number(x).toFixed(2)+'%';
   const p27num=x=>x==null?'—':Number(x).toFixed(2);
   const p27pp=x=>x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+' pp';
   const p27money=x=>x==null?'—':rpi(x);
