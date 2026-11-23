@@ -1163,6 +1163,34 @@ function pfHtml(){
   if(risk.warnings&&risk.warnings.length)h+='<div class="dnote" style="margin-top:8px">'+risk.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
   h+='<div class="dnote"><small>'+esc(risk.methodology||'')+'<br>Volatilitas dan drawdown adalah statistik historis, bukan prediksi. Simulasi mengasumsikan kas tetap dan aset berisiko turun sesuai skenario; belum memasukkan biaya, pajak, slippage, aksi korporasi, dan perubahan saldo.</small></div>';
  }
+ const mi=P.marketIntel;
+ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+  if(mi&&mi.ready){
+  const mm=mi.market||{},bb=mi.breadth||{},nn=mi.news||{},ss=mi.sectors||{};
+  const sentimentClass=x=>String(x||'').indexOf('Positif')===0?'ok':String(x||'').indexOf('Negatif')===0?'err':'idle';
+  const ppLabel=n=>n==null?'—':(n>0?'+':'')+Number(n).toFixed(1)+' pp';
+  const linkSafe=u=>{u=String(u||'');return u.indexOf('https://')===0||u.indexOf('http://')===0?esc(u):'#';};
+  h+='<h4>🌏 P15 — Market Intelligence <small>('+esc(mi.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dchips"><span class="chip">IHSG <b>'+nf(mm.close)+' poin</b></span><span class="chip">5 hari <b>'+pc(mm.return5Pct)+'</b></span><span class="chip">20 hari <b>'+pc(mm.return20Pct)+'</b></span><span class="chip">Regime <b>'+esc(mi.regime||'Belum cukup data')+'</b></span></div>';
+  h+='<div class="dlist"><div>Data indeks terakhir <b>'+esc(mm.lastDate||'belum tersedia')+'</b> • status <b>'+esc(mm.status||'—')+'</b> • umur '+(mm.staleDays==null?'—':nf(mm.staleDays)+' hari')+'</div></div>';
+  h+='<h4>Market breadth <small>(ScreenUniverse)</small></h4><div class="dchips"><span class="chip">5 hari: naik <b>'+nf(bb.adv5)+'</b> / turun <b>'+nf(bb.dec5)+'</b> / datar <b>'+nf(bb.flat5)+'</b></span><span class="chip">20 hari: naik <b>'+nf(bb.adv20)+'</b> / turun <b>'+nf(bb.dec20)+'</b> / datar <b>'+nf(bb.flat20)+'</b></span><span class="chip">Cakupan <b>'+nf(bb.valid20)+'/'+nf(bb.total)+'</b></span><span class="chip">Persentase naik <b>'+pc(bb.advPct20)+'</b></span></div>';
+  h+='<h4>Kekuatan sektor IDX-IC <small>(keranjang saham sama-bobot)</small></h4>';
+  if(ss.items&&ss.items.length)h+='<table><tr><th>Sektor</th><th>Saham</th><th>5 hari</th><th>20 hari</th><th>Vs IHSG</th><th>Breadth</th><th>Sampel</th></tr>'+ss.items.map(x=>'<tr><td><b>'+esc(x.name)+'</b> ('+esc(x.code)+')</td><td>'+nf(x.constituents)+'</td><td><span class="bdg '+pcCls(x.return5Pct)+'">'+pc(x.return5Pct)+'</span></td><td><span class="bdg '+pcCls(x.return20Pct)+'">'+pc(x.return20Pct)+'</span></td><td>'+pc(x.relative20Pct)+' pp</td><td>'+pc(x.breadth20Pct)+'</td><td>'+esc(x.sample||'—')+'</td></tr>').join('')+'</table>';
+  else h+='<div class="dnote">Belum ada data sektor. Lengkapi SectorCode pada sheet SectorMap.</div>';
+  h+='<div class="dnote">'+esc(ss.note||'')+' Pemetaan: '+nf(ss.mappedTickers)+' dari '+nf(ss.universeTickers)+' ticker.</div>';
+  h+='<h4>Saham portofolio & kandidat screener</h4>';
+  if(mi.watchlist&&mi.watchlist.length)h+='<table><tr><th>Ticker</th><th>Sumber</th><th>5 hari</th><th>20 hari</th><th>Vs IHSG</th><th>Data</th></tr>'+mi.watchlist.map(x=>'<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.source)+'</td><td><span class="bdg '+pcCls(x.return5Pct)+'">'+pc(x.return5Pct)+'</span></td><td><span class="bdg '+pcCls(x.return20Pct)+'">'+pc(x.return20Pct)+'</span></td><td>'+pc(x.relative20Pct)+' pp</td><td>'+esc(x.lastDate||'—')+'</td></tr>').join('')+'</table>';
+  else h+='<div class="dnote">Belum ada ticker portofolio atau kandidat screener yang dapat dianalisis.</div>';
+  h+='<h4>Berita pasar & emiten <small>('+nf(nn.windowDays||7)+' hari terakhir)</small></h4><div class="dchips"><span class="chip">Headline <b>'+nf(nn.count)+'</b></span><span class="chip">Kata kunci positif <b>'+nf(nn.positive)+'</b></span><span class="chip">Kata kunci negatif <b>'+nf(nn.negative)+'</b></span><span class="chip">Netral/campuran <b>'+nf(nn.neutral)+'</b></span></div>';
+  if(nn.items&&nn.items.length)h+='<table><tr><th>Ticker</th><th>Judul</th><th>Sumber</th><th>Terbit (WIB)</th><th>Indikator</th></tr>'+nn.items.slice(0,8).map(x=>'<tr><td><b>'+esc(x.ticker||'Pasar')+'</b></td><td><a href="'+linkSafe(x.url)+'" target="_blank" rel="noopener noreferrer" style="color:#9fc2ff">'+esc(x.title)+'</a></td><td>'+esc(x.source||'—')+'</td><td>'+esc(x.publishedAt||'—')+'</td><td><span class="bdg '+sentimentClass(x.sentiment)+'">'+esc(x.sentiment||'—')+'</span></td></tr>').join('')+'</table>';
+  else h+='<div class="dnote">Belum ada headline RSS terbaru yang berhasil diverifikasi tanggal terbitnya.</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p15RefreshMarket" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">Perbarui riset pasar</button><span id="p15MarketMsg" class="dnote">Sumber: '+esc((mi.sources||[]).join(' • '))+'</span></div>';
+  if(mi.warnings&&mi.warnings.length)h+='<div class="dnote">'+mi.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div class="dnote"><small>'+esc(mi.regimeMethod||'')+' '+esc(nn.note||'')+' Data sektor bukan indeks sektoral resmi. Perubahan harga dan breadth menggunakan histori Google Finance terakhir yang tersedia; semua metrik tertinggal dari harga real-time.</small></div>';
+  }else{
+   h+='<h4>🌏 P15 — Market Intelligence</h4><div class="dnote">Belum ada snapshot riset pasar. Jalankan pembaruan pertama untuk mengambil IHSG, market breadth, kekuatan sektor, dan berita emiten.</div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p15RefreshMarket" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">Jalankan riset pasar pertama</button><span id="p15MarketMsg" class="dnote">Membutuhkan token admin dan koneksi Google Apps Script.</span></div>';
+  }
+ }
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1199,6 +1227,24 @@ if(!window.__p13PortfolioTargetsBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p13TargetMsg');if(done)done.textContent='Target berhasil disimpan.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Simpan target';}
+ });
+}
+
+/* ===== P15: refresh market intelligence hanya melalui ADMIN_TOKEN ===== */
+if(!window.__p15RefreshBound){
+ window.__p15RefreshBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p15RefreshMarket'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p15MarketMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Mengambil data…';if(msg)msg.textContent='Mengambil IHSG, breadth, sektor, dan RSS berita…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'refresh_market_intelligence',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Pembaruan riset pasar gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p15MarketMsg');if(done)done.textContent=j.message||'Riset pasar diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Perbarui riset pasar';}
  });
 }
 
