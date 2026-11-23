@@ -1537,6 +1537,7 @@ function pfHtml(){
   const p26money=x=>x==null?'—':rpi(x);
   const p26pct=x=>x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+'%';
   const p26pp=x=>x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+' pp';
+  const p26dd=x=>x==null?'—':Math.abs(Number(x)).toFixed(2)+'%';
   const p26r=x=>x==null?'—':Number(x).toFixed(2)+'R';
   const p26weights=p26.weights||{};
   const p26colors={CONSERVATIVE:'Conservative',BALANCED:'Balanced',MOMENTUM:'Momentum'};
@@ -1546,13 +1547,13 @@ function pfHtml(){
   h+='<div class="dchips"><span class="chip">Shadow signals <b>'+nf(p26.totalSignals||0)+'</b></span><span class="chip">Entry terisi <b>'+nf(p26.filledCount||0)+'</b></span><span class="chip">Menunggu <b>'+nf(p26.waitingCount||0)+'</b></span><span class="chip">Aktif <b>'+nf(p26.openCount||0)+'</b></span><span class="chip">Closed <b>'+nf(p26.closedCount||0)+'</b></span><span class="chip">No fill <b>'+nf(p26.noFillCount||0)+'</b></span></div>';
   if(p26.profiles&&p26.profiles.length){
    h+='<h4>Perbandingan performa forward per profil</h4><div style="overflow-x:auto"><table><tr><th>Profil</th><th>Signal</th><th>Closed</th><th>Win rate</th><th>Avg R</th><th>PF</th><th>Return bersih</th><th>Max DD</th><th>Alpha IHSG</th></tr>';
-   p26.profiles.forEach(x=>{const z=x.stats||{},q=x.portfolio||{};h+='<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.signals)+'</td><td>'+nf(x.closedCount)+'</td><td>'+(z.winRatePct==null?'—':Number(z.winRatePct).toFixed(1)+'%')+'</td><td>'+p26r(z.averageR)+'</td><td>'+esc(q.profitFactor==null?'—':String(q.profitFactor))+'</td><td><b>'+p26pct(q.totalReturnPct)+'</b></td><td>'+p26pct(Math.abs(Number(q.maxDrawdownPct||0)))+'</td><td>'+p26pp(q.alphaPp)+'</td></tr>';});
+   p26.profiles.forEach(x=>{const z=x.stats||{},q=x.portfolio||{};h+='<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.signals)+'</td><td>'+nf(x.closedCount)+'</td><td>'+(z.winRatePct==null?'—':Number(z.winRatePct).toFixed(1)+'%')+'</td><td>'+p26r(z.averageR)+'</td><td>'+esc(q.profitFactor==null?'—':String(q.profitFactor))+'</td><td><b>'+p26pct(q.totalReturnPct)+'</b></td><td>'+p26dd(q.maxDrawdownPct)+'</td><td>'+p26pp(q.alphaPp)+'</td></tr>';});
    h+='</table></div>';
    h+='<div class="dnote">Kriteria profil: Conservative vol ≥1,20×, CMF ≥0,05, nilai ≥Rp10 miliar, harga di atas MA20, MA5 ≥ MA20, risiko ≤6%. Balanced vol ≥1,00×, CMF ≥0,00, nilai ≥Rp5 miliar, risiko ≤8%. Momentum vol ≥1,50×, CMF ≥0,10, nilai ≥Rp5 miliar, MA5 ≥ MA20, risiko ≤8%.</div>';
   }else h+='<div class="dnote">Belum ada ringkasan profil.</div>';
   const bl=p26.blend||{};
   h+='<h4>Portofolio gabungan berdasarkan bobot sleeve</h4>';
-  h+='<div class="dchips"><span class="chip">Modal gabungan <b>'+p26money(bl.startingCapital)+'</b></span><span class="chip">Ekuitas bersih <b>'+p26money(bl.endingEquity)+'</b></span><span class="chip">Return bersih <b><b>'+p26pct(bl.totalReturnPct)+'</b></b></span><span class="chip">IHSG <b>'+p26pct(bl.benchmark&&bl.benchmark.returnPct)+'</b></span><span class="chip">Alpha <b>'+p26pp(bl.alphaPp)+'</b></span><span class="chip">Max DD <b>'+p26pct(Math.abs(Number(bl.maxDrawdownPct||0)))+'</b></span><span class="chip">Total fee <b>'+p26money(bl.totalFees)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Modal gabungan <b>'+p26money(bl.startingCapital)+'</b></span><span class="chip">Ekuitas bersih <b>'+p26money(bl.endingEquity)+'</b></span><span class="chip">Return bersih <b><b>'+p26pct(bl.totalReturnPct)+'</b></b></span><span class="chip">IHSG <b>'+p26pct(bl.benchmark&&bl.benchmark.returnPct)+'</b></span><span class="chip">Alpha <b>'+p26pp(bl.alphaPp)+'</b></span><span class="chip">Max DD <b>'+p26dd(bl.maxDrawdownPct)+'</b></span><span class="chip">Total fee <b>'+p26money(bl.totalFees)+'</b></span></div>';
   const cv=bl.curve||[];
   if(cv.length>1){
    const vv=cv.map(x=>Number(x.equity)||0),mn=Math.min.apply(null,vv),mx=Math.max.apply(null,vv),span=mx-mn||1;
