@@ -1164,7 +1164,8 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(risk.methodology||'')+'<br>Volatilitas dan drawdown adalah statistik historis, bukan prediksi. Simulasi mengasumsikan kas tetap dan aset berisiko turun sesuai skenario; belum memasukkan biaya, pajak, slippage, aksi korporasi, dan perubahan saldo.</small></div>';
  }
  const mi=P.marketIntel;
- if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&mi&&mi.ready){
+ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+  if(mi&&mi.ready){
   const mm=mi.market||{},bb=mi.breadth||{},nn=mi.news||{},ss=mi.sectors||{};
   const sentimentClass=x=>String(x||'').indexOf('Positif')===0?'ok':String(x||'').indexOf('Negatif')===0?'err':'idle';
   const ppLabel=n=>n==null?'—':(n>0?'+':'')+Number(n).toFixed(1)+' pp';
@@ -1186,6 +1187,9 @@ function pfHtml(){
   h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p15RefreshMarket" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">Perbarui riset pasar</button><span id="p15MarketMsg" class="dnote">Sumber: '+esc((mi.sources||[]).join(' • '))+'</span></div>';
   if(mi.warnings&&mi.warnings.length)h+='<div class="dnote">'+mi.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
   h+='<div class="dnote"><small>'+esc(mi.regimeMethod||'')+' '+esc(nn.note||'')+' Data sektor bukan indeks sektoral resmi. Perubahan harga dan breadth menggunakan histori Google Finance terakhir yang tersedia; semua metrik tertinggal dari harga real-time.</small></div>';
+  }else{
+   h+='<h4>🌏 P15 — Market Intelligence</h4><div class="dnote">Belum ada snapshot riset pasar. Jalankan pembaruan pertama untuk mengambil IHSG, market breadth, kekuatan sektor, dan berita emiten.</div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p15RefreshMarket" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">Jalankan riset pasar pertama</button><span id="p15MarketMsg" class="dnote">Membutuhkan token admin dan koneksi Google Apps Script.</span></div>';
+  }
  }
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
