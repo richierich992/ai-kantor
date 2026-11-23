@@ -554,8 +554,8 @@ async function openPreview(viewport, label) {
   const chessAfter = await page.evaluate(() => window.__socialActivityQA?.inspect("chess"));
   const chessSeated = chessAfter?.chessSeatCount === 2 && chessAfter.seats.length === 2 &&
     chessAfter.seats.every(seat => seat.sit && seat.occupant?.act === "chat" &&
-      Math.abs(seat.occupant.y - seat.rootY) < 0.06 && Math.abs(seat.rootY - 0.64) < 0.005 &&
-      seat.occupant.y > 0.7);
+      Math.abs(seat.occupant.y - seat.rootY) < 0.06 && Math.abs(seat.rootY - 0.78) < 0.005 &&
+      seat.occupant.y > 0.75);
   const chessSideApproach = chessAfter?.seats?.every(seat => {
     const dx = seat.approach[0] - seat.x, dz = seat.approach[1] - seat.z;
     const forward = dx * Math.sin(seat.face) + dz * Math.cos(seat.face);
