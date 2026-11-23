@@ -1321,6 +1321,7 @@ function pfHtml(){
   const p20Input=(id,label,type,ph,step)=>'<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">'+label+'<input id="'+id+'" type="'+type+'" placeholder="'+ph+'" '+(step?'step="'+step+'"':'')+' style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
   h+=p20Input('p20Ticker','Ticker','text','BBCA')+p20Input('p20EntryDate','Tanggal entry','date','')+p20Input('p20EntryPrice','Harga entry aktual','number','Rp/lembar','1');
   h+=p20Input('p20QtyShares','Jumlah saham (lembar)','number','kelipatan 100','100')+p20Input('p20StopLoss','Stop Loss','number','Rp/lembar','1')+p20Input('p20TP1','Take Profit 1','number','Rp/lembar','1')+p20Input('p20TP2','Take Profit 2 (opsional)','number','Rp/lembar','1');
+  h+='<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">Tag strategi<select id="p20StrategyTag" style="width:100%;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"><option value="">Tidak diberi tag</option><option>Swing</option><option>Momentum</option><option>Breakout</option><option>Dividend</option><option>Value</option><option>Intraday</option><option>Lainnya</option></select></label>';
   h+='</div><div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap"><input id="p20Notes" type="text" placeholder="Catatan transaksi (opsional)" style="flex:1;min-width:180px;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"><button id="p20SavePosition" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:#fff;font-weight:800;cursor:pointer">Simpan posisi aktual</button><button id="p20RefreshMonitor" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#475569;color:#fff;font-weight:800;cursor:pointer">Refresh harga & alert</button><span id="p20TradeMsg" class="dnote">Input adalah harga dan jumlah yang benar-benar terisi di broker.</span></div>';
   h+='<h4>Posisi yang sedang dipantau</h4>';
   if(pos.length){
@@ -1357,6 +1358,44 @@ function pfHtml(){
    h+='</table>';
   }
   h+='<div class="dnote"><small>'+esc(tm.note||'')+'<br>Harga Google Finance dapat tertunda. Verifikasi harga, SL/TP, status order, dan realisasi transaksi pada aplikasi broker. P20 tidak menjual saham otomatis.</small></div>';
+ }
+
+
+ const p21=P.performance;
+ if(localStorage.getItem('admin_token')&&sh([2,3,4,5])&&p21){
+  const trades=p21.tradeRows||[],strategies=['Swing','Momentum','Breakout','Dividend','Value','Intraday','Lainnya'];
+  const p21pf=x=>x==null?'—':Number(x).toFixed(2);
+  const p21r=x=>x==null?'—':Number(x).toFixed(2)+'R';
+  h+='<h4>📈 P21 — Trading Performance & Learning Engine <small>('+esc(p21.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dnote">Evaluasi menggunakan posisi yang benar-benar ditutup dan dicatat di P20. Win rate, profit factor, expectancy, dan R-multiple bersifat historis; engine tidak mengubah sinyal atau strategi secara otomatis.</div>';
+  h+='<div class="dchips"><span class="chip">Trade closed <b>'+nf(p21.closedCount)+'</b></span><span class="chip">Posisi aktif <b>'+nf(p21.openCount)+'</b></span><span class="chip">Win rate <b>'+pc(p21.winRatePct)+'</b></span><span class="chip">Profit factor <b>'+p21pf(p21.profitFactor)+'</b></span><span class="chip">P/L realized bruto <b>'+rpi(p21.totalGrossPnl)+'</b></span><span class="chip">Expectancy/trade <b>'+rpi(p21.expectancyIdr)+'</b></span><span class="chip">R-multiple rata-rata <b>'+p21r(p21.averageR)+'</b></span><span class="chip">Max drawdown realized <b>'+rpi(p21.maxDrawdownIdr)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Menang <b>'+nf(p21.winningTrades)+'</b></span><span class="chip">Kalah <b>'+nf(p21.losingTrades)+'</b></span><span class="chip">Impas <b>'+nf(p21.breakevenTrades)+'</b></span><span class="chip">R coverage <b>'+pc(p21.rCoveragePct)+'</b></span><span class="chip">Rata-rata holding <b>'+(p21.averageHoldingDays==null?'—':nf(p21.averageHoldingDays)+' hari')+'</b></span><span class="chip">Max loss streak <b>'+nf(p21.maxLosingStreak)+'</b></span></div>';
+  if(p21.bestStrategy||p21.worstStrategy)h+='<div class="dnote">Strategi terbaik pada sampel minimal 5 trade: <b>'+esc(p21.bestStrategy||'—')+'</b> • terendah: <b>'+esc(p21.worstStrategy||'—')+'</b>. Peringkat menggunakan expectancy per trade, bukan laba absolut.</div>';
+  if(p21.last7Days||p21.currentMonth){const w=p21.last7Days||{},m=p21.currentMonth||{};h+='<div class="dchips"><span class="chip">7 hari terakhir <b>'+nf(w.trades||0)+' trade • '+rpi(w.totalPnl||0)+'</b></span><span class="chip">Bulan berjalan <b>'+nf(m.trades||0)+' trade • '+rpi(m.totalPnl||0)+'</b></span></div>';}
+  h+='<h4>Performa berdasarkan tag strategi</h4>';
+  if(p21.byStrategy&&p21.byStrategy.length){
+   h+='<div style="overflow-x:auto"><table><tr><th>Strategi</th><th>Trade</th><th>Win rate</th><th>Profit factor</th><th>Expectancy</th><th>R rata-rata</th><th>Total P/L</th></tr>';
+   p21.byStrategy.forEach(x=>{h+='<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.trades)+'</td><td>'+pc(x.winRatePct)+'</td><td>'+p21pf(x.profitFactor)+'</td><td>'+rpi(x.expectancyIdr)+'</td><td>'+p21r(x.averageR)+'</td><td>'+rpi(x.totalPnl)+'</td></tr>';});
+   h+='</table></div>';
+  }else h+='<div class="dnote">Belum ada transaksi closed.</div>';
+  h+='<h4>Performa bulanan</h4>';
+  if(p21.byMonth&&p21.byMonth.length)h+='<div style="overflow-x:auto"><table><tr><th>Bulan</th><th>Trade</th><th>Win rate</th><th>P/L bruto</th><th>Expectancy</th><th>Profit factor</th></tr>'+p21.byMonth.map(x=>'<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.trades)+'</td><td>'+pc(x.winRatePct)+'</td><td>'+rpi(x.totalPnl)+'</td><td>'+rpi(x.expectancyIdr)+'</td><td>'+p21pf(x.profitFactor)+'</td></tr>').join('')+'</table></div>';
+  else h+='<div class="dnote">Belum ada data bulanan.</div>';
+  if(p21.byTicker&&p21.byTicker.length)h+='<h4>Performa per ticker</h4><div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Trade</th><th>Win rate</th><th>P/L bruto</th><th>Expectancy</th><th>R rata-rata</th></tr>'+p21.byTicker.map(x=>'<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.trades)+'</td><td>'+pc(x.winRatePct)+'</td><td>'+rpi(x.totalPnl)+'</td><td>'+rpi(x.expectancyIdr)+'</td><td>'+p21r(x.averageR)+'</td></tr>').join('')+'</table></div>';
+  if(p21.byExitReason&&p21.byExitReason.length)h+='<h4>Evaluasi alasan exit</h4><div style="overflow-x:auto"><table><tr><th>Alasan</th><th>Trade</th><th>Win rate</th><th>P/L bruto</th><th>Expectancy</th></tr>'+p21.byExitReason.map(x=>'<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.trades)+'</td><td>'+pc(x.winRatePct)+'</td><td>'+rpi(x.totalPnl)+'</td><td>'+rpi(x.expectancyIdr)+'</td></tr>').join('')+'</table></div>';
+  h+='<h4>Jurnal hasil transaksi terbaru</h4>';
+  if(p21.recent&&p21.recent.length)h+='<div style="overflow-x:auto"><table><tr><th>Tanggal exit</th><th>Ticker</th><th>Strategi</th><th>Return</th><th>R</th><th>P/L bruto</th><th>Alasan</th></tr>'+p21.recent.slice(0,15).map(x=>'<tr><td>'+esc(x.closedDate||'—')+'</td><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.strategyTag)+'</td><td><span class="bdg '+pcCls(x.returnPct)+'">'+pc(x.returnPct)+'</span></td><td>'+p21r(x.rMultiple)+'</td><td>'+rpi(x.pnl)+'</td><td>'+esc(x.exitReason)+'</td></tr>').join('')+'</table></div>';
+  else h+='<div class="dnote">Belum ada transaksi yang ditutup dengan data lengkap.</div>';
+  h+='<h4>Tag strategi pada posisi (untuk evaluasi yang lebih akurat)</h4><div class="dnote">Pilih tag untuk setiap posisi, termasuk transaksi lama. Posisi lama yang belum diberi tag masuk kategori “Tidak diberi tag”.</div>';
+  if(trades.length){
+   h+='<div style="overflow-x:auto"><table><tr><th>Status</th><th>Ticker</th><th>Tanggal</th><th>Strategi</th><th>Jumlah</th><th>Tag baru</th><th>Aksi</th></tr>';
+   trades.forEach(x=>{const id=esc(x.positionId),sel='<select id="p21tag_'+id+'" style="padding:7px;background:#101b32;color:#fff;border:1px solid #52658e;border-radius:7px"><option value="">Tidak diberi tag</option>'+strategies.map(v=>'<option value="'+v+'" '+(x.strategyTag===v?'selected':'')+'>'+v+'</option>').join('')+'</select>';
+    h+='<tr><td>'+esc(x.status)+'</td><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.closedDate||x.entryDate||'—')+'</td><td>'+esc(x.strategyTag)+'</td><td>'+nf(x.qtyShares)+'</td><td>'+sel+'</td><td><button data-p21-tag-save="'+id+'" type="button" style="padding:7px 9px;border:0;border-radius:7px;background:#475569;color:#fff;cursor:pointer">Simpan tag</button></td></tr>';});
+   h+='</table></div>';
+  }else h+='<div class="dnote">Belum ada posisi untuk diberi tag.</div>';
+  if(p21.insights&&p21.insights.length)h+='<h4>Temuan dan evaluasi</h4><div class="dnote">'+p21.insights.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p21RefreshPerformance" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:#fff;font-weight:800;cursor:pointer">Refresh evaluasi</button><span id="p21PerformanceMsg" class="dnote">Analisis diperbarui berdasarkan jurnal P20.</span></div>';
+  h+='<div class="dnote"><small>'+esc(p21.methodology||'')+'<br>'+esc(p21.note||'')+' Data belum dikurangi biaya dan pajak; strategi dengan kurang dari 5 trade tidak diberi peringkat terbaik/terendah.</small></div>';
  }
 
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
@@ -1521,7 +1560,7 @@ if(!window.__p20TradeMonitorBound){
   try{
    if(target.id==='p20SavePosition'){
     const val=id=>{const e=$(id);return e?e.value.trim():'';};
-    const position={Ticker:val('p20Ticker'),EntryDate:val('p20EntryDate'),EntryPrice:val('p20EntryPrice'),QtyShares:val('p20QtyShares'),StopLoss:val('p20StopLoss'),TP1:val('p20TP1'),TP2:val('p20TP2'),Notes:val('p20Notes')};
+    const position={Ticker:val('p20Ticker'),EntryDate:val('p20EntryDate'),EntryPrice:val('p20EntryPrice'),QtyShares:val('p20QtyShares'),StopLoss:val('p20StopLoss'),TP1:val('p20TP1'),TP2:val('p20TP2'),StrategyTag:val('p20StrategyTag'),Notes:val('p20Notes')};
     target.textContent='Menyimpan…';if(msg)msg.textContent='Mencatat posisi entry aktual…';
     await send({action:'trade_position_save',position});
    }else if(target.id==='p20RefreshMonitor'){
@@ -1541,6 +1580,35 @@ if(!window.__p20TradeMonitorBound){
     target.textContent='Mencatat…';if(msg)msg.textContent='Mencatat harga exit aktual…';
     await send({action:'trade_position_close',positionId:id,exitPrice,exitReason:reason});
    }
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+/* ===== P21: refresh evaluasi dan tag strategi melalui ADMIN_TOKEN ===== */
+if(!window.__p21PerformanceBound){
+ window.__p21PerformanceBound=true;
+ document.addEventListener('click',async function(ev){
+  const target=ev.target&&ev.target.closest?ev.target.closest('#p21RefreshPerformance,[data-p21-tag-save]'):null;
+  if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p21PerformanceMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  target.disabled=true;
+  try{
+   let payload;
+   if(target.id==='p21RefreshPerformance'){
+    target.textContent='Memperbarui…';if(msg)msg.textContent='Menghitung ulang statistik jurnal transaksi…';
+    payload={action:'trade_performance_refresh',token:token};
+   }else{
+    const id=target.getAttribute('data-p21-tag-save'),safe=id.replace(/[^A-Za-z0-9_-]/g,'');
+    const el=$('p21tag_'+safe),tag=el?el.value:'';
+    target.textContent='Menyimpan…';if(msg)msg.textContent='Menyimpan tag strategi…';
+    payload={action:'trade_strategy_tag_save',token:token,positionId:id,strategyTag:tag};
+   }
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Pembaruan P21 gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p21PerformanceMsg');if(done)done.textContent=j.message||'P21 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
