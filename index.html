@@ -1531,6 +1531,48 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(p25.note||'')+'</small></div>';
  }
 
+
+ const p26=P.strategyComparison;
+ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p26){
+  const p26money=x=>x==null?'—':rpi(x);
+  const p26pct=x=>x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+'%';
+  const p26pp=x=>x==null?'—':(Number(x)>=0?'+':'')+Number(x).toFixed(2)+' pp';
+  const p26r=x=>x==null?'—':Number(x).toFixed(2)+'R';
+  const p26weights=p26.weights||{};
+  const p26colors={CONSERVATIVE:'Conservative',BALANCED:'Balanced',MOMENTUM:'Momentum'};
+  const p26fields=(id,label,val)=>'<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">'+label+' (%)<input id="'+id+'" type="number" min="0" max="100" step="0.1" value="'+(val==null?'':Number(val))+'" style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
+  h+='<h4>🧬 P26 — Strategy Comparison & Portfolio Optimization <small>('+esc(p26.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dnote">Tiga profil P23 mempunyai jurnal shadow forward terpisah. Sinyal hanya direkam pada tanggal screener yang sedang berjalan; entry menunggu candle berikutnya dan diproses dengan mesin P24. Perbandingan portofolio memakai aturan biaya, slippage, risiko dan lot P25 yang sama. Tidak ada perubahan strategi live atau order broker.</div>';
+  h+='<div class="dchips"><span class="chip">Shadow signals <b>'+nf(p26.totalSignals||0)+'</b></span><span class="chip">Entry terisi <b>'+nf(p26.filledCount||0)+'</b></span><span class="chip">Menunggu <b>'+nf(p26.waitingCount||0)+'</b></span><span class="chip">Aktif <b>'+nf(p26.openCount||0)+'</b></span><span class="chip">Closed <b>'+nf(p26.closedCount||0)+'</b></span><span class="chip">No fill <b>'+nf(p26.noFillCount||0)+'</b></span></div>';
+  if(p26.profiles&&p26.profiles.length){
+   h+='<h4>Perbandingan performa forward per profil</h4><div style="overflow-x:auto"><table><tr><th>Profil</th><th>Signal</th><th>Closed</th><th>Win rate</th><th>Avg R</th><th>PF</th><th>Return bersih</th><th>Max DD</th><th>Alpha IHSG</th></tr>';
+   p26.profiles.forEach(x=>{const z=x.stats||{},q=x.portfolio||{};h+='<tr><td><b>'+esc(x.label)+'</b></td><td>'+nf(x.signals)+'</td><td>'+nf(x.closedCount)+'</td><td>'+(z.winRatePct==null?'—':Number(z.winRatePct).toFixed(1)+'%')+'</td><td>'+p26r(z.averageR)+'</td><td>'+esc(q.profitFactor==null?'—':String(q.profitFactor))+'</td><td><b>'+p26pct(q.totalReturnPct)+'</b></td><td>'+p26pct(Math.abs(Number(q.maxDrawdownPct||0)))+'</td><td>'+p26pp(q.alphaPp)+'</td></tr>';});
+   h+='</table></div>';
+   h+='<div class="dnote">Kriteria profil: Conservative vol ≥1,20×, CMF ≥0,05, nilai ≥Rp10 miliar, harga di atas MA20, MA5 ≥ MA20, risiko ≤6%. Balanced vol ≥1,00×, CMF ≥0,00, nilai ≥Rp5 miliar, risiko ≤8%. Momentum vol ≥1,50×, CMF ≥0,10, nilai ≥Rp5 miliar, MA5 ≥ MA20, risiko ≤8%.</div>';
+  }else h+='<div class="dnote">Belum ada ringkasan profil.</div>';
+  const bl=p26.blend||{};
+  h+='<h4>Portofolio gabungan berdasarkan bobot sleeve</h4>';
+  h+='<div class="dchips"><span class="chip">Modal gabungan <b>'+p26money(bl.startingCapital)+'</b></span><span class="chip">Ekuitas bersih <b>'+p26money(bl.endingEquity)+'</b></span><span class="chip">Return bersih <b><b>'+p26pct(bl.totalReturnPct)+'</b></b></span><span class="chip">IHSG <b>'+p26pct(bl.benchmark&&bl.benchmark.returnPct)+'</b></span><span class="chip">Alpha <b>'+p26pp(bl.alphaPp)+'</b></span><span class="chip">Max DD <b>'+p26pct(Math.abs(Number(bl.maxDrawdownPct||0)))+'</b></span><span class="chip">Total fee <b>'+p26money(bl.totalFees)+'</b></span></div>';
+  const cv=bl.curve||[];
+  if(cv.length>1){
+   const vv=cv.map(x=>Number(x.equity)||0),mn=Math.min.apply(null,vv),mx=Math.max.apply(null,vv),span=mx-mn||1;
+   const pts=vv.map((v,i)=>((i/(vv.length-1))*660+10).toFixed(1)+','+(130-((v-mn)/span)*110).toFixed(1)).join(' ');
+   h+='<div style="padding:8px;border:1px solid rgba(140,160,200,.25);border-radius:10px;background:rgba(10,20,40,.28)"><svg viewBox="0 0 680 145" role="img" aria-label="Kurva ekuitas portofolio gabungan P26" style="width:100%;height:auto;display:block"><line x1="10" y1="130" x2="670" y2="130" stroke="rgba(150,170,210,.25)" stroke-width="1"/><polyline points="'+pts+'" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="dnote">Ekuitas akhir seluruh sleeve berdasarkan bobot yang tersimpan • snapshot akhir sesi.</div></div>';
+  }
+  const ld=p26.leader||{};
+  if(ld.status==='PROVISIONAL_LEADER')h+='<div class="dnote" style="margin:9px 0"><b>Kandidat sementara:</b> '+esc(p26colors[ld.leader]||ld.leader)+'. Memenuhi minimal '+nf(p26.minClosedForLeader)+' trade closed, return bersih positif, PF ≥1,2, dan max DD ≤20%. Belum diterapkan ke strategi aktif.</div>';
+  else if(ld.status==='INSUFFICIENT')h+='<div class="dnote" style="margin:9px 0">Belum memilih profil: setiap profil perlu minimal '+nf(p26.minClosedForLeader)+' transaksi closed agar kandidat bisa dinilai.</div>';
+  else h+='<div class="dnote" style="margin:9px 0">Belum ada profil yang memenuhi seluruh gate return, profit factor dan drawdown. Sistem tidak memaksakan pemenang.</div>';
+  h+='<h4>Bobot strategi portofolio gabungan</h4><div class="dnote">Bobot default 33,3% / 33,3% / 33,4%. Total harus 100%. Perubahan bobot menghitung ulang histori shadow yang sama sebagai skenario baru; bukan parameter historis per tanggal.</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:10px 0">';
+  h+=p26fields('p26WeightConservative','Conservative',p26weights.CONSERVATIVE);
+  h+=p26fields('p26WeightBalanced','Balanced',p26weights.BALANCED);
+  h+=p26fields('p26WeightMomentum','Momentum',p26weights.MOMENTUM);
+  h+='</div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p26SaveWeights" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:#fff;font-weight:800;cursor:pointer">Simpan bobot gabungan</button><button id="p26RefreshShadow" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Proses & refresh shadow forward</button><span id="p26StrategyMsg" class="dnote">S38 otomatis 16:58 WIB • sebelum digest portofolio pukul 17:00.</span></div>';
+  if(p26.warnings&&p26.warnings.length)h+='<div class="dnote" style="margin-top:8px">'+p26.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div class="dnote"><small>'+esc(p26.note||'')+'</small></div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1829,6 +1871,35 @@ if(!window.__p25PaperPortfolioBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p25PortfolioMsg');if(done)done.textContent=j.message||'P25 berhasil diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent=save?'Simpan asumsi':'Proses ulang & refresh portofolio';}
+ });
+}
+
+
+/* ===== P26: simpan bobot dan refresh strategy shadow forward ===== */
+if(!window.__p26StrategyComparisonBound){
+ window.__p26StrategyComparisonBound=true;
+ document.addEventListener('click',async function(ev){
+  const save=ev.target&&ev.target.closest?ev.target.closest('#p26SaveWeights'):null;
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p26RefreshShadow'):null;
+  const btn=save||refresh;if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p26StrategyMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  let payload;
+  if(save){
+   const read=id=>{const el=$(id);return el&&el.value.trim()!==''?Number(el.value):NaN;};
+   const weights={CONSERVATIVE:read('p26WeightConservative'),BALANCED:read('p26WeightBalanced'),MOMENTUM:read('p26WeightMomentum')};
+   if(Object.keys(weights).some(k=>!isFinite(weights[k])||weights[k]<0||weights[k]>100)){if(msg)msg.textContent='Isi ketiga bobot dengan angka 0–100%.';return;}
+   if(Math.round((weights.CONSERVATIVE+weights.BALANCED+weights.MOMENTUM)*10)/10!==100){if(msg)msg.textContent='Total bobot harus tepat 100%.';return;}
+   payload={action:'strategy_shadow_config_save',token:token,weights:weights};
+  }else payload={action:'strategy_shadow_refresh',token:token};
+  btn.disabled=true;btn.textContent=save?'Menyimpan…':'Memproses…';
+  if(msg)msg.textContent=save?'Memvalidasi dan menyimpan bobot strategi…':'Merekam sinyal per profil, memperbarui entry/exit dan menghitung ulang tiga sleeve…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P26 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p26StrategyMsg');if(done)done.textContent=j.message||'P26 berhasil diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent=save?'Simpan bobot gabungan':'Proses & refresh shadow forward';}
  });
 }
 
