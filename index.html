@@ -1281,6 +1281,35 @@ function pfHtml(){
   }
  }
 
+
+ const p19=P.positionSizer;
+ if(localStorage.getItem('admin_token')&&sh([2,3,4,5])&&p19){
+  const ip=p19.inputs||{},rows=p19.items||[];
+  const p19Badge=x=>x==='Ukuran simulasi tersedia'?'ok':x==='Tidak mencapai 1 lot'?'warn':'idle';
+  const pctInput=(id,label,value,min,max,step)=>'<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">'+label+' (%)<input id="'+id+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+(value==null?'':Number(value))+'" placeholder="'+min+'–'+max+'" style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
+  h+='<h4>📐 P19 — Intelligent Capital Allocation & Position Sizing <small>('+esc(p19.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dnote">Ukuran posisi dihitung dari batas risiko yang kamu tentukan, jarak Entry–Stop Loss, batas nilai per saham, modal deployable, dan korelasi. Hanya saham P17 berstatus “Layak dipantau” dengan level teknikal valid yang diproses.</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0">';
+  h+=pctInput('p19RiskPerPosition','Batas risiko per posisi',ip.riskPerPositionPct,0.05,5,0.05);
+  h+=pctInput('p19TotalRiskLimit','Batas risiko total portofolio',ip.totalRiskLimitPct,0.1,15,0.1);
+  h+=pctInput('p19MaxPosition','Batas nilai maksimal per saham',ip.maxPositionPct,1,50,0.5);
+  h+='<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">Modal deployable saham (IDR)<input id="p19CapitalBudget" type="number" min="0" max="1000000000000" step="100000" value="'+(ip.capitalBudgetIdr==null?0:Number(ip.capitalBudgetIdr))+'" style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
+  h+='</div>';
+  h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0"><button id="p19SaveSizing" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">Simpan asumsi & hitung sizing</button><span id="p19SizingMsg" class="dnote">'+(p19.configured?'Asumsi aktif.':'Belum ada preset risiko. Isi semua asumsi agar kalkulasi aktif.')+'</span></div>';
+  if(p19.ready&&p19.configured){
+   h+='<div class="dchips"><span class="chip">Nilai portofolio <b>'+rpi(p19.totalValue)+'</b></span><span class="chip">Batas risiko total <b>'+rpi(p19.totalRiskBudgetIdr)+'</b></span><span class="chip">Risiko simulasi terpakai <b>'+rpi(p19.totalRiskUsedIdr)+'</b> ('+pc(p19.totalRiskUsedPct)+')</span><span class="chip">Sisa batas risiko <b>'+rpi(p19.totalRiskRemainingIdr)+'</b></span><span class="chip">Modal tersisa <b>'+rpi(p19.capitalRemainingIdr)+'</b></span><span class="chip">Posisi yang dapat dihitung <b>'+nf(p19.allocatedCount)+'/'+nf(p19.candidateCount)+'</b></span></div>';
+  }
+  h+='<h4>Rekomendasi ukuran posisi simulasi</h4>';
+  if(rows.length){
+   h+='<div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Skor P17</th><th>Buy Zone</th><th>Entry asumsi</th><th>SL</th><th>Risiko/lembar</th><th>Korelasi</th><th>Lot</th><th>Nilai posisi</th><th>Risiko ke SL</th><th>Status</th></tr>';
+   rows.forEach(x=>{const corr=x.correlation==null?'Belum cukup data':Number(x.correlation).toFixed(2)+(x.correlationAgainst?' vs '+esc(x.correlationAgainst):'')+' • faktor '+Number(x.correlationFactor||1).toFixed(2);h+='<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+(x.score==null?'—':nf(x.score)+'/100')+'<br><small>'+nf(x.coveragePct)+'% data</small></td><td>'+(x.buyLo==null?'—':rpi(x.buyLo))+' – '+(x.buyHi==null?'—':rpi(x.buyHi))+'</td><td>'+(x.entryPrice==null?'—':rpi(x.entryPrice))+'</td><td>'+(x.stopLoss==null?'—':rpi(x.stopLoss))+'</td><td>'+(x.riskPerShare==null?'—':rpi(x.riskPerShare))+'</td><td>'+corr+'</td><td><b>'+nf(x.lots)+'</b><br><small>'+nf(x.shares)+' lembar</small></td><td>'+rpi(x.positionValue)+'</td><td>'+rpi(x.riskAtSL)+'</td><td><span class="bdg '+p19Badge(x.status)+'">'+esc(x.status)+'</span></td></tr>';});
+   h+='</table></div>';
+   rows.slice(0,10).forEach(x=>{h+='<div class="dlist"><div><b>'+esc(x.ticker)+' — '+esc(x.status)+'</b><br>'+esc(x.reason||'')+(x.currentValue>0?'<br><small>Nilai kepemilikan saat ini: '+rpi(x.currentValue)+' • batas nilai total per saham: '+rpi(p19.maxPositionValueIdr)+'</small>':'')+'</div></div>';});
+  }else h+='<div class="dnote">Belum ada kandidat P17 berstatus Layak dipantau. P19 tidak akan mengambil saham yang hanya menunggu konfirmasi atau berisiko tinggi.</div>';
+  if(p19.warnings&&p19.warnings.length)h+='<div class="dnote" style="margin-top:8px">'+p19.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div class="dnote"><small>'+esc(p19.methodology||'')+'<br>'+esc(p19.note||'')+'<br>1 lot = 100 saham pada pasar reguler/tunai BEI. Entry diasumsikan di BuyHi, bukan harga yang dijamin terisi.</small></div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1396,6 +1425,31 @@ if(!window.__p18StrategyBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p18StrategyMsg');if(done)done.textContent=j.message||'Simulasi P18 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Simpan asumsi & hitung ulang';}
+ });
+}
+
+
+/* ===== P19: simpan batas risiko dan modal untuk sizing melalui ADMIN_TOKEN ===== */
+if(!window.__p19PositionSizingBound){
+ window.__p19PositionSizingBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p19SaveSizing'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p19SizingMsg');
+  const get=id=>{const el=$(id);return el&&el.value.trim()!==''?Number(el.value):NaN;};
+  const inputs={riskPerPositionPct:get('p19RiskPerPosition'),totalRiskLimitPct:get('p19TotalRiskLimit'),maxPositionPct:get('p19MaxPosition'),capitalBudgetIdr:get('p19CapitalBudget')};
+  if(!isFinite(inputs.riskPerPositionPct)||inputs.riskPerPositionPct<0.05||inputs.riskPerPositionPct>5){if(msg)msg.textContent='Risiko per posisi wajib 0,05–5%.';return;}
+  if(!isFinite(inputs.totalRiskLimitPct)||inputs.totalRiskLimitPct<0.1||inputs.totalRiskLimitPct>15||inputs.riskPerPositionPct>inputs.totalRiskLimitPct){if(msg)msg.textContent='Batas total wajib 0,1–15% dan tidak boleh lebih kecil dari batas per posisi.';return;}
+  if(!isFinite(inputs.maxPositionPct)||inputs.maxPositionPct<1||inputs.maxPositionPct>50){if(msg)msg.textContent='Batas nilai per saham wajib 1–50%.';return;}
+  if(!isFinite(inputs.capitalBudgetIdr)||inputs.capitalBudgetIdr<0||inputs.capitalBudgetIdr>1000000000000){if(msg)msg.textContent='Modal deployable wajib Rp0–Rp1 triliun.';return;}
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menghitung…';if(msg)msg.textContent='Menyimpan batas risiko dan menghitung ulang ukuran posisi…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'portfolio_position_sizing_save',token:token,inputs:inputs})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Perhitungan position sizing gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p19SizingMsg');if(done)done.textContent=j.message||'Position sizing P19 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Simpan asumsi & hitung sizing';}
  });
 }
 
