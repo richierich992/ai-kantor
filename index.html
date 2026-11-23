@@ -1191,6 +1191,33 @@ function pfHtml(){
    h+='<h4>🌏 P15 — Market Intelligence</h4><div class="dnote">Belum ada snapshot riset pasar. Jalankan pembaruan pertama untuk mengambil IHSG, market breadth, kekuatan sektor, dan berita emiten.</div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p15RefreshMarket" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">Jalankan riset pasar pertama</button><span id="p15MarketMsg" class="dnote">Membutuhkan token admin dan koneksi Google Apps Script.</span></div>';
   }
  }
+ const fu=P.fundamentals,ca=P.corporateActions;
+ if(localStorage.getItem('admin_token')&&sh([2,3,4,5])){
+  const metric=n=>n==null?'—':Number(n).toFixed(1)+'%';
+  const ratio=n=>n==null?'—':Number(n).toFixed(2)+'x';
+  const multiple=n=>n==null?'—':Number(n).toFixed(2)+'x';
+  const gradeClass=g=>g==='A'||g==='B'?'ok':g==='D'?'err':g==='C'?'idle':'warn';
+  const safeDoc=u=>{u=String(u||'');return u.indexOf('https://')===0||u.indexOf('http://')===0?esc(u):'';};
+  h+='<h4>📘 P16 — Fundamental & Corporate Action Intelligence <small>('+esc((fu&&fu.generatedAt)||(ca&&ca.generatedAt)||'—')+' WIB)</small></h4>';
+  if(fu&&fu.ready){
+   h+='<div class="dchips"><span class="chip">Emiten <b>'+nf(fu.count)+'</b></span><span class="chip">Sumber terbaru <b>'+pc(fu.coveragePct)+'</b></span><span class="chip">Skor rata-rata <b>'+(fu.averageScore==null?'—':nf(fu.averageScore)+'/100')+'</b></span><span class="chip">Baris tak valid <b>'+nf(fu.invalidRows||0)+'</b></span></div>';
+   h+='<div class="dnote">'+esc(fu.note||'')+'</div>';
+   h+='<h4>Fundamental saham portofolio & watchlist <small>(maks. 20 emiten, data terbaru per ticker)</small></h4>';
+   h+='<div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Periode</th><th>Skor</th><th>Revenue YoY</th><th>Laba YoY</th><th>Gross margin</th><th>Operating margin</th><th>Net margin</th><th>ROE periode</th><th>ROA periode</th><th>Debt/Equity</th><th>Current ratio</th><th>CFO/NI</th><th>FCF</th><th>PER</th><th>PBV</th><th>Umur sumber</th><th>Dokumen</th></tr>'+(fu.items||[]).map(x=>{const m=x.metrics||{},url=safeDoc(x.sourceUrl);return '<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.period)+'</td><td><span class="bdg '+gradeClass(m.grade)+'">'+esc(m.grade||'—')+(m.score==null?'':' '+m.score)+'</span></td><td>'+metric(m.revenueGrowthPct)+'</td><td>'+metric(m.netIncomeGrowthPct)+'</td><td>'+metric(m.grossMarginPct)+'</td><td>'+metric(m.operatingMarginPct)+'</td><td>'+metric(m.netMarginPct)+'</td><td>'+metric(m.roePeriodPct)+'</td><td>'+metric(m.roaPeriodPct)+'</td><td>'+metric(m.debtEquityPct)+'</td><td>'+ratio(m.currentRatio)+'</td><td>'+metric(m.cashConversionPct)+'</td><td>'+rpi(m.freeCashFlow)+'</td><td>'+multiple(m.pe)+'</td><td>'+multiple(m.pbv)+'</td><td>'+(x.sourceAgeDays==null?'—':nf(x.sourceAgeDays)+' hari')+'</td><td>'+(url?'<a href="'+url+'" target="_blank" rel="noopener noreferrer" style="color:#9fc2ff">Buka</a>':'—')+'</td></tr>';}).join('')+'</table></div>';
+   if(fu.warnings&&fu.warnings.length)h+='<div class="dnote">'+fu.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  }else{
+   h+='<div class="dnote">Belum ada snapshot fundamental. Isi sheet FundamentalData dengan data laporan keuangan resmi, lalu jalankan pembaruan pertama.</div>';
+  }
+  h+='<h4>Kalender aksi korporasi <small>(60 hari ke depan)</small></h4>';
+  if(ca&&ca.upcoming&&ca.upcoming.length){
+   h+='<div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Aksi</th><th>Tanggal terdekat</th><th>Status</th><th>Rasio</th><th>Dividen/lembar</th><th>Estimasi bruto kepemilikan saat ini</th><th>Pengumuman</th></tr>'+(ca.upcoming||[]).map(x=>{const url=safeDoc(x.sourceUrl);return '<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.actionLabel)+'</td><td>'+esc(x.nextDateLabel||'')+' • '+esc(x.nextDate||'—')+' ('+nf(x.daysToEvent)+' hari)</td><td>'+esc(x.status)+'</td><td>'+esc(x.ratio||'—')+'</td><td>'+(x.cashPerShare==null?'—':rpi(x.cashPerShare))+'</td><td>'+(x.estimatedGrossDividend==null?'—':rpi(x.estimatedGrossDividend)+' <small>(bruto)</small>')+'</td><td>'+(url?'<a href="'+url+'" target="_blank" rel="noopener noreferrer" style="color:#9fc2ff">Buka</a>':'—')+'</td></tr>';}).join('')+'</table></div>';
+  }else h+='<div class="dnote">'+(ca?'Belum ada aksi korporasi bertanggal dalam 60 hari ke depan.':'Belum ada snapshot aksi korporasi.')+'</div>';
+  if(ca&&ca.undated&&ca.undated.length)h+='<div class="dnote"><b>Aksi yang belum memiliki tanggal:</b> '+ca.undated.map(x=>esc(x.ticker+' • '+x.actionLabel+' • '+x.status)).join(' | ')+'</div>';
+  if(ca&&ca.recent&&ca.recent.length)h+='<div class="dnote"><b>Aksi terakhir:</b> '+ca.recent.slice(0,5).map(x=>esc(x.ticker+' • '+x.actionLabel)).join(' | ')+'</div>';
+  if(ca&&ca.warnings&&ca.warnings.length)h+='<div class="dnote">'+ca.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p16RefreshFundamental" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">'+(fu||ca?'Perbarui fundamental & aksi korporasi':'Jalankan analisis P16 pertama')+'</button><span id="p16FundamentalMsg" class="dnote">Sumber data: input manual dari dokumen resmi. FundamentalData & CorporateActions.</span></div>';
+  h+='<div class="dnote"><small>Growth membandingkan periode fiskal yang sama tahun sebelumnya. ROE/ROA adalah rasio laba periode terhadap rata-rata ekuitas/aset, tidak diannualisasi. PER memakai EPS TTM; PBV memakai ekuitas dibagi saham beredar. Skor P16 adalah heuristik umum, bukan peringkat resmi atau rekomendasi transaksi. Estimasi dividen bruto hanya memakai lot pada sheet Portfolio saat ini dan tidak menjamin jumlah yang akan diterima.</small></div>';
+ }
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1245,6 +1272,24 @@ if(!window.__p15RefreshBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p15MarketMsg');if(done)done.textContent=j.message||'Riset pasar diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Perbarui riset pasar';}
+ });
+}
+
+/* ===== P16: refresh fundamental/corporate actions melalui ADMIN_TOKEN ===== */
+if(!window.__p16RefreshBound){
+ window.__p16RefreshBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p16RefreshFundamental'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p16FundamentalMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menghitung…';if(msg)msg.textContent='Membaca FundamentalData dan CorporateActions…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'refresh_fundamental_intelligence',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Pembaruan P16 gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p16FundamentalMsg');if(done)done.textContent=j.message||'Fundamental dan aksi korporasi diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Perbarui fundamental & aksi korporasi';}
  });
 }
 
