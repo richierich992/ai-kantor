@@ -1237,6 +1237,50 @@ function pfHtml(){
   if(de&&de.warnings&&de.warnings.length)h+='<div class="dnote">'+de.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
   h+='<div class="dnote"><small>'+esc(de&&de.note||'Skor komposit dan confidence hanya menggunakan komponen yang tersedia. Tidak ada order otomatis.')+'</small></div>';
  }
+
+ const p18=P.strategyOptimizer;
+ if(localStorage.getItem('admin_token')&&sh([2,3,4,5])){
+  const si=p18&&p18.inputs||{},sc=p18&&p18.scenarios||[];
+  const scenario=k=>sc.filter(x=>x.key===k)[0]||null;
+  const hold=scenario('hold'),add=scenario('add_only'),reb=scenario('full_rebalance');
+  const money=x=>x==null?'Belum dihitung':rpi(x);
+  h+='<h4>⚙️ P18 — Portfolio & Trading Strategy Optimizer <small>('+esc(p18&&p18.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dnote">Bandingkan strategi pada snapshot yang sama: pertahankan posisi, tambah modal tanpa menjual, atau rebalancing ke target P13. Ini simulasi kelas aset, bukan rekomendasi transaksi.</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:10px 0">';
+  h+='<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">Modal tambahan (IDR)<input id="p18Capital" type="number" min="0" step="100000" value="'+(si.capitalIdr==null?0:Number(si.capitalIdr))+'" style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
+  h+='<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">Biaya beli all-in (%)<input id="p18BuyCost" type="number" min="0" max="5" step="0.01" value="'+(si.buyCostPct==null?'':Number(si.buyCostPct))+'" placeholder="Wajib untuk net value" style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
+  h+='<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">Biaya jual all-in (%)<input id="p18SellCost" type="number" min="0" max="5" step="0.01" value="'+(si.sellCostPct==null?'':Number(si.sellCostPct))+'" placeholder="Wajib untuk net value" style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
+  h+='</div>';
+  h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0"><button id="p18RunStrategy" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:white;font-weight:800;cursor:pointer">Simpan asumsi & hitung ulang</button><span id="p18StrategyMsg" class="dnote">Biaya kosong tidak dianggap nol. Isi tarif all-in beli dan jual untuk menghitung nilai bersih.</span></div>';
+  if(p18&&p18.ready){
+   h+='<div class="dchips"><span class="chip">Valuasi sekarang <b>'+rpi(p18.totalCurrentValue)+'</b></span><span class="chip">Valuasi + modal <b>'+rpi(p18.totalWithCapital)+'</b></span><span class="chip">Target P13 <b>'+(p18.targetsConfigured?'tersimpan':'belum diatur')+'</b></span><span class="chip">Asumsi biaya <b>'+(p18.costAssumptions&&p18.costAssumptions.complete?'lengkap':'belum lengkap')+'</b></span></div>';
+   h+='<h4>Perbandingan skenario</h4><div style="overflow-x:auto"><table><tr><th>Skenario</th><th>Beli</th><th>Jual</th><th>Estimasi biaya</th><th>Nilai kotor</th><th>Nilai bersih</th></tr>';
+   [hold,add,reb].filter(Boolean).forEach(x=>{h+='<tr><td><b>'+esc(x.label)+'</b></td><td>'+rpi(x.buyValue)+'</td><td>'+rpi(x.sellValue)+'</td><td>'+money(x.costEstimate)+'</td><td>'+rpi(x.grossValue)+'</td><td><b>'+money(x.netValue)+'</b></td></tr>';});
+   h+='</table></div>';
+   if(!p18.targetsConfigured)h+='<div class="dnote">Skenario tambah modal dan rebalancing memerlukan target P13 yang totalnya 100%. Simpan target terlebih dahulu pada panel P13.</div>';
+   if(p18.classRows&&p18.classRows.length){
+    h+='<h4>Perubahan alokasi per kelas aset</h4><div style="overflow-x:auto"><table><tr><th>Kelas aset</th><th>Sekarang</th><th>Target</th><th>Beli tambah modal</th><th>Beli rebalancing</th><th>Jual rebalancing</th><th>Nilai akhir rebalance</th></tr>';
+    p18.classRows.forEach(x=>{h+='<tr><td><b>'+esc(x.assetClass)+'</b></td><td>'+rpi(x.currentValue)+'</td><td>'+Number(x.targetPct).toFixed(1)+'%</td><td>'+rpi(x.addOnlyBuyValue)+'</td><td>'+rpi(x.fullBuyValue)+'</td><td>'+rpi(x.fullSellValue)+'</td><td>'+rpi(x.fullRebalanceValue)+'</td></tr>';});
+    h+='</table></div>';
+   }
+   h+='<h4>Stress test setelah strategi</h4><div style="overflow-x:auto"><table><tr><th>Skenario aset berisiko turun</th><th>Penurunan hold</th><th>Penurunan tambah modal</th><th>Penurunan rebalance</th></tr>';
+   [5,10,20].forEach(n=>{const loss=s=>{const q=s&&s.stress&&s.stress.uniform||[];const r=q.filter(x=>x.shockPct===n)[0];return r?rpi(r.lossValue):'—';};h+='<tr><td><b>'+n+'%</b></td><td>'+loss(hold)+'</td><td>'+loss(add)+'</td><td>'+loss(reb)+'</td></tr>';});
+   h+='</table></div>';
+   if(reb&&reb.stress&&reb.stress.severe)h+='<div class="dnote">Guncangan berbeda per kelas pada rebalancing penuh: saham -20%, reksa dana -15%, kripto -35%, kas 0%. Estimasi penurunan '+rpi(reb.stress.severe.lossValue)+'.</div>';
+   const bm=p18.benchmark||{};
+   h+='<h4>Perbandingan historis basket saham vs IHSG</h4><div style="overflow-x:auto"><table><tr><th>Horizon</th><th>Basket saham saat ini</th><th>IHSG</th><th>Selisih</th><th>Status</th></tr>';
+   (bm.rows||[]).forEach(x=>{h+='<tr><td><b>'+nf(x.sessions)+' sesi</b></td><td>'+pc(x.stockBasketReturnPct)+'</td><td>'+pc(x.ihsgReturnPct)+'</td><td><span class="bdg '+pcCls(x.relativePct)+'">'+(x.relativePct==null?'—':(x.relativePct>0?'+':'')+Number(x.relativePct).toFixed(2)+' pp')+'</span></td><td>'+esc(x.status)+'</td></tr>';});
+   h+='</table></div><div class="dnote">'+esc(bm.note||'Histori basket/indeks belum lengkap.')+'</div>';
+   h+='<h4>Prioritas tinjauan dari P17</h4>';
+   if(p18.candidates&&p18.candidates.length)h+='<div class="dchips">'+p18.candidates.map(x=>'<span class="chip"><b>'+esc(x.ticker)+'</b> • '+(x.score==null?'—':nf(x.score)+'/100')+' • confidence '+nf(x.coveragePct)+'%</span>').join('')+'</div>';
+   else h+='<div class="dnote">Belum ada kandidat Layak dipantau dari P17.</div>';
+   if(p18.warnings&&p18.warnings.length)h+='<div class="dnote" style="margin-top:8px">'+p18.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+   h+='<div class="dnote"><small>'+esc(p18.methodology||'')+'<br>'+esc(p18.costAssumptions&&p18.costAssumptions.note||'')+' Tidak ada order otomatis. Persentase dan biaya hanyalah input simulasi.</small></div>';
+  }else{
+   h+='<div class="dnote">Valuasi portofolio belum tersedia. Refresh data portofolio terlebih dahulu untuk menjalankan simulasi P18.</div>';
+  }
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1327,6 +1371,31 @@ if(!window.__p17RefreshBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p17DecisionMsg');if(done)done.textContent=j.message||'Investment Decision Engine diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Perbarui analisis keputusan';}
+ });
+}
+
+
+/* ===== P18: asumsi dan kalkulasi strategi melalui ADMIN_TOKEN ===== */
+if(!window.__p18StrategyBound){
+ window.__p18StrategyBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p18RunStrategy'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p18StrategyMsg');
+  const capitalEl=$('p18Capital'),buyEl=$('p18BuyCost'),sellEl=$('p18SellCost');
+  const capital=capitalEl&&capitalEl.value.trim()!==''?Number(capitalEl.value):NaN;
+  const buy=buyEl&&buyEl.value.trim()!==''?Number(buyEl.value):null;
+  const sell=sellEl&&sellEl.value.trim()!==''?Number(sellEl.value):null;
+  if(!isFinite(capital)||capital<0||capital>1000000000000){if(msg)msg.textContent='Modal harus berupa angka Rp0 sampai Rp1 triliun.';return;}
+  if((buy!==null&&(!isFinite(buy)||buy<0||buy>5))||(sell!==null&&(!isFinite(sell)||sell<0||sell>5))){if(msg)msg.textContent='Biaya beli dan jual harus 0–5% atau dikosongkan.';return;}
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menghitung…';if(msg)msg.textContent='Menyimpan asumsi dan menghitung ulang tiga skenario…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'portfolio_strategy_save',token:token,inputs:{capitalIdr:capital,buyCostPct:buy,sellCostPct:sell}})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Simulasi strategi gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p18StrategyMsg');if(done)done.textContent=j.message||'Simulasi P18 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Simpan asumsi & hitung ulang';}
  });
 }
 
