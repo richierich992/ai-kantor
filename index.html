@@ -1167,6 +1167,7 @@ function pfHtml(){
  if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&mi&&mi.ready){
   const mm=mi.market||{},bb=mi.breadth||{},nn=mi.news||{},ss=mi.sectors||{};
   const sentimentClass=x=>String(x||'').indexOf('Positif')===0?'ok':String(x||'').indexOf('Negatif')===0?'err':'idle';
+  const ppLabel=n=>n==null?'—':(n>0?'+':'')+Number(n).toFixed(1)+' pp';
   const linkSafe=u=>{u=String(u||'');return u.indexOf('https://')===0||u.indexOf('http://')===0?esc(u):'#';};
   h+='<h4>🌏 P15 — Market Intelligence <small>('+esc(mi.generatedAt||'—')+' WIB)</small></h4>';
   h+='<div class="dchips"><span class="chip">IHSG <b>'+nf(mm.close)+' poin</b></span><span class="chip">5 hari <b>'+pc(mm.return5Pct)+'</b></span><span class="chip">20 hari <b>'+pc(mm.return20Pct)+'</b></span><span class="chip">Regime <b>'+esc(mi.regime||'Belum cukup data')+'</b></span></div>';
