@@ -1310,6 +1310,55 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(p19.methodology||'')+'<br>'+esc(p19.note||'')+'<br>1 lot = 100 saham pada pasar reguler/tunai BEI. Entry diasumsikan di BuyHi, bukan harga yang dijamin terisi.</small></div>';
  }
 
+
+ const tm=P.tradeMonitor;
+ if(localStorage.getItem('admin_token')&&sh([2,3,4,5])&&tm){
+  const vMoney=x=>x==null?'—':rpi(x), pos=tm.positions||[];
+  h+='<h4>🎯 P20 — Trade Monitoring & Exit Management <small>('+esc(tm.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dchips"><span class="chip">Posisi aktif <b>'+nf(tm.openCount)+'</b></span><span class="chip">Floating P/L bruto <b>'+rpi(tm.unrealizedPnl)+'</b></span><span class="chip">Closed <b>'+nf(tm.closedCount)+'</b></span><span class="chip">Realized P/L bruto <b>'+rpi(tm.realizedPnl)+'</b></span><span class="chip '+(tm.staleCount?'warn':'ok')+'">Harga stale/tidak segar <b>'+nf(tm.staleCount)+'</b></span></div>';
+  h+='<div class="dnote">Catat posisi yang benar-benar sudah dibeli. Entry dan jumlah saham dicatat manual dari broker. Harga indikatif dipantau melalui GOOGLEFINANCE; alert SL/TP hanya peringatan, bukan perintah jual.</div>';
+  h+='<h4>Catat posisi aktual baru</h4><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:10px 0">';
+  const p20Input=(id,label,type,ph,step)=>'<label style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:#b8c6e6">'+label+'<input id="'+id+'" type="'+type+'" placeholder="'+ph+'" '+(step?'step="'+step+'"':'')+' style="width:100%;min-width:0;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"></label>';
+  h+=p20Input('p20Ticker','Ticker','text','BBCA')+p20Input('p20EntryDate','Tanggal entry','date','')+p20Input('p20EntryPrice','Harga entry aktual','number','Rp/lembar','1');
+  h+=p20Input('p20QtyShares','Jumlah saham (lembar)','number','kelipatan 100','100')+p20Input('p20StopLoss','Stop Loss','number','Rp/lembar','1')+p20Input('p20TP1','Take Profit 1','number','Rp/lembar','1')+p20Input('p20TP2','Take Profit 2 (opsional)','number','Rp/lembar','1');
+  h+='</div><div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap"><input id="p20Notes" type="text" placeholder="Catatan transaksi (opsional)" style="flex:1;min-width:180px;padding:9px;border:1px solid #52658e;border-radius:8px;background:#101b32;color:#fff"><button id="p20SavePosition" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#3b82f6;color:#fff;font-weight:800;cursor:pointer">Simpan posisi aktual</button><button id="p20RefreshMonitor" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#475569;color:#fff;font-weight:800;cursor:pointer">Refresh harga & alert</button><span id="p20TradeMsg" class="dnote">Input adalah harga dan jumlah yang benar-benar terisi di broker.</span></div>';
+  h+='<h4>Posisi yang sedang dipantau</h4>';
+  if(pos.length){
+   pos.forEach(x=>{
+    const id=String(x.positionId),safeId=esc(id),fresh=x.priceFresh;
+    h+='<div class="dlist"><div style="padding:10px 0"><div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap"><b>'+esc(x.ticker)+' • '+nf(x.qtyShares)+' saham</b><span class="bdg '+(fresh?'ok':'warn')+'">'+(fresh?'Harga segar':'Harga stale / belum tersedia')+(x.priceAgeHours==null?'':' • '+nf(x.priceAgeHours)+' jam')+'</span></div>';
+    h+='<div class="dchips"><span class="chip">Entry <b>'+rpi(x.entryPrice)+'</b></span><span class="chip">Harga indikatif <b>'+vMoney(x.lastPrice)+'</b></span><span class="chip">Floating P/L <b><span class="bdg '+pcCls(x.unrealizedPct)+'">'+vMoney(x.unrealizedPnl)+' ('+pc(x.unrealizedPct)+')</span></b></span><span class="chip">SL <b>'+rpi(x.stopLoss)+'</b></span><span class="chip">TP1 <b>'+rpi(x.tp1)+'</b></span><span class="chip">TP2 <b>'+vMoney(x.tp2)+'</b></span></div>';
+    if(x.stopTriggeredAt)h+='<div class="dnote" style="color:#fca5a5">⚠ Stop Loss pernah tersentuh. Periksa harga dan antrean pasar.</div>';
+    else if(x.tp2HitAt)h+='<div class="dnote" style="color:#86efac">TP2 terpantau tercapai. Evaluasi exit secara manual.</div>';
+    else if(x.tp1HitAt)h+='<div class="dnote" style="color:#86efac">TP1 terpantau tercapai. Evaluasi exit secara manual.</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:9px">';
+    h+='<label style="font-size:11px;color:#b8c6e6">SL<input id="p20sl_'+safeId+'" type="number" value="'+(x.stopLoss==null?'':x.stopLoss)+'" style="width:100%;padding:7px;border-radius:7px;background:#101b32;color:#fff;border:1px solid #52658e"></label>';
+    h+='<label style="font-size:11px;color:#b8c6e6">TP1<input id="p20tp1_'+safeId+'" type="number" value="'+(x.tp1==null?'':x.tp1)+'" style="width:100%;padding:7px;border-radius:7px;background:#101b32;color:#fff;border:1px solid #52658e"></label>';
+    h+='<label style="font-size:11px;color:#b8c6e6">TP2<input id="p20tp2_'+safeId+'" type="number" value="'+(x.tp2==null?'':x.tp2)+'" style="width:100%;padding:7px;border-radius:7px;background:#101b32;color:#fff;border:1px solid #52658e"></label>';
+    h+='<button data-p20-update="'+safeId+'" type="button" style="align-self:end;padding:8px;border:0;border-radius:7px;background:#475569;color:#fff;font-weight:700;cursor:pointer">Update level</button>';
+    h+='<label style="font-size:11px;color:#b8c6e6">Harga exit aktual<input id="p20exit_'+safeId+'" type="number" min="1" placeholder="Rp/lembar" style="width:100%;padding:7px;border-radius:7px;background:#101b32;color:#fff;border:1px solid #52658e"></label>';
+    h+='<label style="font-size:11px;color:#b8c6e6;grid-column:span 2">Alasan exit<input id="p20reason_'+safeId+'" type="text" placeholder="TP, SL, trailing, manual…" style="width:100%;padding:7px;border-radius:7px;background:#101b32;color:#fff;border:1px solid #52658e"></label>';
+    h+='<button data-p20-close="'+safeId+'" type="button" style="align-self:end;padding:8px;border:0;border-radius:7px;background:#9f3131;color:#fff;font-weight:700;cursor:pointer">Catat posisi ditutup</button></div></div></div>';
+   });
+  }else h+='<div class="dnote">Belum ada posisi aktif. Setelah mencatat entry aktual, posisi akan muncul di sini.</div>';
+  if(tm.alerts&&tm.alerts.length){
+   h+='<h4>Alert terbaru</h4><table><tr><th>Waktu</th><th>Ticker</th><th>Level</th><th>Harga</th><th>Notifikasi</th></tr>';
+   tm.alerts.forEach(x=>{h+='<tr><td>'+esc(x.time||'—')+'</td><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.level)+'</td><td>'+vMoney(x.price)+'</td><td>'+esc(x.notified||'—')+'</td></tr>';});
+   h+='</table>';
+  }
+  if(tm.journal&&tm.journal.length){
+   h+='<h4>Jurnal transaksi terakhir</h4><table><tr><th>Waktu</th><th>Ticker</th><th>Event</th><th>Harga</th><th>P/L</th><th>Catatan</th></tr>';
+   tm.journal.forEach(x=>{h+='<tr><td>'+esc(x.time||'—')+'</td><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.event)+'</td><td>'+vMoney(x.price)+'</td><td>'+vMoney(x.pnl)+'</td><td>'+esc(x.reason||'')+'</td></tr>';});
+   h+='</table>';
+  }
+  if(tm.closed&&tm.closed.length){
+   h+='<h4>Riwayat posisi ditutup</h4><table><tr><th>Ticker</th><th>Entry</th><th>Exit</th><th>Jumlah</th><th>Realized P/L bruto</th><th>Alasan</th></tr>';
+   tm.closed.forEach(x=>{h+='<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+vMoney(x.entryPrice)+'</td><td>'+vMoney(x.exitPrice)+'</td><td>'+nf(x.qtyShares)+'</td><td>'+vMoney(x.realizedPnl)+'</td><td>'+esc(x.exitReason||'')+'</td></tr>';});
+   h+='</table>';
+  }
+  h+='<div class="dnote"><small>'+esc(tm.note||'')+'<br>Harga Google Finance dapat tertunda. Verifikasi harga, SL/TP, status order, dan realisasi transaksi pada aplikasi broker. P20 tidak menjual saham otomatis.</small></div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -1450,6 +1499,49 @@ if(!window.__p19PositionSizingBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p19SizingMsg');if(done)done.textContent=j.message||'Position sizing P19 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Simpan asumsi & hitung sizing';}
+ });
+}
+
+
+/* ===== P20: posisi aktual, update level, close & monitor melalui ADMIN_TOKEN ===== */
+if(!window.__p20TradeMonitorBound){
+ window.__p20TradeMonitorBound=true;
+ document.addEventListener('click',async function(ev){
+  const target=ev.target&&ev.target.closest?ev.target.closest('#p20SavePosition,#p20RefreshMonitor,[data-p20-update],[data-p20-close]'):null;
+  if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p20TradeMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const send=async(payload)=>{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(Object.assign({token:token},payload))});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Permintaan P20 gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p20TradeMsg');if(done)done.textContent=j.message||'P20 diperbarui.';
+  };
+  target.disabled=true;
+  try{
+   if(target.id==='p20SavePosition'){
+    const val=id=>{const e=$(id);return e?e.value.trim():'';};
+    const position={Ticker:val('p20Ticker'),EntryDate:val('p20EntryDate'),EntryPrice:val('p20EntryPrice'),QtyShares:val('p20QtyShares'),StopLoss:val('p20StopLoss'),TP1:val('p20TP1'),TP2:val('p20TP2'),Notes:val('p20Notes')};
+    target.textContent='Menyimpan…';if(msg)msg.textContent='Mencatat posisi entry aktual…';
+    await send({action:'trade_position_save',position});
+   }else if(target.id==='p20RefreshMonitor'){
+    target.textContent='Memperbarui…';if(msg)msg.textContent='Menyegarkan GOOGLEFINANCE dan memeriksa level SL/TP…';
+    await send({action:'trade_monitor_refresh'});
+   }else if(target.hasAttribute('data-p20-update')){
+    const id=target.getAttribute('data-p20-update'),key=id.replace(/[^A-Za-z0-9_-]/g,'');
+    const value=id=>{const e=$(id);return e?e.value.trim():'';};
+    target.textContent='Menyimpan…';if(msg)msg.textContent='Memperbarui SL/TP posisi…';
+    await send({action:'trade_position_update',positionId:id,levels:{StopLoss:value('p20sl_'+key),TP1:value('p20tp1_'+key),TP2:value('p20tp2_'+key)}});
+   }else if(target.hasAttribute('data-p20-close')){
+    const id=target.getAttribute('data-p20-close'),key=id.replace(/[^A-Za-z0-9_-]/g,'');
+    const value=id=>{const e=$(id);return e?e.value.trim():'';};
+    const exitPrice=value('p20exit_'+key),reason=value('p20reason_'+key);
+    if(!exitPrice||!reason)throw new Error('Isi harga exit aktual dan alasan exit sebelum menutup posisi.');
+    if(!window.confirm('Catat '+id+' sebagai posisi ditutup dengan harga exit Rp'+exitPrice+'? Ini hanya mencatat jurnal, tidak mengirim order ke broker.')){target.disabled=false;return;}
+    target.textContent='Mencatat…';if(msg)msg.textContent='Mencatat harga exit aktual…';
+    await send({action:'trade_position_close',positionId:id,exitPrice,exitReason:reason});
+   }
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
 
