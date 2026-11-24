@@ -1716,6 +1716,37 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p31){
  h+='<div class="dnote"><small>'+esc(p31.policy||'')+'</small></div>';
 }
 
+/* ===== P32: AI Investment Calibration Report panel ===== */
+const p32=P.investmentCalibration;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p32){
+ const p32pct=x=>x==null?'—':Number(x).toFixed(1)+'%';
+ const p32rho=x=>x==null?'—':Number(x).toFixed(3);
+ const p32num=x=>x==null?'—':Number(x).toFixed(2);
+ const p32grade=x=>x==='MORE_RELIABLE'?'ok':x==='PROVISIONAL'?'warn':'idle';
+ const p32direction=x=>({HIGH_SCORE_OUTPERFORMS:'Skor tinggi unggul',LOW_SCORE_OUTPERFORMS:'Skor rendah unggul',NO_CLEAR_SPREAD:'Belum ada selisih jelas',INSUFFICIENT_SAMPLE:'Sampel belum cukup'})[x]||x||'—';
+ const p32groups=(groups,label)=>{
+  h+='<h4>'+label+'</h4><div style="overflow-x:auto"><table><tr><th>Kelompok</th><th>Total</th><th>5 sesi · n / return / beat IHSG</th><th>20 sesi · n / return / beat IHSG</th><th>30 sesi · n / return / beat IHSG</th></tr>';
+  (groups||[]).forEach(g=>{const a=(g.horizons||[]).find(x=>x.horizon===5)||{},b=(g.horizons||[]).find(x=>x.horizon===20)||{},c=(g.horizons||[]).find(x=>x.horizon===30)||{};
+   h+='<tr><td><b>'+esc(g.label)+'</b></td><td>'+nf(g.totalSignals||0)+'</td><td>'+nf(a.sampleCount||0)+' / '+p32pct(a.averageReturnPct)+' / '+p32pct(a.beatIhsgPct)+'</td><td>'+nf(b.sampleCount||0)+' / '+p32pct(b.averageReturnPct)+' / '+p32pct(b.beatIhsgPct)+'</td><td>'+nf(c.sampleCount||0)+' / '+p32pct(c.averageReturnPct)+' / '+p32pct(c.beatIhsgPct)+'</td></tr>';
+  });
+  if(!(groups||[]).length)h+='<tr><td colspan="5">Belum ada outcome matang untuk kelompok ini.</td></tr>';
+  h+='</table></div>';
+ };
+ h+='<h4>🧭 P32 — AI Investment Calibration Report <small>('+esc(p32.generatedAt||'—')+' WIB)</small></h4>';
+ h+='<div class="dnote">Menguji apakah skor komite P30 berasosiasi dengan hasil forward P31. Spearman rho mengukur arah hubungan peringkat skor dan return; ini bukan probabilitas profit, bukan kalibrasi probabilitas, dan bukan bukti sebab-akibat.</div>';
+ h+='<div class="dchips"><span class="chip">Status <b><span class="bdg '+(p32.overallStatus==='HIGH_SCORE_OUTPERFORMS'?'ok':p32.overallStatus==='LOW_SCORE_OUTPERFORMS'?'warn':'idle')+'">'+esc(p32.overallStatus||'INSUFFICIENT_SAMPLE')+'</span></b></span><span class="chip">Outcome tercatat <b>'+nf(p32.trackedOutcomes||0)+'</b></span><span class="chip">Skor tersedia <b>'+nf(p32.scoredOutcomes||0)+'</b></span><span class="chip">Outcome matang 20 sesi <b>'+nf(p32.mature20Count||0)+'</b></span></div>';
+ h+='<h4>Hubungan skor dengan hasil aktual</h4><div style="overflow-x:auto"><table><tr><th>Horizon</th><th>Sampel skor matang</th><th>Spearman skor ↔ return</th><th>Spearman skor ↔ excess IHSG</th><th>Skor tinggi vs rendah</th><th>Selisih excess</th><th>Kualitas sampel</th></tr>';
+ (p32.scoreCalibration||[]).forEach(m=>{h+='<tr><td><b>'+m.horizon+' sesi</b></td><td>'+nf(m.scoredMatureCount||0)+'</td><td>'+p32rho(m.scoreReturnSpearman)+'</td><td>'+p32rho(m.scoreExcessSpearman)+'</td><td>'+esc(p32direction(m.direction))+'<br><small>tinggi n='+nf(m.highScoreCount||0)+' • rendah n='+nf(m.lowScoreCount||0)+'</small></td><td>'+p32pct(m.highMinusLowExcessPct)+'</td><td><span class="bdg '+p32grade(m.evidenceGrade)+'">'+esc(m.evidenceGrade||'INSUFFICIENT_SAMPLE')+'</span></td></tr>';});
+ h+='</table></div>';
+ p32groups(p32.scoreBands,'Analisis berdasarkan kelompok skor P30');
+ p32groups(p32.confidenceBands,'Analisis berdasarkan confidence P30');
+ p32groups(p32.marketRegimes,'Analisis berdasarkan rezim IHSG P28');
+ p32groups(p32.coverageBands,'Analisis berdasarkan coverage bukti');
+ if((p32.caveats||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p32.caveats.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p32RefreshCalibration" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh kalibrasi komite</button><span id="p32CalibrationMsg" class="dnote">Menggunakan outcome P31; otomatis sesudah P31 pada S40 pukul 16:59 WIB.</span></div>';
+ h+='<div class="dnote"><small>'+esc(p32.policy||'')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2144,6 +2175,25 @@ if(!window.__p31InvestmentOutcomeBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p31OutcomeMsg');if(done)done.textContent=j.message||'P31 berhasil diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh outcome komite';}
+ });
+}
+
+/* ===== P32: authenticated refresh for AI Investment Calibration Report ===== */
+if(!window.__p32InvestmentCalibrationBound){
+ window.__p32InvestmentCalibrationBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p32RefreshCalibration'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p32CalibrationMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Evaluasi kalibrasi…';
+  if(msg)msg.textContent='Memperbarui P30 dan outcome P31, lalu menghitung korelasi skor, kelompok confidence, coverage, serta rezim IHSG…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'committee_calibration_refresh',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P32 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p32CalibrationMsg');if(done)done.textContent=j.message||'P32 berhasil diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh kalibrasi komite';}
  });
 }
 
