@@ -1693,6 +1693,29 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(p30.policy||'')+'</small></div>';
  }
 
+/* ===== P31: AI Investment Outcome Tracker panel ===== */
+const p31=P.investmentOutcomeTracker;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p31){
+ const p31metric=(p31.horizons||[]);
+ const p31fmt=x=>x==null?'—':Number(x).toFixed(2)+'%';
+ const p31quality=x=>x==='MORE_RELIABLE'?'ok':x==='PROVISIONAL'?'warn':'idle';
+ h+='<h4>📉 P31 — AI Investment Outcome Tracker</h4>';
+ h+='<div class="dnote">Melacak hasil keputusan P30 setelah 5, 10, 20, dan 30 sesi bursa, serta membandingkannya dengan IHSG pada jumlah sesi yang sama. Titik awal memakai penutupan pada tanggal keputusan; candle tanggal sinyal tidak dihitung sebagai return forward.</div>';
+ h+='<div class="dchips"><span class="chip">Sinyal tercatat <b>'+nf(p31.trackedCount||0)+'</b></span><span class="chip">Dalam pemantauan <b>'+nf(p31.inProgressCount||0)+'</b></span><span class="chip">Mulai tracking <b>'+esc(p31.trackingStartDate||'—')+'</b></span><span class="chip">Tanggal sinyal terbaru <b>'+esc(p31.newestSignalDate||'—')+'</b></span></div>';
+ h+='<h4>Hasil forward per horizon</h4><div style="overflow-x:auto"><table><tr><th>Horizon</th><th>Sampel matang</th><th>Return positif</th><th>Rata-rata / median</th><th>Beat IHSG</th><th>Excess vs IHSG</th><th>MFE / MAE rata-rata</th><th>Kualitas sampel</th></tr>';
+ p31metric.forEach(m=>{h+='<tr><td><b>'+m.horizon+' sesi</b></td><td>'+nf(m.sampleCount||0)+' <small>/ pending '+nf(m.pendingCount||0)+'</small></td><td>'+p31fmt(m.positivePct)+'</td><td>'+p31fmt(m.averageReturnPct)+' / '+p31fmt(m.medianReturnPct)+'</td><td>'+p31fmt(m.beatIhsgPct)+' <small>('+nf(m.benchmarkSamples||0)+' benchmark)</small></td><td>'+p31fmt(m.averageExcessPct)+'</td><td>'+p31fmt(m.averageMfePct)+' / '+p31fmt(m.averageMaePct)+'</td><td><span class="bdg '+p31quality(m.evidenceGrade)+'">'+esc(m.evidenceGrade||'INSUFFICIENT_SAMPLE')+'</span></td></tr>';});
+ h+='</table></div>';
+ h+='<h4>Perbandingan menurut keputusan komite</h4><div style="overflow-x:auto"><table><tr><th>Kode keputusan P30</th><th>Total sinyal</th><th>5 sesi · n / rata-rata / beat IHSG</th><th>20 sesi · n / rata-rata / beat IHSG</th><th>30 sesi · n / rata-rata / beat IHSG</th></tr>';
+ (p31.groups||[]).forEach(g=>{const m5=(g.horizons||[]).find(x=>x.horizon===5)||{},m20=(g.horizons||[]).find(x=>x.horizon===20)||{},m30=(g.horizons||[]).find(x=>x.horizon===30)||{};h+='<tr><td><b>'+esc(g.committeeCode)+'</b></td><td>'+nf(g.total||0)+'</td><td>'+nf(m5.sampleCount||0)+' / '+p31fmt(m5.averageReturnPct)+' / '+p31fmt(m5.beatIhsgPct)+'</td><td>'+nf(m20.sampleCount||0)+' / '+p31fmt(m20.averageReturnPct)+' / '+p31fmt(m20.beatIhsgPct)+'</td><td>'+nf(m30.sampleCount||0)+' / '+p31fmt(m30.averageReturnPct)+' / '+p31fmt(m30.beatIhsgPct)+'</td></tr>';});
+ if(!(p31.groups||[]).length)h+='<tr><td colspan="5">Belum ada snapshot keputusan sejak P31 dipasang.</td></tr>';
+ h+='</table></div>';
+ if(p31.lastRun)h+='<div class="dnote">Refresh terakhir: '+nf(p31.lastRun.captured||0)+' sinyal baru • '+nf(p31.lastRun.updated||0)+' outcome diperbarui • '+nf(p31.lastRun.waiting||0)+' menunggu candle.</div>';
+ if((p31.warnings||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p31.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+ if((p31.caveats||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p31.caveats.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p31RefreshOutcomes" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh outcome komite</button><span id="p31OutcomeMsg" class="dnote">Snapshot otomatis setelah P30 pada S40 pukul 16:59 WIB; ringkasan masuk digest 17:00.</span></div>';
+ h+='<div class="dnote"><small>'+esc(p31.policy||'')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2102,6 +2125,25 @@ if(!window.__p30InvestmentCommitteeBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p30CommitteeMsg');if(done)done.textContent=j.message||'P30 berhasil diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh keputusan komite';}
+ });
+}
+
+/* ===== P31: authenticated refresh for AI Investment Outcome Tracker ===== */
+if(!window.__p31InvestmentOutcomeBound){
+ window.__p31InvestmentOutcomeBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p31RefreshOutcomes'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p31OutcomeMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menghitung hasil forward…';
+  if(msg)msg.textContent='Mengambil candle setelah tanggal sinyal dan menyelaraskan benchmark IHSG 5/10/20/30 sesi…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'committee_outcomes_refresh',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P31 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p31OutcomeMsg');if(done)done.textContent=j.message||'P31 berhasil diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh outcome komite';}
  });
 }
 
