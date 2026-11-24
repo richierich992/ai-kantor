@@ -1747,6 +1747,46 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p32){
  h+='<div class="dnote"><small>'+esc(p32.policy||'')+'</small></div>';
 }
 
+/* ===== P33: AI Investment Model Drift & Self-Learning Monitor panel ===== */
+const p33=P.investmentDriftMonitor;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p33){
+ const tone=p33.status==='CRITICAL'?'err':p33.status==='WARNING'?'warn':p33.status==='WATCH'?'warn':p33.status==='STABLE'?'ok':'idle';
+ const p33pct=x=>x==null?'—':Number(x).toFixed(2)+'%';
+ const p33num=x=>x==null?'—':Number(x).toFixed(2);
+ const a=p33.prior||{},b=p33.recent||{},d=p33.delta||{};
+ h+='<h4>🧭 P33 — AI Investment Model Drift & Self-Learning Monitor <small>('+esc(p33.generatedAt||'—')+' WIB)</small></h4>';
+ h+='<div class="dnote">Memantau apakah hasil forward dan hubungan skor mengalami perubahan. Peringatan hanya memicu audit dan usulan uji challenger; tidak ada bobot, Rules, strategi, atau posisi live yang diubah otomatis.</div>';
+ h+='<div class="dchips"><span class="chip">Status drift <b><span class="bdg '+tone+'">'+esc(p33.status||'INSUFFICIENT_SAMPLE')+'</span></b></span><span class="chip">Outcome matang 20 sesi <b>'+nf(p33.matured20Count||0)+'</b></span><span class="chip">Kohort sebelumnya <b>'+nf(a.count||0)+'</b></span><span class="chip">Kohort terbaru <b>'+nf(b.count||0)+'</b></span><span class="chip">Proposal menunggu <b>'+nf(p33.pendingProposalCount||0)+'</b></span><span class="chip">Disetujui untuk shadow <b>'+nf(p33.approvedForShadowCount||0)+'</b></span></div>';
+ h+='<h4>Deteksi perubahan performa — horizon 20 sesi</h4><div style="overflow-x:auto"><table><tr><th>Metrik</th><th>Kohort sebelumnya</th><th>Kohort terbaru</th><th>Perubahan</th></tr>';
+ h+='<tr><td>Rata-rata return</td><td>'+p33pct(a.avgReturn20Pct)+'</td><td>'+p33pct(b.avgReturn20Pct)+'</td><td>'+p33pct(d.return20Pct)+'</td></tr>';
+ h+='<tr><td>Rata-rata excess vs IHSG</td><td>'+p33pct(a.avgExcess20Pct)+'</td><td>'+p33pct(b.avgExcess20Pct)+'</td><td>'+p33pct(d.excess20Pct)+'</td></tr>';
+ h+='<tr><td>Spearman skor ↔ excess</td><td>'+p33num(a.scoreExcessSpearman)+'</td><td>'+p33num(b.scoreExcessSpearman)+'</td><td>'+p33num(d.scoreRho20)+'</td></tr>';
+ h+='<tr><td>Rata-rata MAE</td><td>'+p33pct(a.avgMAE20Pct)+'</td><td>'+p33pct(b.avgMAE20Pct)+'</td><td>—</td></tr>';
+ h+='<tr><td>Rata-rata skor</td><td>'+p33num(a.avgScore)+'</td><td>'+p33num(b.avgScore)+'</td><td>'+p33num(d.scoreMean)+'</td></tr>';
+ h+='<tr><td>Coverage bukti</td><td>'+p33pct(a.avgCoveragePct)+'</td><td>'+p33pct(b.avgCoveragePct)+'</td><td>'+p33pct(d.coveragePct)+'</td></tr>';
+ h+='<tr><td>Perubahan komposisi regime</td><td>—</td><td>—</td><td>'+p33num(d.regimeMixDistance)+'</td></tr></table></div>';
+ h+='<h4>Trigger audit</h4><div class="dlist">';
+ (p33.triggers||[]).forEach(t=>{h+='<div><span class="bdg '+(t.severity==='CRITICAL'?'err':t.severity==='WARNING'?'warn':'idle')+'">'+esc(t.severity)+'</span> <b>'+esc(t.code)+'</b><br><small>'+esc(t.observation)+'</small></div>';});
+ if(!(p33.triggers||[]).length)h+='<div><small>'+(p33.status==='INSUFFICIENT_SAMPLE'?'Belum cukup sampel matang untuk membandingkan dua kohort.':'Tidak ada trigger drift yang melewati ambang pada snapshot ini.')+'</small></div>';
+ h+='</div>';
+ h+='<h4>Hipotesis perbaikan — wajib ditinjau manusia</h4><div style="overflow-x:auto"><table><tr><th>Trigger / Severity</th><th>Temuan & rekomendasi</th><th>Validasi challenger</th><th>Status</th><th>Tindakan</th></tr>';
+ (p33.proposals||[]).slice(0,20).forEach(x=>{
+  const pending=x.status==='PENDING_REVIEW',tag=x.status==='APPROVED_FOR_SHADOW'?'ok':x.status==='REJECTED'?'err':'warn';
+  h+='<tr><td><b>'+esc(x.triggerCode)+'</b><br><span class="bdg '+(x.severity==='CRITICAL'?'err':x.severity==='WARNING'?'warn':'idle')+'">'+esc(x.severity)+'</span></td>';
+  h+='<td>'+esc(x.observation)+'<br><small>'+esc(x.recommendation)+'<br>'+esc(x.proposedAction)+'</small></td><td><small>'+esc(x.validationPlan)+'</small></td>';
+  h+='<td><span class="bdg '+tag+'">'+esc(x.status)+'</span></td><td>';
+  if(pending)h+='<button class="p33ProposalDecision" data-proposal-id="'+esc(x.proposalId)+'" data-decision="APPROVED_FOR_SHADOW" type="button">Setujui uji shadow</button> <button class="p33ProposalDecision" data-proposal-id="'+esc(x.proposalId)+'" data-decision="REJECTED" type="button">Tolak</button>';
+  else h+='<small>'+(x.reviewedAt?esc(x.reviewedAt):'Sudah diproses')+'</small>';
+  h+='</td></tr>';
+ });
+ if(!(p33.proposals||[]).length)h+='<tr><td colspan="5">Belum ada hipotesis review. Proposal hanya dibuat ketika trigger melewati ambang.</td></tr>';
+ h+='</table></div>';
+ if((p33.warnings||[]).length)h+='<div class="dnote">'+p33.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+ if((p33.caveats||[]).length)h+='<div class="dnote">'+p33.caveats.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p33RefreshDrift" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh model drift</button><span id="p33DriftMsg" class="dnote">Terjadwal setelah P32 pada S40 pukul 16:59 WIB • ringkasan masuk digest 17:00.</span></div>';
+ h+='<div class="dnote"><small>'+esc(p33.policy||'')+' Model: '+esc(p33.modelVersion||'')+' • Evidence: '+esc(p33.evidenceGrade||'')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2194,6 +2234,37 @@ if(!window.__p32InvestmentCalibrationBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p32CalibrationMsg');if(done)done.textContent=j.message||'P32 berhasil diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh kalibrasi komite';}
+ });
+}
+
+/* ===== P33: authenticated drift refresh and human proposal review ===== */
+if(!window.__p33InvestmentDriftBound){
+ window.__p33InvestmentDriftBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p33RefreshDrift'):null;
+  const review=ev.target&&ev.target.closest?ev.target.closest('.p33ProposalDecision'):null;
+  if(!refresh&&!review)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl();
+  const msg=$('p33DriftMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  if(refresh){
+   refresh.disabled=true;refresh.textContent='Memeriksa drift…';
+   if(msg)msg.textContent='Memperbarui outcome P31 dan kalibrasi P32 sebelum menghitung drift kohort…';
+   try{
+    const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'committee_drift_refresh',token:token})});
+    const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P33 gagal diperbarui.');
+    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+    const done=$('p33DriftMsg');if(done)done.textContent=j.message||'P33 berhasil diperbarui.';
+   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);refresh.disabled=false;refresh.textContent='Refresh model drift';}
+   return;
+  }
+  review.disabled=true;const oldText=review.textContent;review.textContent='Menyimpan…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'committee_learning_proposal_review',token:token,proposalId:review.dataset.proposalId,decision:review.dataset.decision})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Review proposal gagal disimpan.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p33DriftMsg');if(done)done.textContent=j.message||'Review tersimpan.';
+  }catch(err){review.disabled=false;review.textContent=oldText;if(msg)msg.textContent=String(err&&err.message||err);}
  });
 }
 
