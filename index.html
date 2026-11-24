@@ -1666,6 +1666,33 @@ function pfHtml(){
   h+='<div class="dnote"><small>'+esc(p29.methodology||'')+'</small></div>';
  }
 
+
+ const p30=P.investmentCommittee;
+ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p30){
+  const stanceTone=p30.overallStance==='SELECTIVE'?'ok':p30.overallStance==='DEFENSIVE'?'err':p30.overallStance==='CAUTIOUS'||p30.overallStance==='SELECTIVE_DEFENSIVE'?'warn':'idle';
+  const p30num=x=>x==null?'—':Number(x).toFixed(1);
+  const p30pct=x=>x==null?'—':Number(x).toFixed(1)+'%';
+  const p30scores=p30.globalScores||{},p30parts=p30scores.components||{};
+  const p30names={REVIEW_REQUIRED:'Wajib ditinjau manual',PORTFOLIO_RISK_REVIEW:'Tinjau risiko portofolio',REVIEW_EXISTING_POSITION:'Tinjau posisi berjalan',DEFENSIVE_WAIT:'Tahan penambahan eksposur',VALIDATION_REVIEW:'Validasi strategi belum lolos',INSUFFICIENT_DATA:'Data belum cukup',WAIT_TECHNICAL:'Tunggu konfirmasi teknikal',PRIORITY_RESEARCH:'Prioritas tinjauan komite',MONITOR:'Pantau',WAIT:'Tunggu'};
+  h+='<h4>🧠 P30 — AI Investment Decision Committee <small>('+esc(p30.generatedAt||'—')+' WIB)</small></h4>';
+  h+='<div class="dnote">Komite menyatukan P17, P23, P26, P28 dan P29. Skor komposit adalah alat prioritas riset dan coverage bukti, bukan probabilitas profit atau instruksi beli/jual. Tidak ada order, auto-rebalance, atau perubahan Rules.</div>';
+  h+='<div class="dchips"><span class="chip">Sikap komite <b><span class="bdg '+stanceTone+'">'+esc(p30.overallStance||'NEUTRAL')+'</span></b></span><span class="chip">Emiten dianalisis <b>'+nf(p30.totalCandidates||0)+'</b></span><span class="chip">Prioritas tinjauan <b>'+nf(p30.counts&&p30.counts.watch||0)+'</b></span><span class="chip">Review risiko <b>'+nf(p30.counts&&p30.counts.priorityReview||0)+'</b></span><span class="chip">Tunggu <b>'+nf(p30.counts&&p30.counts.wait||0)+'</b></span><span class="chip">Data belum cukup <b>'+nf(p30.counts&&p30.counts.insufficient||0)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">P23 walk-forward <b>'+esc(p30.walkForward&&p30.walkForward.statusCode||'NOT_RUN')+'</b></span><span class="chip">P26 forward <b>'+(p30.forward&&p30.forward.ready?p30num(p30.forward.score)+'/100':'Sampel kurang')+'</b></span><span class="chip">Profil forward terbaik <b>'+esc(p30.forward&&p30.forward.leaderLabel||'—')+'</b></span><span class="chip">P28 regime <b>'+esc(p30.market&&p30.market.regime||'UNKNOWN')+'</b></span><span class="chip">Risk multiplier <b>'+p30num(p30.market&&p30.market.riskMultiplier)+'×</b></span><span class="chip">P29 risiko lintas aset <b>'+esc(p30.portfolio&&p30.portfolio.riskStatus||'INSUFFICIENT')+'</b></span></div>';
+  h+='<h4>Hasil pemungutan bukti komite</h4><div style="overflow-x:auto"><table><tr><th>Sumber</th><th>Nilai bukti</th><th>Status data</th><th>Bobot maksimum</th></tr>';
+  [['P17 — keputusan ticker',p30parts.p17&&p30parts.p17.score,p30parts.p17&&p30parts.p17.status,40],['P23 — walk-forward',p30parts.walkForward&&p30parts.walkForward.score,p30parts.walkForward&&p30parts.walkForward.status,15],['P26 — forward portfolio',p30parts.forward&&p30parts.forward.score,p30parts.forward&&p30parts.forward.status,15],['P28 — market regime',p30parts.market&&p30parts.market.score,p30parts.market&&p30parts.market.status,15],['P29 — portfolio risk',p30parts.portfolio&&p30parts.portfolio.score,p30parts.portfolio&&p30parts.portfolio.status,15]].forEach(x=>{h+='<tr><td><b>'+x[0]+'</b></td><td>'+(x[1]==null?'—':p30num(x[1])+'/100')+'</td><td>'+esc(x[2]||'Belum tersedia')+'</td><td>'+x[3]+'%</td></tr>';});
+  h+='</table></div>';
+  h+='<div class="dnote">'+(p30.overallReason||[]).map(x=>esc(x)).join('<br>')+'</div>';
+  h+='<h4>Daftar keputusan per emiten</h4><div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Keputusan komite</th><th>Skor</th><th>Coverage</th><th>Confidence</th><th>P17</th></tr>';
+  (p30.candidates||[]).forEach(x=>{const tone=x.decisionCode==='PRIORITY_RESEARCH'?'ok':['REVIEW_REQUIRED','PORTFOLIO_RISK_REVIEW','DEFENSIVE_WAIT','VALIDATION_REVIEW'].includes(x.decisionCode)?'warn':'idle';h+='<tr><td><b>'+esc(x.ticker)+'</b></td><td><span class="bdg '+tone+'">'+esc(p30names[x.decisionCode]||x.decision)+'</span></td><td>'+(x.score==null?'—':p30num(x.score)+'/100')+'</td><td>'+p30pct(x.coveragePct)+'</td><td>'+esc(x.confidence||'Rendah')+'</td><td>'+esc(x.p17&&x.p17.decisionCode||'—')+'</td></tr>';});
+  if(!(p30.candidates||[]).length)h+='<tr><td colspan="6">Belum ada kandidat saham dari P17. Perbarui screener dan Investment Decision Engine.</td></tr>';
+  h+='</table></div>';
+  const top=(p30.candidates||[]).slice(0,5);
+  top.forEach(x=>{h+='<div class="dnote" style="margin:6px 0"><b>'+esc(x.ticker)+' — '+esc(p30names[x.decisionCode]||x.decision)+'</b><br>'+esc((x.reasons||[]).slice(0,3).join(' • '))+(x.missing&&x.missing.length?'<br><small>Data yang perlu dilengkapi: '+esc(x.missing.slice(0,3).join(' • '))+'</small>':'')+'</div>';});
+  if((p30.warnings||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p30.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p30RefreshCommittee" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh keputusan komite</button><span id="p30CommitteeMsg" class="dnote">Terjadwal setelah P29 pada S40 pukul 16:59 WIB • ringkasan masuk digest 17:00.</span></div>';
+  h+='<div class="dnote"><small>'+esc(p30.policy||'')+'</small></div>';
+ }
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2055,6 +2082,26 @@ if(!window.__p29PortfolioGuardianBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p29GuardianMsg');if(done)done.textContent=j.message||'P29 berhasil diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh pengawas risiko portofolio';}
+ });
+}
+
+
+/* ===== P30: authenticated refresh for AI Investment Decision Committee ===== */
+if(!window.__p30InvestmentCommitteeBound){
+ window.__p30InvestmentCommitteeBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p30RefreshCommittee'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p30CommitteeMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Rapat komite…';
+  if(msg)msg.textContent='Menggabungkan skor P17, walk-forward P23, forward P26, regime P28, dan risiko lintas aset P29…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'investment_committee_refresh',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P30 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p30CommitteeMsg');if(done)done.textContent=j.message||'P30 berhasil diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh keputusan komite';}
  });
 }
 
