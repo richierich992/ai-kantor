@@ -2680,13 +2680,13 @@ if(!window.__p39BrokerReconciliationBound){
   }else if(cash){
    const date=val('p39CashDate'),broker=val('p39CashBroker'),balance=val('p39CashBalance');
    if(!date||!broker||balance===''||!Number.isFinite(Number(balance))||Number(balance)<0){if(msg)msg.textContent='Isi tanggal, broker, dan saldo kas yang valid.';return;}
-   payload.command='record_cash_snapshot';payload.snapshotDate=date;payload.broker=broker;payload.cashBalance:Number(balance);payload.statementRef=val('p39CashRef');
+   payload.command='record_cash_snapshot';payload.snapshotDate=date;payload.broker=broker;payload.cashBalance=Number(balance);payload.statementRef=val('p39CashRef');
    target.disabled=true;target.textContent='Menyimpan saldo…';if(msg)msg.textContent='Menyimpan saldo kas aktual dari statement broker…';
   }else{
    const ticker=sync.getAttribute('data-p39-sync'),key=tickerSafe(ticker),sl=val('p39SL_'+key),tp1=val('p39TP1_'+key),tp2=val('p39TP2_'+key);
    if(!sl||!tp1){if(msg)msg.textContent='Isi Stop Loss dan TP1 sebelum sync ke P20.';return;}
    if(!window.confirm('Sinkronkan posisi '+ticker+' ke jurnal P20 berdasarkan jumlah lembar dan rata-rata biaya broker? Tindakan ini membuat atau memperbarui catatan internal saja; tidak mengirim order.'))return;
-   payload.command='sync_p20';payload.ticker=ticker;payload.stopLoss:Number(sl);payload.tp1:Number(tp1);payload.tp2:tp2?Number(tp2):null;payload.acknowledge=true;
+   payload.command='sync_p20';payload.ticker=ticker;payload.stopLoss=Number(sl);payload.tp1=Number(tp1);payload.tp2=tp2?Number(tp2):null;payload.acknowledge=true;
    target.disabled=true;target.textContent='Sync ke P20…';if(msg)msg.textContent='Memvalidasi saldo broker, level SL/TP, lalu memperbarui jurnal P20…';
   }
   try{
