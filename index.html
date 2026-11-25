@@ -2792,7 +2792,7 @@ if(!window.__p40PortfolioCapitalBound){
   }else if(asset){
    const market=val('p40AssetMarket'),qty=val('p40AssetQty'),unit=val('p40AssetUnit');
    if(!val('p40AssetCode')||!val('p40AssetName')||!val('p40AssetAccount')||!val('p40AssetDate')||(!market&&(!qty||!unit))){if(msg)msg.textContent='Isi identitas aset, akun, tanggal, dan nilai pasar (atau jumlah × harga satuan).';return;}
-   payload.command='asset_valuation';payload.assetClass=val('p40AssetClass');payload.assetCode=val('p40AssetCode');payload.assetName=val('p40AssetName');payload.account=val('p40AssetAccount');payload.asOfDate=val('p40AssetDate');payload.quantity=qty?Number(qty):null;payload.unitPrice=unit?Number(unit):null;payload.marketValue=market?Number(market):null;payload.costBasis:val('p40AssetBasis')?Number(val('p40AssetBasis')):null;payload.statementRef=val('p40AssetRef');payload.notes=val('p40AssetNotes');
+   payload.command='asset_valuation';payload.assetClass=val('p40AssetClass');payload.assetCode=val('p40AssetCode');payload.assetName=val('p40AssetName');payload.account=val('p40AssetAccount');payload.asOfDate=val('p40AssetDate');payload.quantity=qty?Number(qty):null;payload.unitPrice=unit?Number(unit):null;payload.marketValue=market?Number(market):null;payload.costBasis=val('p40AssetBasis')?Number(val('p40AssetBasis')):null;payload.statementRef=val('p40AssetRef');payload.notes=val('p40AssetNotes');
    target.disabled=true;target.textContent='Menyimpan valuasi…';if(msg)msg.textContent='Menyimpan valuasi GOLD/OTHER dan menghitung ulang coverage…';
   }else{
    const balance=val('p40CashBalance');
