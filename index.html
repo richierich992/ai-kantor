@@ -1967,6 +1967,65 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div class="dnote"><small>'+esc(p38.policy||'Event keputusan dicatat append-only. Setelah fill broker dicatat, keputusan tersebut tidak dapat direvisi; koreksi transaksi dilakukan melalui jurnal posisi P20.')+'</small></div>';
 }
 
+
+/* ===== P39: Broker Reconciliation & Actual Portfolio Sync ===== */
+const p39=P.brokerReconciliation||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p39fmt=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p39tone=s=>s==='RECONCILED'?'ok':s==='BROKER_POSITION_NOT_IN_P20'?'warn':s==='P20_POSITION_NOT_IN_BROKER_LEDGER'||s==='SELL_EXCEEDS_RECORDED_BUYS'||s==='QUANTITY_MISMATCH'?'err':'idle';
+ h+='<h4>🔄 P39 — AI Broker Reconciliation & Actual Portfolio Sync <small>('+esc(p39&&p39.generatedAt||'belum direkonsiliasi')+')</small></h4>';
+ h+='<div class="dnote">Mencocokkan fill broker yang dicatat di P38, aktivitas manual dari statement broker, dan posisi internal P20. BUY P38 diimpor idempotent; SELL dan saldo awal dapat dicatat manual. Tombol Sync ke P20 hanya memperbarui jurnal internal setelah konfirmasi, bukan mengirim order.</div>';
+ if(p39){
+  const t=p39.totals||{};
+  h+='<div class="dchips"><span class="chip">Ticker <b>'+nf(t.tickers||0)+'</b></span><span class="chip ok">Reconciled <b>'+nf(t.reconciled||0)+'</b></span><span class="chip '+(t.mismatched?'warn':'')+'">Perlu pemeriksaan <b>'+nf(t.mismatched||0)+'</b></span><span class="chip '+(t.unmatchedSells?'err':'')+'">Sell tak terimbangi <b>'+nf(t.unmatchedSells||0)+'</b></span><span class="chip">Posisi P20 <b>'+nf(t.p20OpenPositions||0)+'</b></span><span class="chip">Nilai open broker (avg cost) <b>'+p39fmt(t.brokerOpenValue)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Net cash flow ledger <b>'+p39fmt(t.brokerNetCashFlow)+'</b></span><span class="chip">Saldo kas statement <b>'+(p39.cashSnapshot?p39fmt(p39.cashSnapshot.cashBalance):'belum dicatat')+'</b></span><span class="chip">Tanggal saldo <b>'+esc(p39.cashSnapshot&&p39.cashSnapshot.snapshotDate||'—')+'</b></span><span class="chip">BUY P38 baru diimpor <b>'+nf(p39.importedP38Buys||0)+'</b></span></div>';
+  h+='<h4>Rekonsiliasi posisi per saham</h4><div style="overflow-x:auto"><table><tr><th>Ticker / status</th><th>Qty broker</th><th>Qty P20</th><th>Selisih</th><th>Average cost broker</th><th>Average cost P20</th><th>Aksi</th></tr>';
+  (p39.items||[]).forEach(x=>{
+   const k=String(x.ticker||'').replace(/[^A-Za-z0-9]/g,'');
+   h+='<tr><td><b>'+esc(x.ticker)+'</b><br><span class="bdg '+p39tone(x.status)+'">'+esc(x.status)+'</span><br><small>'+nf(x.activityCount||0)+' aktivitas</small></td>';
+   h+='<td>'+nf(x.brokerQty||0)+' lembar<br><small>Nilai '+p39fmt(x.brokerOpenValue)+'</small></td><td>'+nf(x.p20Qty||0)+' lembar<br><small>'+esc((x.p20PositionIds||[]).join(', ')||'—')+'</small></td>';
+   h+='<td><b>'+(Number(x.difference)>0?'+':'')+nf(x.difference||0)+'</b> lembar<br><small>'+nf(x.unmatchedSellShares||0)+' sell belum terimbangi</small></td>';
+   h+='<td>'+p39fmt(x.brokerAvgCost)+'</td><td>'+p39fmt(x.p20AvgCost)+'</td><td>';
+   if(x.canSyncP20||x.canUpdateP20){
+    const pos=x.positions&&x.positions[0]||{};
+    h+='<details><summary style="cursor:pointer;color:#9fc2ff">Sync ke P20</summary><div class="dlist" style="min-width:190px;margin:7px 0">';
+    h+='<label>Stop Loss<input id="p39SL_'+k+'" type="number" min="1" value="'+(pos.StopLoss||'')+'" style="width:100%;padding:7px"></label>';
+    h+='<label>TP1<input id="p39TP1_'+k+'" type="number" min="1" value="'+(pos.TP1||'')+'" style="width:100%;padding:7px"></label>';
+    h+='<label>TP2 (opsional)<input id="p39TP2_'+k+'" type="number" min="1" value="'+(pos.TP2||'')+'" style="width:100%;padding:7px"></label>';
+    h+='<button type="button" data-p39-sync="'+esc(x.ticker)+'" style="padding:8px 12px">Konfirmasi sync posisi</button></div></details>';
+   }else h+='<small>'+(x.p20PositionCount>1?'Lebih dari satu posisi P20; konsolidasikan manual.':x.status==='RECONCILED'?'Sudah cocok.':x.brokerQty===0&&x.p20Qty>0?'Periksa posisi P20; penutupan perlu dicatat melalui P20.':'Butuh pemeriksaan manual.')+'</small>';
+   h+='</td></tr>';
+  });
+  if(!(p39.items||[]).length)h+='<tr><td colspan="7">Belum ada aktivitas broker atau posisi P20 untuk direkonsiliasi.</td></tr>';
+  h+='</table></div>';
+  h+='<h4>Catat aktivitas dari statement broker</h4><div class="dnote">BUY dari P38 otomatis diimpor. Gunakan OPENING_BALANCE untuk kepemilikan sebelum P38 mulai digunakan, dan SELL untuk transaksi jual yang benar-benar sudah terjadi. Jangan masukkan BUY P38 yang sama sebagai OPENING_BALANCE.</div>';
+  h+='<div class="dlist" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">';
+  h+='<label>Jenis aktivitas<select id="p39Side" style="width:100%;padding:8px"><option value="SELL">SELL — transaksi jual aktual</option><option value="OPENING_BALANCE">OPENING_BALANCE — saldo awal</option></select></label>';
+  h+='<label>Ticker<input id="p39Ticker" maxlength="6" placeholder="BBCA" style="width:100%;padding:8px"></label>';
+  h+='<label>Tanggal transaksi<input id="p39TradeDate" type="date" max="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:8px"></label>';
+  h+='<label>Broker<input id="p39Broker" maxlength="80" placeholder="Nama broker" style="width:100%;padding:8px"></label>';
+  h+='<label>Jumlah lembar<input id="p39Qty" type="number" min="1" step="1" style="width:100%;padding:8px"></label>';
+  h+='<label>Harga per lembar<input id="p39Price" type="number" min="1" step="1" style="width:100%;padding:8px"></label>';
+  h+='<label>Fee (Rp)<input id="p39Fee" type="number" min="0" step="1" value="0" style="width:100%;padding:8px"></label>';
+  h+='<label>No. referensi<input id="p39OrderRef" maxlength="100" style="width:100%;padding:8px"></label>';
+  h+='<label style="grid-column:1/-1">Catatan<input id="p39ActivityNotes" maxlength="500" style="width:100%;padding:8px"></label>';
+  h+='<div style="grid-column:1/-1"><button id="p39RecordActivity" type="button" style="padding:8px 12px">Simpan aktivitas broker</button></div></div>';
+  h+='<h4>Snapshot saldo kas broker</h4><div class="dnote">Saldo kas dibaca dari statement broker yang Anda masukkan. P39 tidak mengasumsikan net cash flow ledger sebagai saldo kas aktual.</div>';
+  h+='<div class="dlist" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">';
+  h+='<label>Tanggal statement<input id="p39CashDate" type="date" max="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:8px"></label>';
+  h+='<label>Broker<input id="p39CashBroker" maxlength="80" style="width:100%;padding:8px"></label>';
+  h+='<label>Saldo kas (Rp)<input id="p39CashBalance" type="number" min="0" step="1" style="width:100%;padding:8px"></label>';
+  h+='<label>Referensi statement<input id="p39CashRef" maxlength="100" style="width:100%;padding:8px"></label>';
+  h+='<div style="grid-column:1/-1"><button id="p39RecordCash" type="button" style="padding:8px 12px">Simpan snapshot kas</button></div></div>';
+  h+='<h4>Aktivitas ledger terakhir</h4><div style="overflow-x:auto"><table><tr><th>Tanggal</th><th>Ticker / sisi</th><th>Qty</th><th>Harga</th><th>Broker</th><th>Sumber</th></tr>';
+  (p39.activities||[]).slice(0,20).forEach(x=>{h+='<tr><td>'+esc(x.tradeDate)+'</td><td><b>'+esc(x.ticker)+'</b><br><small>'+esc(x.side)+'</small></td><td>'+nf(x.qtyShares)+'</td><td>'+p39fmt(x.price)+'</td><td>'+esc(x.broker)+'</td><td>'+esc(x.source)+'</td></tr>';});
+  if(!(p39.activities||[]).length)h+='<tr><td colspan="6">Belum ada aktivitas tercatat.</td></tr>';
+  h+='</table></div>';
+ }else h+='<div class="dnote">Klik Refresh Rekonsiliasi untuk mengambil fill BUY dari P38 dan membandingkannya dengan posisi P20.</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p39RefreshReconciliation" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh rekonsiliasi</button><span id="p39ReconciliationMsg" class="dnote">Refresh mengimpor fill BUY P38 satu kali, menghitung qty dan avg cost, lalu mencocokkan P20.</span></div>';
+ if(p39&&p39.policy)h+='<div class="dnote"><small>'+esc(p39.policy)+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2590,6 +2649,51 @@ if(!window.__p38HumanDecisionJournalBound){
    const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P38 gagal memproses jurnal.');
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p38JournalMsg');if(done)done.textContent=j.message||'P38 berhasil diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+
+/* ===== P39: broker reconciliation, manual statement capture and explicit P20 sync ===== */
+if(!window.__p39BrokerReconciliationBound){
+ window.__p39BrokerReconciliationBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p39RefreshReconciliation'):null;
+  const activity=ev.target&&ev.target.closest?ev.target.closest('#p39RecordActivity'):null;
+  const cash=ev.target&&ev.target.closest?ev.target.closest('#p39RecordCash'):null;
+  const sync=ev.target&&ev.target.closest?ev.target.closest('[data-p39-sync]'):null;
+  const target=refresh||activity||cash||sync;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p39ReconciliationMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';};
+  const tickerSafe=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+  let payload={action:'broker_reconciliation',token:token};
+  if(refresh){payload.command='reconcile';target.disabled=true;target.textContent='Merekonsiliasi…';}
+  else if(activity){
+   const side=val('p39Side'),ticker=val('p39Ticker').toUpperCase(),date=val('p39TradeDate'),broker=val('p39Broker'),qty=Number(val('p39Qty')),price=Number(val('p39Price')),fee=Number(val('p39Fee')||0);
+   if(!ticker||!date||!broker||!Number.isInteger(qty)||qty<=0||!Number.isFinite(price)||price<=0){if(msg)msg.textContent='Lengkapi ticker, tanggal, broker, jumlah lembar, dan harga valid.';return;}
+   if(side==='SELL'&&!window.confirm('Konfirmasi bahwa transaksi SELL '+ticker+' sebanyak '+qty+' lembar benar-benar sudah terjadi di broker? Tidak ada order dikirim.'))return;
+   if(side==='OPENING_BALANCE'&&!window.confirm('Konfirmasi bahwa '+qty+' lembar '+ticker+' merupakan saldo awal pada statement broker dan bukan fill P38 yang sudah dicatat?'))return;
+   payload.command='record_activity';payload.side=side;payload.ticker=ticker;payload.tradeDate=date;payload.broker=broker;payload.qtyShares=qty;payload.price=price;payload.feeIdr=fee;payload.orderRef=val('p39OrderRef');payload.notes=val('p39ActivityNotes');
+   target.disabled=true;target.textContent='Menyimpan aktivitas…';if(msg)msg.textContent='Menyimpan aktivitas statement broker dan menghitung ulang posisi…';
+  }else if(cash){
+   const date=val('p39CashDate'),broker=val('p39CashBroker'),balance=val('p39CashBalance');
+   if(!date||!broker||balance===''||!Number.isFinite(Number(balance))||Number(balance)<0){if(msg)msg.textContent='Isi tanggal, broker, dan saldo kas yang valid.';return;}
+   payload.command='record_cash_snapshot';payload.snapshotDate=date;payload.broker=broker;payload.cashBalance=Number(balance);payload.statementRef=val('p39CashRef');
+   target.disabled=true;target.textContent='Menyimpan saldo…';if(msg)msg.textContent='Menyimpan saldo kas aktual dari statement broker…';
+  }else{
+   const ticker=sync.getAttribute('data-p39-sync'),key=tickerSafe(ticker),sl=val('p39SL_'+key),tp1=val('p39TP1_'+key),tp2=val('p39TP2_'+key);
+   if(!sl||!tp1){if(msg)msg.textContent='Isi Stop Loss dan TP1 sebelum sync ke P20.';return;}
+   if(!window.confirm('Sinkronkan posisi '+ticker+' ke jurnal P20 berdasarkan jumlah lembar dan rata-rata biaya broker? Tindakan ini membuat atau memperbarui catatan internal saja; tidak mengirim order.'))return;
+   payload.command='sync_p20';payload.ticker=ticker;payload.stopLoss=Number(sl);payload.tp1=Number(tp1);payload.tp2=tp2?Number(tp2):null;payload.acknowledge=true;
+   target.disabled=true;target.textContent='Sync ke P20…';if(msg)msg.textContent='Memvalidasi saldo broker, level SL/TP, lalu memperbarui jurnal P20…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P39 gagal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p39ReconciliationMsg');if(done)done.textContent=j.message||'P39 berhasil diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
