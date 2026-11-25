@@ -1813,6 +1813,38 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p34){
  h+='<div class="dnote"><small>'+esc(p34.policy||'')+' Versi: '+esc(p34.version||'')+'</small></div>';
 }
 
+/* ===== P35: AI Model Registry & Controlled Promotion Gate panel ===== */
+const p35=P.investmentModelRegistry;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p35){
+ const c=p35.counts||{},tone=s=>s==='ACTIVE_CHAMPION_REGISTRY'||s==='CHAMPION_REGISTRY_APPROVED'?'ok':s==='PAPER_FAILED'||s==='REJECTED'||s==='ROLLED_BACK'?'err':s==='READY_FOR_HUMAN_APPROVAL'?'ok':s==='PAPER_TRADING'||s==='PENDING_PAPER_REVIEW'||s==='PAPER_REVIEW_REQUIRED'?'warn':'idle';
+ const pct=x=>x==null?'—':Number(x).toFixed(2)+'%';
+ h+='<h4>🗂️ P35 — AI Model Registry & Controlled Promotion Gate <small>('+esc(p35.generatedAt||'—')+' WIB)</small></h4>';
+ h+='<div class="dnote">Mengatur identitas Champion/Challenger dan proses promosi. P34 PASS hanya membuat kandidat; persetujuan pertama memulai paper trading, dan persetujuan kedua baru mengubah pointer Champion Registry. Ini metadata governance—belum mengganti scoring engine P30 yang berjalan.</div>';
+ if(p35.champion)h+='<div class="dchips"><span class="chip">Champion Registry <b><span class="bdg ok">'+esc(p35.champion.modelVersion)+'</span></b></span><span class="chip">Status <b>'+esc(p35.champion.status)+'</b></span><span class="chip">Model terdaftar <b>'+nf(p35.modelCount||0)+'</b></span><span class="chip">Butuh review paper <b>'+nf(c.pendingPaperReview||0)+'</b></span><span class="chip">Paper berjalan <b>'+nf(c.paperTrading||0)+'</b></span><span class="chip">Siap promosi <b>'+nf(c.readyForPromotion||0)+'</b></span></div>';
+ h+='<h4>Promotion queue — persetujuan bertahap</h4><div style="overflow-x:auto"><table><tr><th>Model / sumber</th><th>Status</th><th>Paper (hari)</th><th>Sampel baseline / challenger</th><th>Δ excess / Δ MAE</th><th>Gate</th><th>Aksi manual</th></tr>';
+ (p35.promotions||[]).forEach(x=>{
+  h+='<tr><td><b>'+esc(x.modelVersion||x.modelName||x.modelId)+'</b><br><small>'+esc(x.policyId)+' • '+esc(x.sourceProposalId||'')+'</small></td>';
+  h+='<td><span class="bdg '+tone(x.status)+'">'+esc(x.status)+'</span></td><td>'+nf(x.paperElapsedDays||0)+'</td><td>'+nf(x.baselineN||0)+' / '+nf(x.challengerN||0)+'</td>';
+  h+='<td>'+pct(x.excessDelta20Pct)+' / '+pct(x.maeDelta20Pct)+'</td><td><span class="bdg '+tone(x.gateStatus)+'">'+esc(x.gateStatus||'—')+'</span><br><small>'+esc(x.gateReason||'')+'</small></td><td>';
+  if(x.status==='PENDING_PAPER_REVIEW')h+='<button class="p35ModelAction" data-action="committee_model_promotion_review" data-promotion-id="'+esc(x.promotionId)+'" data-decision="APPROVED_FOR_PAPER" type="button">Setujui paper</button> <button class="p35ModelAction" data-action="committee_model_promotion_review" data-promotion-id="'+esc(x.promotionId)+'" data-decision="REJECTED" type="button">Tolak</button>';
+  else if(x.status==='READY_FOR_HUMAN_APPROVAL')h+='<button class="p35ModelAction" data-action="committee_model_champion_approve" data-promotion-id="'+esc(x.promotionId)+'" type="button">Setujui Champion Registry</button>';
+  else if(x.status==='PAPER_TRADING'||x.status==='PAPER_REVIEW_REQUIRED')h+='<small>Menunggu sampel / review paper</small>';
+  else h+='<small>—</small>';
+  h+='</td></tr>';
+ });
+ if(!(p35.promotions||[]).length)h+='<tr><td colspan="7">Belum ada challenger P34 berstatus PASS dan proposal P33 yang disetujui. Refresh P34/P35 untuk sinkronisasi.</td></tr>';
+ h+='</table></div>';
+ h+='<h4>Model Registry</h4><div style="overflow-x:auto"><table><tr><th>Versi</th><th>Role</th><th>Status</th><th>Policy</th><th>Effective at</th></tr>';
+ (p35.registry||[]).forEach(x=>{h+='<tr><td><b>'+esc(x.modelVersion)+'</b><br><small>'+esc(x.modelName)+'</small></td><td>'+esc(x.role)+'</td><td><span class="bdg '+tone(x.status)+'">'+esc(x.status)+'</span></td><td>'+esc(x.policyId||'—')+'</td><td>'+esc(x.effectiveAt||'—')+'</td></tr>';});
+ h+='</table></div>';
+ if((p35.warnings||[]).length)h+='<div class="dnote">'+p35.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+ if((p35.caveats||[]).length)h+='<div class="dnote">'+p35.caveats.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p35RefreshRegistry" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh Model Registry</button><button id="p35RefreshPaper" type="button">Refresh paper gate</button>';
+ if(p35.canRollback)h+='<button id="p35RollbackModel" type="button">Rollback Champion Registry</button>';
+ h+='<span id="p35RegistryMsg" class="dnote">S40 16:59 WIB • ringkasan masuk follow-up Telegram setelah digest 17:00.</span></div>';
+ h+='<div class="dnote"><small>'+esc(p35.policy||'')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2310,6 +2342,39 @@ if(!window.__p34InvestmentShadowBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p34ShadowLabMsg');if(done)done.textContent=j.message||'P34 berhasil diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh challenger shadow';}
+ });
+}
+
+/* ===== P35: authenticated registry, review, paper, champion and rollback actions ===== */
+if(!window.__p35ModelRegistryBound){
+ window.__p35ModelRegistryBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p35RefreshRegistry'):null;
+  const paper=ev.target&&ev.target.closest?ev.target.closest('#p35RefreshPaper'):null;
+  const rollback=ev.target&&ev.target.closest?ev.target.closest('#p35RollbackModel'):null;
+  const actionBtn=ev.target&&ev.target.closest?ev.target.closest('.p35ModelAction'):null;
+  if(!refresh&&!paper&&!rollback&&!actionBtn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p35RegistryMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  let payload={token:token},btn=refresh||paper||rollback||actionBtn;
+  if(refresh){payload.action='committee_model_registry_refresh';}
+  else if(paper){payload.action='committee_model_paper_refresh';}
+  else if(rollback){
+   const reason=window.prompt('Alasan rollback Champion Registry:','Hasil review manual');
+   if(reason===null)return;
+   payload.action='committee_model_rollback';payload.reason=reason;
+  }else{
+   payload.action=actionBtn.dataset.action;payload.promotionId=actionBtn.dataset.promotionId;
+   if(actionBtn.dataset.decision)payload.decision=actionBtn.dataset.decision;
+  }
+  btn.disabled=true;const oldText=btn.textContent;btn.textContent='Memproses…';
+  if(msg)msg.textContent='Memvalidasi gate, persetujuan manusia, dan status Model Registry…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Aksi P35 gagal diproses.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p35RegistryMsg');if(done)done.textContent=j.message||'Model Registry diperbarui.';
+  }catch(err){btn.disabled=false;btn.textContent=oldText;if(msg)msg.textContent=String(err&&err.message||err);}
  });
 }
 
