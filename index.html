@@ -1875,6 +1875,35 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p36){
  h+='<div class="dnote"><small>'+esc(p36.policy||'')+'</small></div>';
 }
 
+/* ===== P37: AI Investment Execution Readiness & Risk Gate panel ===== */
+const p37=P.investmentExecutionReadiness;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p37){
+ const p37tone=s=>s==='READY_FOR_MANUAL_REVIEW'?'ok':s==='READY_WITH_CAUTION'||s==='WAIT_FOR_PRICE_ZONE'?'warn':s==='BLOCKED'?'err':'idle';
+ const p37money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ h+='<h4>🛡️ P37 — AI Investment Execution Readiness & Risk Gate <small>('+esc(p37.generatedAt||'—')+' WIB)</small></h4>';
+ h+='<div class="dnote">Gate terakhir sebelum kandidat masuk daftar siap ditinjau manusia. P37 memeriksa keputusan P30/P17, shortlist runtime P36, tanggal harga dan ScreenHist, likuiditas, Buy Zone, SL/TP, reward/risk, sizing P19, risiko IHSG P28 dan risiko lintas aset P29. READY bukan instruksi beli dan tidak menjalankan order.</div>';
+ h+='<div class="dchips"><span class="chip">Kandidat runtime <b>'+nf(p37.totalCandidates||0)+'</b></span><span class="chip">Ready review <b>'+nf(p37.counts&&p37.counts.ready||0)+'</b></span><span class="chip">Caution <b>'+nf(p37.counts&&p37.counts.caution||0)+'</b></span><span class="chip">Tunggu zona harga <b>'+nf(p37.counts&&p37.counts.waitPrice||0)+'</b></span><span class="chip">Blocked <b>'+nf(p37.counts&&p37.counts.blocked||0)+'</b></span><span class="chip">Data kurang <b>'+nf(p37.counts&&p37.counts.incomplete||0)+'</b></span></div>';
+ h+='<div class="dchips"><span class="chip">Runtime <b>'+esc(p37.runtimeMode||'BASELINE_LOCKED')+'</b></span><span class="chip">Champion <b>'+esc(p37.activeModelVersion||'P30 baseline')+'</b></span><span class="chip">IHSG <b>'+esc(p37.marketRegime||'UNKNOWN')+'</b></span><span class="chip">Risiko portofolio <b>'+esc(p37.portfolioRiskStatus||'INSUFFICIENT')+'</b></span><span class="chip">Avg turnover minimum <b>'+p37money(p37.minAvgDailyValueIdr)+'</b></span></div>';
+ h+='<h4>Checklist kandidat</h4><div style="overflow-x:auto"><table><tr><th>Ticker / keputusan</th><th>Harga / Buy Zone</th><th>Likuiditas 20 sesi</th><th>SL / TP1 / RR</th><th>Ukuran P19</th><th>Status</th></tr>';
+ (p37.items||[]).forEach(x=>{
+  h+='<tr><td><b>'+esc(x.ticker)+'</b><br><small>'+esc(x.p30Decision||x.p30DecisionCode||'')+' • skor '+(x.p30Score==null?'—':Number(x.p30Score).toFixed(1))+' • coverage '+(x.coveragePct==null?'—':Number(x.coveragePct).toFixed(1)+'%')+'</small></td>';
+  h+='<td>'+p37money(x.price)+'<br><small>Zona '+p37money(x.buyLo)+'–'+p37money(x.buyHi)+'<br>'+esc(x.priceDate||'—')+'</small></td>';
+  h+='<td>Avg '+p37money(x.avgDailyValue20)+'<br><small>Median '+p37money(x.medianDailyValue20)+'</small></td>';
+  h+='<td>SL '+p37money(x.stopLoss)+'<br><small>TP1 '+p37money(x.tp1)+' • RR '+(x.riskRewardTP1==null?'—':Number(x.riskRewardTP1).toFixed(2)+'R')+'</small></td>';
+  h+='<td>'+(x.sizing&&x.sizing.lots!=null?nf(x.sizing.lots)+' lot':'—')+'<br><small>'+p37money(x.sizing&&x.sizing.positionValue)+' • Risiko '+p37money(x.sizing&&x.sizing.riskAtSL)+'</small></td>';
+  h+='<td><span class="bdg '+p37tone(x.status)+'">'+esc(x.status)+'</span></td></tr>';
+  h+='<tr><td colspan="6"><details><summary style="cursor:pointer;color:#9fc2ff">Lihat alasan & checklist '+esc(x.ticker)+'</summary><div class="dlist" style="margin:6px 0">';
+  (x.checks||[]).forEach(c=>{const tone=c.status==='PASS'?'ok':c.status==='BLOCK'?'err':c.status==='WARN'?'warn':'idle';h+='<div><span class="bdg '+tone+'">'+esc(c.status)+'</span> <b>'+esc(c.key)+'</b><br><small>'+esc(c.detail)+'</small></div>';});
+  h+='</div></details></td></tr>';
+ });
+ if(!(p37.items||[]).length)h+='<tr><td colspan="6">Belum ada kandidat pada shortlist runtime P36. Perbarui komite dan screener, kemudian refresh readiness.</td></tr>';
+ h+='</table></div>';
+ if((p37.warnings||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p37.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+ if((p37.caveats||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p37.caveats.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p37RefreshReadiness" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh readiness gate</button><span id="p37ReadinessMsg" class="dnote">Terjadwal setelah P36 pada S40 pukul 16:59 WIB • ringkasan Telegram setelah digest 17:00.</span></div>';
+ h+='<div class="dnote"><small>'+esc(p37.policy||'')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2440,6 +2469,25 @@ if(!window.__p36RuntimeRouterBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p36RuntimeMsg');if(done)done.textContent=j.message||'Runtime router diperbarui.';
   }catch(err){btn.disabled=false;btn.textContent=old;if(msg)msg.textContent=String(err&&err.message||err);}
+ });
+}
+
+/* ===== P37: authenticated refresh for AI Investment Execution Readiness ===== */
+if(!window.__p37ExecutionReadinessBound){
+ window.__p37ExecutionReadinessBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p37RefreshReadiness'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p37ReadinessMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Memeriksa kesiapan…';
+  if(msg)msg.textContent='Memperbarui P30–P36 lalu memeriksa harga, turnover, risk/reward, sizing dan risiko portofolio…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'execution_readiness_refresh',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P37 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p37ReadinessMsg');if(done)done.textContent=j.message||'P37 readiness gate diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh readiness gate';}
  });
 }
 
