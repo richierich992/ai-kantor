@@ -2576,13 +2576,13 @@ if(!window.__p38HumanDecisionJournalBound){
    if(reason.length<8){if(msg)msg.textContent='Alasan keputusan minimal 8 karakter.';return;}
    if(decision==='APPROVE'&&(!capital||!isFinite(Number(capital))||Number(capital)<=0)){if(msg)msg.textContent='Isi modal yang disetujui untuk keputusan APPROVE.';return;}
    if(decision==='APPROVE'&&!window.confirm('Setujui '+ticker+' untuk dipertimbangkan pada tindakan manual dengan modal Rp'+Number(capital).toLocaleString('id-ID')+'? Kantor AI tidak akan mengirim order.'))return;
-   payload.command='save_decision';payload.ticker=ticker;payload.decision=decision;payload.approvedCapital: capital?Number(capital):0;payload.reason=reason;payload.cautionAccepted=!!(caution&&caution.checked);
+   payload.command='save_decision';payload.ticker=ticker;payload.decision=decision;payload.approvedCapital=capital?Number(capital):0;payload.reason=reason;payload.cautionAccepted=!!(caution&&caution.checked);
    target.disabled=true;target.textContent='Menyimpan keputusan…';if(msg)msg.textContent='Memvalidasi ulang kandidat P37 di server dan menyimpan snapshot keputusan manusia…';
   }else{
    const id=saveFill.getAttribute('data-p38-save-fill'),key=safe(id),broker=value('p38Broker_'+key),tradeDate=value('p38Date_'+key),qty=value('p38Qty_'+key),price=value('p38FillPrice_'+key),fee=value('p38Fee_'+key),orderRef=value('p38Order_'+key);
    if(!broker||!tradeDate||!qty||!price){if(msg)msg.textContent='Isi broker, tanggal transaksi, jumlah saham, dan harga fill.';return;}
    if(!window.confirm('Konfirmasi: transaksi BUY '+qty+' lembar sudah benar-benar terjadi di broker pada harga Rp'+Number(price).toLocaleString('id-ID')+'? Tindakan ini hanya mencatat bukti transaksi, bukan mengirim order.'))return;
-   payload.command='record_execution';payload.decisionId=id;payload.broker=broker;payload.tradeDate=tradeDate;payload.qtyShares:Number(qty);payload.fillPrice:Number(price);payload.feeIdr:fee?Number(fee):0;payload.orderRef=orderRef;payload.p20PositionId=value('p38P20_'+key);payload.notes=value('p38FillNotes_'+key);
+   payload.command='record_execution';payload.decisionId=id;payload.broker=broker;payload.tradeDate=tradeDate;payload.qtyShares=Number(qty);payload.fillPrice=Number(price);payload.feeIdr=fee?Number(fee):0;payload.orderRef=orderRef;payload.p20PositionId=value('p38P20_'+key);payload.notes=value('p38FillNotes_'+key);
    target.disabled=true;target.textContent='Mencatat fill…';if(msg)msg.textContent='Menyimpan data fill broker aktual dan memeriksa selisih terhadap modal approval…';
   }
   try{
