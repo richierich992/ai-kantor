@@ -1904,6 +1904,69 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p37){
  h+='<div class="dnote"><small>'+esc(p37.policy||'')+'</small></div>';
 }
 
+
+/* ===== P38: Human Approval & Trade Decision Journal ===== */
+const p38=P.tradeDecisionJournal||{};
+const p38Decisions=p38.decisions||[],p38Executions=p38.executions||[];
+const p38Candidates=(p37&&p37.items||[]).filter(x=>['READY_FOR_MANUAL_REVIEW','READY_WITH_CAUTION'].includes(String(x.status||'')));
+const p38money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ h+='<h4>🧾 P38 — Human Approval & Trade Decision Journal <small>('+esc(p38.generatedAt||'belum dimuat')+')</small></h4>';
+ h+='<div class="dnote">Catat keputusan manusia terhadap kandidat P37, snapshot rencana saat keputusan dibuat, alasan, dan modal yang disetujui. Fill broker dicatat manual hanya setelah transaksi benar-benar terjadi. P38 tidak mengirim order dan tidak membuat posisi otomatis.</div>';
+ h+='<div class="dchips"><span class="chip">Jurnal <b>'+nf(p38.counts&&p38.counts.total||p38Decisions.length)+'</b></span><span class="chip">Disetujui <b>'+nf(p38.counts&&p38.counts.approved||0)+'</b></span><span class="chip">Ditunda <b>'+nf(p38.counts&&p38.counts.deferred||0)+'</b></span><span class="chip">Ditolak <b>'+nf(p38.counts&&p38.counts.rejected||0)+'</b></span><span class="chip">Fill tercatat <b>'+nf(p38.counts&&p38.counts.executed||0)+'</b></span><span class="chip">Perlu review fill <b>'+nf(p38.counts&&p38.counts.executionReview||0)+'</b></span></div>';
+ h+='<h4>Kandidat P37 yang siap ditinjau</h4>';
+ if(p38Candidates.length){
+  h+='<div class="dnote">Pilih APPROVE, DEFER, atau REJECT. Approval hanya mencatat izin manusia untuk mempertimbangkan transaksi manual; bukan instruksi broker. Modal approval tidak boleh melebihi estimasi sizing P19.</div>';
+  h+='<div style="overflow-x:auto"><table><tr><th>Saham / readiness</th><th>Harga & zona</th><th>SL / TP1</th><th>Estimasi sizing</th><th>Keputusan manusia</th></tr>';
+  p38Candidates.forEach(function(x){
+   const safe=String(x.ticker||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+   h+='<tr><td><b>'+esc(x.ticker)+'</b><br><small>'+esc(x.status)+' • P30 '+esc(x.p30DecisionCode||x.p30Decision||'—')+' • skor '+(x.p30Score==null?'—':Number(x.p30Score).toFixed(1))+'</small></td>';
+   h+='<td>'+p38money(x.price)+'<br><small>'+p38money(x.buyLo)+'–'+p38money(x.buyHi)+'<br>'+esc(x.priceDate||'—')+'</small></td>';
+   h+='<td>SL '+p38money(x.stopLoss)+'<br><small>TP1 '+p38money(x.tp1)+' • RR '+(x.riskRewardTP1==null?'—':Number(x.riskRewardTP1).toFixed(2)+'R')+'</small></td>';
+   h+='<td>'+nf(x.sizing&&x.sizing.lots||0)+' lot<br><small>'+p38money(x.sizing&&x.sizing.positionValue)+' • risiko '+p38money(x.sizing&&x.sizing.riskAtSL)+'</small></td>';
+   h+='<td><details><summary style="cursor:pointer;color:#9fc2ff">Catat keputusan '+esc(x.ticker)+'</summary>';
+   h+='<div class="dlist" style="margin:8px 0;min-width:220px"><label>Keputusan manusia</label><select id="p38Decision_'+safe+'" style="width:100%;padding:8px"><option value="">Pilih keputusan…</option><option value="APPROVE">APPROVE — setujui untuk tindakan manual</option><option value="DEFER">DEFER — tunda</option><option value="REJECT">REJECT — tolak</option></select>';
+   h+='<label>Modal disetujui (Rp, hanya untuk APPROVE)</label><input id="p38Capital_'+safe+'" type="number" min="0" max="'+Math.floor(Number(x.sizing&&x.sizing.positionValue||0))+'" step="100000" placeholder="Maks '+Math.round(Number(x.sizing&&x.sizing.positionValue||0)).toLocaleString('id-ID')+'" style="width:100%;padding:8px">';
+   h+='<label>Alasan keputusan (minimal 8 karakter)</label><textarea id="p38Reason_'+safe+'" rows="2" maxlength="500" placeholder="Tuliskan pertimbangan manusia…" style="width:100%;padding:8px"></textarea>';
+   if(x.status==='READY_WITH_CAUTION')h+='<label style="display:block;margin:8px 0"><input id="p38Caution_'+safe+'" type="checkbox"> Saya sudah meninjau dan menerima catatan caution P37.</label>';
+   h+='<button type="button" data-p38-save-decision="'+esc(x.ticker)+'" style="padding:8px 12px">Simpan keputusan</button></div></details></td></tr>';
+  });
+  h+='</table></div>';
+ }else h+='<div class="dnote">Belum ada kandidat dengan status READY_FOR_MANUAL_REVIEW atau READY_WITH_CAUTION. Kandidat yang BLOCKED, WAIT, atau datanya belum lengkap tidak dapat disetujui melalui P38.</div>';
+ h+='<h4>Riwayat keputusan manusia</h4>';
+ if(p38Decisions.length){
+  h+='<div style="overflow-x:auto"><table><tr><th>Ticker / ID</th><th>Snapshot AI</th><th>Keputusan</th><th>Modal / Lot</th><th>Alasan / status</th></tr>';
+  p38Decisions.forEach(function(d){
+   const safe=String(d.decisionId||'').replace(/[^A-Za-z0-9]/g,'');
+   h+='<tr><td><b>'+esc(d.ticker)+'</b><br><small>'+esc(d.decisionId)+' • revisi '+nf(d.revision||1)+'</small></td>';
+   h+='<td>'+p38money(d.referencePrice)+'<br><small>'+esc(d.priceDate)+' • skor '+(d.p30Score==null?'—':Number(d.p30Score).toFixed(1))+' • '+esc(d.championVersion||'')+'</small></td>';
+   h+='<td><b>'+esc(d.humanDecision)+'</b><br><small>'+esc(d.readinessStatus)+'</small></td>';
+   h+='<td>'+p38money(d.approvedCapital)+'<br><small>'+nf(d.approvedLots||0)+' lot</small></td>';
+   h+='<td>'+esc(d.humanReason||'')+'<br><small>'+esc(d.status)+' • '+esc(d.updatedAt||d.createdAt||'')+'</small></td></tr>';
+   if(d.humanDecision==='APPROVE'&&d.status==='APPROVED_PENDING_EXECUTION'){
+    h+='<tr><td colspan="5"><details><summary style="cursor:pointer;color:#9fc2ff">Catat fill broker aktual — '+esc(d.ticker)+'</summary><div class="dlist" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:7px;margin:8px 0">';
+    h+='<label>Broker<input id="p38Broker_'+safe+'" type="text" maxlength="80" placeholder="Nama broker" style="width:100%;padding:7px"></label>';
+    h+='<label>Tanggal transaksi<input id="p38Date_'+safe+'" type="date" max="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:7px"></label>';
+    h+='<label>Jumlah saham (lembar)<input id="p38Qty_'+safe+'" type="number" min="1" step="1" style="width:100%;padding:7px"></label>';
+    h+='<label>Harga fill (Rp)<input id="p38FillPrice_'+safe+'" type="number" min="1" step="1" style="width:100%;padding:7px"></label>';
+    h+='<label>Fee (Rp)<input id="p38Fee_'+safe+'" type="number" min="0" step="1" value="0" style="width:100%;padding:7px"></label>';
+    h+='<label>No. order / trade ref<input id="p38Order_'+safe+'" type="text" maxlength="100" style="width:100%;padding:7px"></label>';
+    h+='<label>Link ID posisi P20 (opsional)<input id="p38P20_'+safe+'" type="text" maxlength="80" style="width:100%;padding:7px"></label>';
+    h+='<label>Catatan<input id="p38FillNotes_'+safe+'" type="text" maxlength="500" style="width:100%;padding:7px"></label>';
+    h+='<div style="grid-column:1/-1"><button type="button" data-p38-save-fill="'+esc(d.decisionId)+'" style="padding:8px 12px">Simpan fill yang sudah terjadi</button></div></div></details></td></tr>';
+   }
+  });
+  h+='</table></div>';
+ }else h+='<div class="dnote">Belum ada keputusan manusia yang tercatat.</div>';
+ if(p38Executions.length){
+  h+='<h4>Fill broker yang sudah terjadi</h4><div style="overflow-x:auto"><table><tr><th>Tanggal / saham</th><th>Broker / qty</th><th>Harga fill</th><th>Nilai + fee</th><th>Audit</th></tr>';
+  p38Executions.forEach(function(x){h+='<tr><td>'+esc(x.tradeDate)+' • <b>'+esc(x.ticker)+'</b></td><td>'+esc(x.broker)+' • '+nf(x.qtyShares)+' lembar</td><td>'+p38money(x.fillPrice)+'</td><td>'+p38money(x.netCashValue)+'</td><td>'+esc(x.exceptionFlag||'OK')+'<br><small>'+esc(x.orderRef||x.executionId)+'</small></td></tr>';});
+  h+='</table></div>';
+ }
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p38RefreshJournal" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh jurnal keputusan</button><span id="p38JournalMsg" class="dnote">Data disimpan di TradeDecisionJournal, TradeDecisionEvents, dan BrokerExecutions.</span></div>';
+ h+='<div class="dnote"><small>'+esc(p38.policy||'Event keputusan dicatat append-only. Setelah fill broker dicatat, keputusan tersebut tidak dapat direvisi; koreksi transaksi dilakukan melalui jurnal posisi P20.')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2490,6 +2553,47 @@ if(!window.__p37ExecutionReadinessBound){
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh readiness gate';}
  });
 }
+
+
+/* ===== P38: authenticated human decision journal and manual broker-fill capture ===== */
+if(!window.__p38HumanDecisionJournalBound){
+ window.__p38HumanDecisionJournalBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p38RefreshJournal'):null;
+  const saveDecision=ev.target&&ev.target.closest?ev.target.closest('[data-p38-save-decision]'):null;
+  const saveFill=ev.target&&ev.target.closest?ev.target.closest('[data-p38-save-fill]'):null;
+  const target=refresh||saveDecision||saveFill;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p38JournalMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const safe=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+  const value=id=>{const el=$(id);return el?el.value.trim():'';};
+  let payload={action:'trade_decision_journal',token:token};
+  if(refresh){payload.command='list';target.disabled=true;target.textContent='Memuat jurnal…';}
+  else if(saveDecision){
+   const ticker=saveDecision.getAttribute('data-p38-save-decision'),key=safe(ticker),decision=value('p38Decision_'+key),reason=value('p38Reason_'+key);
+   const capital=value('p38Capital_'+key),caution=$('p38Caution_'+key);
+   if(!decision){if(msg)msg.textContent='Pilih APPROVE, DEFER, atau REJECT.';return;}
+   if(reason.length<8){if(msg)msg.textContent='Alasan keputusan minimal 8 karakter.';return;}
+   if(decision==='APPROVE'&&(!capital||!isFinite(Number(capital))||Number(capital)<=0)){if(msg)msg.textContent='Isi modal yang disetujui untuk keputusan APPROVE.';return;}
+   if(decision==='APPROVE'&&!window.confirm('Setujui '+ticker+' untuk dipertimbangkan pada tindakan manual dengan modal Rp'+Number(capital).toLocaleString('id-ID')+'? Kantor AI tidak akan mengirim order.'))return;
+   payload.command='save_decision';payload.ticker=ticker;payload.decision=decision;payload.approvedCapital=capital?Number(capital):0;payload.reason=reason;payload.cautionAccepted=!!(caution&&caution.checked);
+   target.disabled=true;target.textContent='Menyimpan keputusan…';if(msg)msg.textContent='Memvalidasi ulang kandidat P37 di server dan menyimpan snapshot keputusan manusia…';
+  }else{
+   const id=saveFill.getAttribute('data-p38-save-fill'),key=safe(id),broker=value('p38Broker_'+key),tradeDate=value('p38Date_'+key),qty=value('p38Qty_'+key),price=value('p38FillPrice_'+key),fee=value('p38Fee_'+key),orderRef=value('p38Order_'+key);
+   if(!broker||!tradeDate||!qty||!price){if(msg)msg.textContent='Isi broker, tanggal transaksi, jumlah saham, dan harga fill.';return;}
+   if(!window.confirm('Konfirmasi: transaksi BUY '+qty+' lembar sudah benar-benar terjadi di broker pada harga Rp'+Number(price).toLocaleString('id-ID')+'? Tindakan ini hanya mencatat bukti transaksi, bukan mengirim order.'))return;
+   payload.command='record_execution';payload.decisionId=id;payload.broker=broker;payload.tradeDate=tradeDate;payload.qtyShares=Number(qty);payload.fillPrice=Number(price);payload.feeIdr=fee?Number(fee):0;payload.orderRef=orderRef;payload.p20PositionId=value('p38P20_'+key);payload.notes=value('p38FillNotes_'+key);
+   target.disabled=true;target.textContent='Mencatat fill…';if(msg)msg.textContent='Menyimpan data fill broker aktual dan memeriksa selisih terhadap modal approval…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P38 gagal memproses jurnal.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p38JournalMsg');if(done)done.textContent=j.message||'P38 berhasil diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
 
 /* --- Perintah ke divisi: router AI memilih divisi, lalu tiap divisi menjawab di ruangannya --- */
 const RT_KW=[[/toko ?crypto|tokocrypto|bot (trading|crypto)/i,6],[/indodax|bitcoin|btc|kripto|crypto/i,5],[/dividen/i,3],[/portofolio|portfolio|invest/i,2],[/screener|trading|saham|ihsg/i,1],[/bibit|reksa ?dana/i,4],[/emas|antam|logam mulia/i,7],[/catat|keuangan|pengeluaran|pemasukan/i,8],[/video|reels|shorts|tiktok|capcut/i,9],[/desain|grafis|poster|logo|thumbnail|canva/i,10],[/kode|coding|script|bug|program/i,11],[/produk|jualan|toko online|promo/i,12],[/viral|trend|tren|berita/i,13],[/resep|masak|minuman|kuliner/i,14],[/upload|pipeline|sosmed|monitoring konten/i,16]];
