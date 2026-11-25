@@ -1787,6 +1787,32 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p33){
  h+='<div class="dnote"><small>'+esc(p33.policy||'')+' Model: '+esc(p33.modelVersion||'')+' • Evidence: '+esc(p33.evidenceGrade||'')+'</small></div>';
 }
 
+/* ===== P34: AI Investment Challenger Shadow Lab panel ===== */
+const p34=P.investmentShadowLab;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p34){
+ const counts=p34.counts||{},runs=p34.runs||[];
+ const tone=x=>x==='PASS'?'ok':x==='FAIL'?'err':x==='REVIEW'?'warn':x==='INSUFFICIENT_CHALLENGER_SAMPLE'?'warn':'idle';
+ const pct=x=>x==null?'—':Number(x).toFixed(2)+'%';
+ h+='<h4>🧪 P34 — AI Investment Challenger Shadow Lab <small>('+esc(p34.generatedAt||'—')+' WIB)</small></h4>';
+ h+='<div class="dnote">Menguji filter challenger yang berasal dari proposal P33 dan sudah disetujui manusia. Cut-off dimulai pada waktu persetujuan; hanya sinyal baru sesudahnya yang dinilai. Data future return/MAE tidak digunakan untuk memilih sinyal.</div>';
+ h+='<div class="dchips"><span class="chip">Proposal disetujui <b>'+nf(p34.approvedRunCount||0)+'</b></span><span class="chip">Menunggu data forward <b>'+nf(counts.awaiting||0)+'</b></span><span class="chip">PASS <b>'+nf(counts.pass||0)+'</b></span><span class="chip">FAIL <b>'+nf(counts.fail||0)+'</b></span><span class="chip">Review <b>'+nf(counts.review||0)+'</b></span><span class="chip">Menunggu persetujuan manusia <b>'+nf(p34.pendingHumanApprovalCount||0)+'</b></span></div>';
+ h+='<h4>Hasil challenger berdasarkan sinyal pasca-persetujuan</h4><div style="overflow-x:auto"><table><tr><th>Proposal / trigger</th><th>Aturan challenger</th><th>Sampel baseline / challenger</th><th>Retensi</th><th>Δ excess return 20 sesi</th><th>Δ MAE 20 sesi</th><th>Hasil</th></tr>';
+ runs.forEach(x=>{
+  h+='<tr><td><b>'+esc(x.triggerCode||'—')+'</b><br><small>'+esc(x.proposalId||'')+'</small><br><small>Disetujui '+esc(x.approvedAt||'—')+'</small></td>';
+  h+='<td>'+esc(x.policyLabel||x.policyId||'—')+'<br><small>'+esc(x.policyDescription||'')+'</small></td>';
+  h+='<td>'+nf(x.baselineN||0)+' / '+nf(x.challengerN||0)+'</td><td>'+pct(x.retentionPct)+'</td>';
+  h+='<td>'+pct(x.excessDelta20Pct)+'</td><td>'+pct(x.maeDelta20Pct)+'</td>';
+  h+='<td><span class="bdg '+tone(x.status)+'">'+esc(x.status||'—')+'</span><br><small>'+esc(x.sampleGrade||'')+'</small></td></tr>';
+  if(x.baseline&&x.challenger)h+='<tr><td colspan="7"><small>Baseline: return '+pct(x.baseline.averageReturnPct)+' • excess '+pct(x.baseline.averageExcessPct)+' • beat IHSG '+pct(x.baseline.beatIhsgPct)+' • MAE '+pct(x.baseline.averageMaePct)+' | Challenger: return '+pct(x.challenger.averageReturnPct)+' • excess '+pct(x.challenger.averageExcessPct)+' • beat IHSG '+pct(x.challenger.beatIhsgPct)+' • MAE '+pct(x.challenger.averageMaePct)+'</small></td></tr>';
+ });
+ if(!runs.length)h+='<tr><td colspan="7">Belum ada proposal P33 yang disetujui untuk shadow. Review proposal dari panel P33 terlebih dahulu.</td></tr>';
+ h+='</table></div>';
+ if((p34.warnings||[]).length)h+='<div class="dnote">'+p34.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+ if((p34.caveats||[]).length)h+='<div class="dnote">'+p34.caveats.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p34RefreshShadowLab" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh challenger shadow</button><span id="p34ShadowLabMsg" class="dnote">Otomatis setelah P33 pada S40 pukul 16:59 WIB • ringkasan dikirim setelah digest 17:00.</span></div>';
+ h+='<div class="dnote"><small>'+esc(p34.policy||'')+' Versi: '+esc(p34.version||'')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2265,6 +2291,25 @@ if(!window.__p33InvestmentDriftBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p33DriftMsg');if(done)done.textContent=j.message||'Review tersimpan.';
   }catch(err){review.disabled=false;review.textContent=oldText;if(msg)msg.textContent=String(err&&err.message||err);}
+ });
+}
+
+/* ===== P34: authenticated refresh for AI Investment Challenger Shadow Lab ===== */
+if(!window.__p34InvestmentShadowBound){
+ window.__p34InvestmentShadowBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p34RefreshShadowLab'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p34ShadowLabMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menjalankan challenger…';
+  if(msg)msg.textContent='Memperbarui P33 dan menilai hanya outcome P31 dari sinyal yang dibuat setelah proposal disetujui…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'committee_shadow_lab_refresh',token:token})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P34 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p34ShadowLabMsg');if(done)done.textContent=j.message||'P34 berhasil diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh challenger shadow';}
  });
 }
 
