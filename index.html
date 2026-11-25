@@ -2026,6 +2026,74 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  if(p39&&p39.policy)h+='<div class="dnote"><small>'+esc(p39.policy)+'</small></div>';
 }
 
+
+/* ===== P40: Portfolio Capital & Cash Flow Intelligence ===== */
+const p40=P.portfolioCapital||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p40m=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p40tone=s=>s==='STOCK'?'ok':s==='GOLD'?'warn':'idle';
+ h+='<h4>🏦 P40 — Portfolio Capital & Cash Flow Intelligence <small>('+esc(p40&&p40.generatedAt||'belum dimuat')+')</small></h4>';
+ h+='<div class="dnote">Pusat ringkasan modal, saldo kas, valuasi aset, cost basis dan hasil investasi. Sumber saham dari P39/P20, reksa dana dan kripto dari P12, emas/aset lain serta rekening non-broker dari statement manual. P40 tidak mengirim order.</div>';
+ if(p40){
+  h+='<div class="dchips"><span class="chip '+(p40.complete?'ok':'warn')+'">Status NAV <b>'+(p40.complete?'LENGKAP':'PARSIAL')+'</b></span><span class="chip">Aset terukur <b>'+nf(p40.valuedAssetCount||0)+'/'+nf(p40.assetCount||0)+'</b></span><span class="chip">Coverage jumlah aset <b>'+nf(p40.valuationCoveragePct||0)+'%</b></span><span class="chip">Akun kas valid <b>'+nf(p40.cash&&p40.cash.validAccounts||0)+'</b></span><span class="chip">Valuasi belum tersedia <b>'+nf(p40.missingValuations||0)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">NAV lengkap <b>'+(p40.netWorth==null?'—':p40m(p40.netWorth))+'</b></span><span class="chip">Nilai terukur sementara <b>'+p40m(p40.knownNetWorth)+'</b></span><span class="chip">Investasi non-kas <b>'+p40m(p40.investedAssets)+'</b></span><span class="chip">Kas valid <b>'+p40m(p40.cashValue)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Modal bersih sejak baseline <b>'+p40m(p40.netExternalCapital)+'</b></span><span class="chip">Net performance <b>'+(p40.netPerformance==null?'—':p40m(p40.netPerformance))+'</b></span><span class="chip">Return sejak baseline <b>'+(p40.performancePct==null?'—':Number(p40.performancePct).toFixed(2)+'%')+'</b></span><span class="chip">Realized P/L saham P39 <b>'+p40m(p40.realizedPnl)+'</b></span><span class="chip">Unrealized P/L terukur <b>'+p40m(p40.unrealizedPnl)+'</b></span></div>';
+  h+='<div class="dnote">Baseline modal '+p40m(p40.capital&&p40.capital.baseline)+' ('+esc(p40.capital&&p40.capital.baselineDate||'belum dicatat')+') • Kontribusi eksternal '+p40m(p40.capital&&p40.capital.contributions)+' • Penarikan '+p40m(p40.capital&&p40.capital.withdrawals)+' • Dividend/interest/other income tercatat '+p40m(p40.capital&&p40.capital.reportedIncome)+' • Fee/pajak/biaya tercatat '+p40m(p40.capital&&p40.capital.reportedCosts)+'. Pendapatan/biaya adalah atribusi, tidak ditambahkan lagi ke NAV agar tidak double count dengan saldo kas statement.</div>';
+  h+='<h4>Alokasi berdasarkan kelas aset</h4><div class="dlist">';
+  (p40.allocations||[]).forEach(function(a){h+='<div style="margin:7px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+esc(a.assetClass)+'</b><span>'+p40m(a.marketValue)+' • '+Number(a.weightPct||0).toFixed(1)+'%</span></div><div style="height:7px;background:rgba(148,163,184,.18);border-radius:8px;overflow:hidden"><div style="height:7px;width:'+Math.max(0,Math.min(100,Number(a.weightPct)||0))+'%;background:#38bdf8;border-radius:8px"></div></div><small>'+nf(a.assets)+' aset • basis '+p40m(a.costBasis)+' • P/L belum terealisasi '+p40m(a.unrealizedPnl)+(a.unpriced?' • '+nf(a.unpriced)+' belum terukur':'')+'</small></div>';});
+  h+='</div>';
+  h+='<h4>Valuasi aset</h4><div style="overflow-x:auto"><table><tr><th>Kelas / aset</th><th>Akun / sumber</th><th>Qty</th><th>Nilai pasar</th><th>Cost basis</th><th>P/L belum terealisasi</th><th>Valuasi</th></tr>';
+  (p40.assets||[]).forEach(function(a){h+='<tr><td><span class="bdg '+p40tone(a.assetClass)+'">'+esc(a.assetClass)+'</span><br><b>'+esc(a.assetName)+'</b><br><small>'+esc(a.assetCode)+'</small></td><td>'+esc(a.account)+'<br><small>'+esc(a.source)+'</small></td><td>'+(a.quantity==null?'—':nf(a.quantity))+'</td><td>'+p40m(a.marketValue)+'</td><td>'+p40m(a.costBasis)+'</td><td>'+p40m(a.unrealizedPnl)+'</td><td>'+esc(a.valuationDate||'—')+'<br><span class="bdg '+(a.priceFresh?'ok':'warn')+'">'+(a.priceFresh?'FRESH':'STALE / MISSING')+'</span></td></tr>';});
+  if(!(p40.assets||[]).length)h+='<tr><td colspan="7">Belum ada aset terukur. Isi data baseline dan statement melalui form di bawah.</td></tr>';
+  h+='</table></div>';
+  h+='<h4>Snapshot saldo kas</h4><div style="overflow-x:auto"><table><tr><th>Akun</th><th>Saldo</th><th>Tanggal</th><th>Sumber</th><th>Status</th></tr>';
+  (p40.cash&&p40.cash.accounts||[]).forEach(function(a){h+='<tr><td>'+esc(a.account)+'</td><td>'+p40m(a.balance)+'</td><td>'+esc(a.snapshotDate)+'</td><td>'+esc(a.source)+'<br><small>'+esc(a.statementRef||'')+'</small></td><td><span class="bdg '+(a.fresh?'ok':'warn')+'">'+(a.fresh?'FRESH':'STALE')+'</span></td></tr>';});
+  if(!(p40.cash&&p40.cash.accounts||[]).length)h+='<tr><td colspan="5">Belum ada saldo kas dari P39 atau P40.</td></tr>';
+  h+='</table></div>';
+  if((p40.warnings||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p40.warnings.map(function(w){return '⚠ '+esc(w);}).join('<br>')+'</div>';
+  h+='<h4>Riwayat arus modal</h4><div style="overflow-x:auto"><table><tr><th>Tanggal</th><th>Jenis</th><th>Akun</th><th>Nominal</th><th>Referensi</th></tr>';
+  (p40.events||[]).forEach(function(e){h+='<tr><td>'+esc(e.date)+'</td><td>'+esc(e.type)+'</td><td>'+esc(e.account)+'</td><td>'+p40m(e.amount)+'</td><td>'+esc(e.reference||'')+'</td></tr>';});
+  if(!(p40.events||[]).length)h+='<tr><td colspan="5">Belum ada event modal.</td></tr>';
+  h+='</table></div>';
+ }else h+='<div class="dnote">Belum ada data P40. Jalankan refresh setelah P20, P38, P39, dan P12 siap.</div>';
+ h+='<details style="margin:10px 0"><summary style="cursor:pointer;color:#9fc2ff;font-weight:800">＋ Catat baseline / arus modal / pendapatan dan biaya</summary>';
+ h+='<div class="dnote">Catat OPENING_CAPITAL sekali saja sesuai total nilai aset + kas pada tanggal baseline. CONTRIBUTION/WITHDRAWAL hanya untuk arus dana dari/ke luar seluruh portofolio. Transfer internal pilih INTERNAL_TRANSFER.</div>';
+ h+='<div class="dlist" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">';
+ h+='<label>Jenis event<select id="p40EventType" style="width:100%;padding:8px"><option value="OPENING_CAPITAL">OPENING_CAPITAL — baseline awal</option><option value="CONTRIBUTION">CONTRIBUTION — setoran dari luar</option><option value="WITHDRAWAL">WITHDRAWAL — penarikan ke luar</option><option value="DIVIDEND">DIVIDEND — dividen diterima</option><option value="INTEREST">INTEREST — bunga</option><option value="FEE">FEE — biaya</option><option value="TAX">TAX — pajak</option><option value="OTHER_INCOME">OTHER_INCOME</option><option value="OTHER_EXPENSE">OTHER_EXPENSE</option><option value="INTERNAL_TRANSFER">INTERNAL_TRANSFER — antar akun sendiri</option></select></label>';
+ h+='<label>Tanggal<input id="p40EventDate" type="date" max="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:8px"></label>';
+ h+='<label>Akun / sumber dana<input id="p40EventAccount" maxlength="100" placeholder="BCA / Broker A" style="width:100%;padding:8px"></label>';
+ h+='<label>Nominal (Rp)<input id="p40EventAmount" type="number" min="1" step="1" style="width:100%;padding:8px"></label>';
+ h+='<label>Referensi bukti<input id="p40EventRef" maxlength="120" placeholder="No. transfer / statement" style="width:100%;padding:8px"></label>';
+ h+='<label>Catatan<input id="p40EventNotes" maxlength="500" style="width:100%;padding:8px"></label>';
+ h+='<div style="grid-column:1/-1"><button id="p40SaveEvent" type="button" style="padding:8px 12px">Simpan event modal</button></div></div></details>';
+ h+='<details style="margin:10px 0"><summary style="cursor:pointer;color:#9fc2ff;font-weight:800">＋ Catat valuasi emas / aset lainnya</summary>';
+ h+='<div class="dnote">Input manual hanya untuk GOLD dan OTHER. Saham bersumber dari ledger P39, reksa dana/kripto dari P12 agar tidak dobel.</div>';
+ h+='<div class="dlist" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">';
+ h+='<label>Kelas aset<select id="p40AssetClass" style="width:100%;padding:8px"><option value="GOLD">GOLD</option><option value="OTHER">OTHER</option></select></label>';
+ h+='<label>Kode aset<input id="p40AssetCode" maxlength="40" placeholder="ANTAM10G" style="width:100%;padding:8px"></label>';
+ h+='<label>Nama aset<input id="p40AssetName" maxlength="100" placeholder="Emas Antam 10 gram" style="width:100%;padding:8px"></label>';
+ h+='<label>Akun / lokasi<input id="p40AssetAccount" maxlength="100" placeholder="Rumah / Brankas" style="width:100%;padding:8px"></label>';
+ h+='<label>Tanggal valuasi<input id="p40AssetDate" type="date" max="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:8px"></label>';
+ h+='<label>Jumlah (opsional)<input id="p40AssetQty" type="number" min="0" step="any" style="width:100%;padding:8px"></label>';
+ h+='<label>Harga satuan Rp (opsional)<input id="p40AssetUnit" type="number" min="0" step="1" style="width:100%;padding:8px"></label>';
+ h+='<label>Nilai pasar total Rp<input id="p40AssetMarket" type="number" min="1" step="1" style="width:100%;padding:8px"></label>';
+ h+='<label>Cost basis Rp (opsional)<input id="p40AssetBasis" type="number" min="0" step="1" style="width:100%;padding:8px"></label>';
+ h+='<label>Referensi statement<input id="p40AssetRef" maxlength="120" style="width:100%;padding:8px"></label>';
+ h+='<label style="grid-column:1/-1">Catatan<input id="p40AssetNotes" maxlength="500" style="width:100%;padding:8px"></label>';
+ h+='<div style="grid-column:1/-1"><button id="p40SaveAsset" type="button" style="padding:8px 12px">Simpan valuasi aset</button></div></div></details>';
+ h+='<details style="margin:10px 0"><summary style="cursor:pointer;color:#9fc2ff;font-weight:800">＋ Catat saldo kas bank / rekening non-broker</summary>';
+ h+='<div class="dnote">Saldo kas broker diambil dari statement P39. Form ini untuk rekening bank dan kas non-broker saja. Gunakan nama akun unik.</div>';
+ h+='<div class="dlist" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px">';
+ h+='<label>Tanggal statement<input id="p40CashDate" type="date" max="'+new Date().toISOString().slice(0,10)+'" style="width:100%;padding:8px"></label>';
+ h+='<label>Nama rekening<input id="p40CashAccount" maxlength="100" placeholder="BCA investasi" style="width:100%;padding:8px"></label>';
+ h+='<label>Saldo kas (Rp)<input id="p40CashBalance" type="number" min="0" step="1" style="width:100%;padding:8px"></label>';
+ h+='<label>Referensi statement<input id="p40CashRef" maxlength="120" style="width:100%;padding:8px"></label>';
+ h+='<label style="grid-column:1/-1">Catatan<input id="p40CashNotes" maxlength="500" style="width:100%;padding:8px"></label>';
+ h+='<div style="grid-column:1/-1"><button id="p40SaveCash" type="button" style="padding:8px 12px">Simpan saldo kas</button></div></div></details>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p40RefreshCapital" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh P40 & impor fill P38</button><span id="p40CapitalMsg" class="dnote">Refresh mengimpor BUY P38 ke P39 secara idempotent, memperbarui snapshot, dan menghitung NAV.</span></div>';
+ if(p40&&p40.policy)h+='<div class="dnote"><small>'+esc(p40.policy)+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2694,6 +2762,49 @@ if(!window.__p39BrokerReconciliationBound){
    const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P39 gagal.');
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p39ReconciliationMsg');if(done)done.textContent=j.message||'P39 berhasil diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+
+/* ===== P40: capital ledger, manual valuations and portfolio refresh ===== */
+if(!window.__p40PortfolioCapitalBound){
+ window.__p40PortfolioCapitalBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p40RefreshCapital'):null;
+  const event=ev.target&&ev.target.closest?ev.target.closest('#p40SaveEvent'):null;
+  const asset=ev.target&&ev.target.closest?ev.target.closest('#p40SaveAsset'):null;
+  const cash=ev.target&&ev.target.closest?ev.target.closest('#p40SaveCash'):null;
+  const target=refresh||event||asset||cash;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p40CapitalMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';};
+  let payload={action:'portfolio_capital_intelligence',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Memperbarui NAV…';if(msg)msg.textContent='Mengimpor fill BUY P38 ke P39, membaca harga P20, snapshot P12, statement kas dan valuasi aset…';}
+  else if(event){
+   const amount=Number(val('p40EventAmount'));
+   if(!val('p40EventDate')||!val('p40EventAccount')||!Number.isFinite(amount)||amount<=0){if(msg)msg.textContent='Isi tanggal, akun, dan nominal event yang valid.';return;}
+   const type=val('p40EventType');
+   if(type==='OPENING_CAPITAL'&&!window.confirm('Tetapkan Rp'+amount.toLocaleString('id-ID')+' sebagai baseline modal awal seluruh portofolio? Baseline hanya bisa dibuat satu kali.'))return;
+   payload.command='capital_event';payload.eventType=type;payload.eventDate=val('p40EventDate');payload.account=val('p40EventAccount');payload.amountIdr=amount;payload.externalRef=val('p40EventRef');payload.notes=val('p40EventNotes');
+   target.disabled=true;target.textContent='Menyimpan event…';if(msg)msg.textContent='Memvalidasi event arus modal dan memperbarui ringkasan…';
+  }else if(asset){
+   const market=val('p40AssetMarket'),qty=val('p40AssetQty'),unit=val('p40AssetUnit');
+   if(!val('p40AssetCode')||!val('p40AssetName')||!val('p40AssetAccount')||!val('p40AssetDate')||(!market&&(!qty||!unit))){if(msg)msg.textContent='Isi identitas aset, akun, tanggal, dan nilai pasar (atau jumlah × harga satuan).';return;}
+   payload.command='asset_valuation';payload.assetClass=val('p40AssetClass');payload.assetCode=val('p40AssetCode');payload.assetName=val('p40AssetName');payload.account=val('p40AssetAccount');payload.asOfDate=val('p40AssetDate');payload.quantity:qty?Number(qty):null;payload.unitPrice:unit?Number(unit):null;payload.marketValue:market?Number(market):null;payload.costBasis:val('p40AssetBasis')?Number(val('p40AssetBasis')):null;payload.statementRef=val('p40AssetRef');payload.notes=val('p40AssetNotes');
+   target.disabled=true;target.textContent='Menyimpan valuasi…';if(msg)msg.textContent='Menyimpan valuasi GOLD/OTHER dan menghitung ulang coverage…';
+  }else{
+   const balance=val('p40CashBalance');
+   if(!val('p40CashDate')||!val('p40CashAccount')||balance===''||!Number.isFinite(Number(balance))||Number(balance)<0){if(msg)msg.textContent='Isi tanggal statement, nama rekening, dan saldo kas valid.';return;}
+   payload.command='cash_snapshot';payload.snapshotDate=val('p40CashDate');payload.account=val('p40CashAccount');payload.cashBalance=Number(balance);payload.statementRef=val('p40CashRef');payload.notes=val('p40CashNotes');
+   target.disabled=true;target.textContent='Menyimpan saldo…';if(msg)msg.textContent='Menyimpan saldo kas rekening dari statement…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P40 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p40CapitalMsg');if(done)done.textContent=j.message||'P40 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
