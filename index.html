@@ -1845,6 +1845,36 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p35){
  h+='<div class="dnote"><small>'+esc(p35.policy||'')+'</small></div>';
 }
 
+/* ===== P36: AI Model Runtime Router & Safe Rollback panel ===== */
+const p36=P.investmentRuntimeRouter;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])&&p36){
+ const st=p36.state||{},shd=p36.shadow||{},rt=p36.route||{},tone=st.mode==='ADVISORY_ROUTING'?'ok':st.mode==='SHADOW_ONLY'?'warn':'idle';
+ const fmt=x=>x==null?'—':Number(x).toFixed(2)+'%';
+ h+='<h4>🧭 P36 — AI Model Runtime Router & Safe Rollback <small>('+esc(p36.generatedAt||'—')+' WIB)</small></h4>';
+ h+='<div class="dnote">Runtime membaca Champion Registry P35. Challenger dikumpulkan di jalur shadow terlebih dahulu; setelah gate lulus, aktivasi manual hanya mengubah shortlist advisory terpisah. Skor, kode keputusan dan daftar asli P30 tetap utuh; tidak ada transaksi otomatis.</div>';
+ h+='<div class="dchips"><span class="chip">Mode runtime <b><span class="bdg '+tone+'">'+esc(st.mode||'BASELINE_LOCKED')+'</span></b></span><span class="chip">Model aktif <b>'+esc(rt.activeModelVersion||'P30-P34 baseline')+'</b></span><span class="chip">Challenger Registry <b>'+esc(rt.candidateModelVersion||'—')+'</b></span><span class="chip">Shadow gate <b>'+esc(shd.gateStatus||'NO_CANDIDATE')+'</b></span></div>';
+ h+='<h4>Runtime shadow gate</h4><div style="overflow-x:auto"><table><tr><th>Durasi</th><th>Baseline matang</th><th>Challenger matang</th><th>Δ excess 20 sesi</th><th>Beat IHSG challenger</th><th>Δ MAE</th><th>Keputusan gate</th></tr>';
+ h+='<tr><td>'+nf(shd.daysElapsed||0)+' / '+nf(shd.minDays||30)+' hari</td><td>'+nf(shd.baseline&&shd.baseline.count||0)+' / '+nf(shd.minBaseline||20)+'</td><td>'+nf(shd.challenger&&shd.challenger.count||0)+' / '+nf(shd.minChallenger||10)+'</td><td>'+fmt(shd.excessDelta20Pct)+'</td><td>'+fmt(shd.challenger&&shd.challenger.beatIhsgPct)+'</td><td>'+fmt(shd.maeDelta20Pct)+'</td><td><span class="bdg '+(shd.gateStatus==='READY_FOR_RUNTIME_APPROVAL'?'ok':shd.gateStatus==='SHADOW_FAILED'?'err':'warn')+'">'+esc(shd.gateStatus||'—')+'</span><br><small>'+esc(shd.gateReason||'')+'</small></td></tr>';
+ h+='</table></div>';
+ h+='<h4>Daftar advisory runtime</h4><div class="dnote">'+esc(rt.note||'')+'</div><div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Keputusan P30 asli</th><th>Skor</th><th>Coverage</th><th>Route</th></tr>';
+ (rt.routedCandidates||[]).forEach(x=>{h+='<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+esc(x.decisionCode)+' · '+esc(x.decision)+'</td><td>'+(x.score==null?'—':Number(x.score).toFixed(1))+'</td><td>'+fmt(x.coveragePct)+'</td><td><span class="bdg '+(st.mode==='ADVISORY_ROUTING'?'ok':'idle')+'">'+(st.mode==='ADVISORY_ROUTING'?'Routed':'Baseline')+'</span></td></tr>';});
+ if(!(rt.routedCandidates||[]).length)h+='<tr><td colspan="5">Belum ada kandidat P30 untuk dirutekan. Refresh komite dan runtime.</td></tr>';
+ h+='</table></div>';
+ if(st.mode==='SHADOW_ONLY'&&(rt.shadowPreview||[]).length){
+  h+='<h4>Preview challenger (tidak memengaruhi output P30)</h4><div class="dchips"><span class="chip">Lolos filter challenger <b>'+nf(rt.shadowCandidateCount||0)+'</b></span><span class="chip">Kandidat baseline <b>'+nf(rt.baselineCandidateCount||0)+'</b></span></div>';
+  h+='<div style="overflow-x:auto"><table><tr><th>Ticker</th><th>Skor</th><th>Coverage</th><th>Keputusan asli P30</th></tr>';
+  rt.shadowPreview.forEach(x=>{h+='<tr><td><b>'+esc(x.ticker)+'</b></td><td>'+(x.score==null?'—':Number(x.score).toFixed(1))+'</td><td>'+fmt(x.coveragePct)+'</td><td>'+esc(x.decisionCode)+'</td></tr>';});h+='</table></div>';
+ }
+ if(p36.audit&&p36.audit.length){h+='<h4>Audit transisi runtime</h4><div class="dlist">';p36.audit.slice(0,8).forEach(x=>{h+='<div><b>'+esc(x.event)+'</b> • '+esc(x.time)+'<br><small>'+esc(x.fromModelId)+' → '+esc(x.toModelId)+' • '+esc(x.modeAfter)+' • '+esc(x.reason)+'</small></div>';});h+='</div>';}
+ if((p36.warnings||[]).length)h+='<div class="dnote">'+p36.warnings.map(x=>'⚠ '+esc(x)).join('<br>')+'</div>';
+ if((p36.caveats||[]).length)h+='<div class="dnote">'+p36.caveats.map(x=>'• '+esc(x)).join('<br>')+'</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p36RefreshRuntime" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#16a34a;color:#fff;font-weight:800;cursor:pointer">Refresh runtime router</button>';
+ if(p36.canActivate)h+='<button id="p36ActivateRuntime" type="button">Setujui aktivasi advisory</button>';
+ if(p36.canRollback)h+='<button id="p36RollbackRuntime" type="button">Rollback ke baseline</button>';
+ h+='<span id="p36RuntimeMsg" class="dnote">Mode default baseline • approval kedua dan shadow gate wajib sebelum advisory runtime aktif.</span></div>';
+ h+='<div class="dnote"><small>'+esc(p36.policy||'')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2375,6 +2405,41 @@ if(!window.__p35ModelRegistryBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p35RegistryMsg');if(done)done.textContent=j.message||'Model Registry diperbarui.';
   }catch(err){btn.disabled=false;btn.textContent=oldText;if(msg)msg.textContent=String(err&&err.message||err);}
+ });
+}
+
+/* ===== P36: authenticated Runtime Router refresh, activate, and safe rollback ===== */
+if(!window.__p36RuntimeRouterBound){
+ window.__p36RuntimeRouterBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p36RefreshRuntime'):null;
+  const activate=ev.target&&ev.target.closest?ev.target.closest('#p36ActivateRuntime'):null;
+  const rollback=ev.target&&ev.target.closest?ev.target.closest('#p36RollbackRuntime'):null;
+  if(!refresh&&!activate&&!rollback)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p36RuntimeMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const btn=refresh||activate||rollback;
+  let payload={token:token};
+  if(refresh)payload.action='committee_runtime_router_refresh';
+  else if(activate){
+   if(!window.confirm('Aktifkan advisory runtime Challenger? Skor dan keputusan P30 tetap tidak berubah; hanya shortlist advisory yang menggunakan filter Challenger.'))return;
+   const reason=window.prompt('Alasan persetujuan aktivasi runtime:','Shadow gate lulus dan disetujui admin');
+   if(reason===null)return;
+   payload.action='committee_runtime_activate';payload.reason=reason;
+  }else{
+   if(!window.confirm('Rollback advisory runtime ke baseline P30? Ini menghentikan filter challenger pada shortlist advisory.'))return;
+   const reason=window.prompt('Alasan rollback runtime:','Review manual / ditemukan penurunan performa');
+   if(reason===null)return;
+   payload.action='committee_runtime_rollback';payload.reason=reason;
+  }
+  btn.disabled=true;const old=btn.textContent;btn.textContent='Memproses…';
+  if(msg)msg.textContent=activate?'Memvalidasi shadow gate dan persetujuan aktivasi…':rollback?'Mengembalikan advisory router ke baseline…':'Memperbarui registry dan data shadow runtime…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'Runtime router gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p36RuntimeMsg');if(done)done.textContent=j.message||'Runtime router diperbarui.';
+  }catch(err){btn.disabled=false;btn.textContent=old;if(msg)msg.textContent=String(err&&err.message||err);}
  });
 }
 
