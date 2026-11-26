@@ -2142,7 +2142,7 @@ const p42=P.portfolioRiskOptimizer||null;
 if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  const p42num=n=>n==null?'—':Number(n).toFixed(2);
  const p42pct=n=>n==null?'—':(Number(n)>=0?'+':'')+Number(n).toFixed(2)+'%';
- const p42money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p42money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID'); const p42pp=n=>n==null?'—':(Number(n)>=0?'+':'')+Number(n).toFixed(2)+' pp';
  const p42tone=n=>n==null?'idle':Number(n)>=0?'ok':'err';
  const p42safe=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
  const m=p42&&p42.metrics||{},reg=p42&&p42.marketRegime||{},risk=p42&&p42.riskContributions||{},sc=p42&&p42.allocationScenario||{};
@@ -2161,7 +2161,7 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
   h+='</table></div>';
   h+='<h4>Skenario alokasi berdasarkan regime</h4><div class="dnote"><span class="bdg warn">SIMULASI HEURISTIK</span> Bobot current direweight memakai faktor kondisi pasar. Ini bukan mean-variance optimization dan tidak mengasumsikan expected return/covariance.</div>';
   h+='<div style="overflow-x:auto"><table><tr><th>Kelas</th><th>Bobot saat ini</th><th>Target skenario</th><th>Perubahan</th><th>Nilai indikatif</th><th>Arah skenario</th></tr>';
-  (sc.items||[]).forEach(function(x){h+='<tr><td><b>'+esc(x.assetClass)+'</b></td><td>'+p42pct(x.currentWeightPct)+'</td><td><b>'+p42pct(x.targetWeightPct)+'</b></td><td><span class="bdg '+p42tone(x.changePctPoints)+'">'+p42pct(x.changePctPoints)+'</span></td><td>'+p42money(x.changeValue)+'</td><td>'+esc(x.action)+'</td></tr>';});
+  (sc.items||[]).forEach(function(x){h+='<tr><td><b>'+esc(x.assetClass)+'</b></td><td>'+p42pct(x.currentWeightPct)+'</td><td><b>'+p42pct(x.targetWeightPct)+'</b></td><td><span class="bdg '+p42tone(x.changePctPoints)+'">'+p42pp(x.changePctPoints)+'</span></td><td>'+p42money(x.changeValue)+'</td><td>'+esc(x.action)+'</td></tr>';});
   if(!(sc.items||[]).length)h+='<tr><td colspan="6">Belum ada alokasi untuk disimulasikan.</td></tr>';
   h+='</table></div>';
   if((p42.warnings||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p42.warnings.map(function(w){return '⚠ '+esc(w);}).join('<br>')+'</div>';
