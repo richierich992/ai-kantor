@@ -2542,6 +2542,39 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div class="dnote"><small>'+esc(p50&&p50.policy||'ACCEPT hanya membuat catatan kebijakan advisory. Tidak mengubah P47/P48 atau mengirim instruksi ke broker.')+'</small></div>';
 }
 
+
+/* ===== P51: execution playbook compliance & performance monitor ===== */
+const p51=P.executionPlaybookCompliance||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p51money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p51bps=n=>n==null?'—':(Number(n)>0?'+':'')+Number(n).toFixed(2)+' bps';
+ const p51pct=n=>n==null?'—':Number(n).toFixed(2)+'%';
+ const p51tone=s=>s==='DEVIATION'?'err':s==='COMPLIANT'?'ok':s==='PARTIAL_ASSESSMENT'||s==='EFFECTIVE_DATE_AMBIGUOUS'||s==='PRE_POLICY_BASELINE'?'warn':'idle';
+ const p51key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ h+='<h4>🛡️ P51 — AI Execution Playbook Compliance & Performance Monitor <small>('+esc(p51&&p51.generatedAt||'belum dimonitor')+')</small></h4>';
+ h+='<div class="dnote">P51 membandingkan order/fill P48 terhadap playbook P50 yang telah di-ACCEPT manusia. Mendeteksi perbedaan broker/akun, partisipasi ADV, dan biaya aktual terhadap simulasi. Ini monitor pasca-transaksi; tidak memblokir, mengubah, atau mengirim order broker.</div>';
+ if(p51&&p51.runId){
+  const t=p51.totals||{};
+  h+='<div class="dchips"><span class="chip">Order P48 <b>'+nf(t.orders)+'</b></span><span class="chip">Evaluated <b>'+nf(t.evaluated)+'</b></span><span class="chip">Compliant <b>'+nf(t.compliant)+'</b></span><span class="chip">Deviation <b>'+nf(t.deviations)+'</b></span><span class="chip">Partial <b>'+nf(t.partial)+'</b></span><span class="chip">Alerts <b>'+nf(t.alerts)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Broker mismatch <b>'+nf(t.brokerMismatches)+'</b></span><span class="chip">ADV breach <b>'+nf(t.dailyParticipationBreaches)+'</b></span><span class="chip">Cost target breach <b>'+nf(t.costTargetBreaches)+'</b></span><span class="chip">No policy <b>'+nf(t.noPolicy)+'</b></span><span class="chip">Pre-policy <b>'+nf(t.prePolicy)+'</b></span><span class="chip">Same-date ambiguous <b>'+nf(t.ambiguous)+'</b></span></div>';
+ }else h+='<div class="dnote">Belum ada hasil P51. Jalankan refresh setelah P48 memiliki order/fill dan P50 memiliki playbook ACCEPT.</div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p51Refresh" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh compliance P48 vs P50</button><span id="p51Msg" class="dnote">Snapshot baru bersifat historis dan tidak mengubah order yang sudah tercatat.</span></div>';
+ h+='<h4>Order compliance & performance</h4><div style="overflow-x:auto"><table><tr><th>Tanggal / aset</th><th>Order / policy</th><th>Broker aktual → rekomendasi</th><th>Fill / notional</th><th>All-in cost aktual / target</th><th>Daily participation / cap</th><th>Compliance</th><th>Review admin</th></tr>';
+ (p51&&p51.evaluations||[]).forEach(function(x){const k=p51key(x.evaluationId);h+='<tr><td>'+esc(x.tradeDate)+'<br><b>'+esc(x.assetCode)+' '+esc(x.side)+'</b><br><small>'+esc(x.assetClass)+'</small></td><td>'+esc(x.orderId)+'<br><small>'+esc(x.policyPlaybookId||'No accepted policy')+(x.policyEffectiveDate?' · effective '+esc(x.policyEffectiveDate):'')+'</small></td><td>'+esc(x.actualBroker)+' / '+esc(x.actualAccount)+'<br><small>→ '+esc(x.preferredBroker||'—')+' / '+esc(x.preferredAccount||'—')+'</small><br><small>Broker '+(x.brokerMatch==='true'?'OK':x.brokerMatch==='false'?'MISMATCH':'—')+' · Account '+(x.accountMatch==='true'?'OK':x.accountMatch==='false'?'MISMATCH':'—')+'</small></td><td>'+nf(x.filledQty)+' / sisa '+nf(x.remainingQty)+'<br>'+p51money(x.fillNotional)+'<br><small>'+nf(x.fillCount)+' fill · '+esc(x.orderStatus)+'</small></td><td><b>'+p51bps(x.actualCostBps)+'</b><br>target '+p51bps(x.expectedCostBps)+'<br><small>delta '+p51bps(x.costDeltaBps)+'</small><br>'+p51money(x.actualCostIdr)+'</td><td>'+p51pct(x.dailyParticipationPct)+' / '+p51pct(x.maxParticipationPct)+'<br><small>'+esc(x.participationStatus)+'</small><br><small>ADV '+p51money(x.advValue)+'</small></td><td><span class="bdg '+p51tone(x.complianceStatus)+'">'+esc(x.complianceStatus)+'</span><br><small>'+esc(x.severity)+' · '+esc((x.deviationCodes||[]).join(', ')||'—')+'</small><br><small>'+esc(x.detail)+'</small></td><td>';
+  if(x.reviewDecision){h+='<span class="bdg idle">'+esc(x.reviewDecision)+'</span><br><small>'+esc(x.reviewReason||'')+'</small>';}
+  else if(x.complianceStatus==='DEVIATION'){h+='<textarea id="p51Reason_'+k+'" rows="2" maxlength="500" placeholder="Alasan minimal 8 karakter" style="width:210px;padding:7px;margin-top:5px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><button type="button" data-p51-review="ACKNOWLEDGE" data-p51-id="'+esc(x.evaluationId)+'">Acknowledge</button><button type="button" data-p51-review="INVESTIGATE" data-p51-id="'+esc(x.evaluationId)+'">Investigate</button><button type="button" data-p51-review="FALSE_POSITIVE" data-p51-id="'+esc(x.evaluationId)+'">False positive</button></div>';}
+  else h+='<small>Review hanya untuk status DEVIATION.</small>';
+  h+='</td></tr>';});
+ if(!(p51&&p51.evaluations&&p51.evaluations.length))h+='<tr><td colspan="8">Belum ada order pada run monitoring ini.</td></tr>';
+ h+='</table></div>';
+ h+='<h4>Alert P51</h4><div style="overflow-x:auto"><table><tr><th>Severity</th><th>Order</th><th>Kode</th><th>Pesan</th><th>Evaluation</th></tr>';
+ (p51&&p51.alerts||[]).forEach(function(a){h+='<tr><td><span class="bdg '+(a.severity==='HIGH'?'err':a.severity==='MEDIUM'?'warn':'idle')+'">'+esc(a.severity)+'</span></td><td>'+esc(a.orderId)+'</td><td><b>'+esc(a.code)+'</b></td><td>'+esc(a.message)+'</td><td><small>'+esc(a.evaluationId)+'</small></td></tr>';});
+ if(!(p51&&p51.alerts&&p51.alerts.length))h+='<tr><td colspan="5">Belum ada alert.</td></tr>';
+ h+='</table></div>';
+ h+='<div class="dnote"><b>Batasan evaluasi:</b> kebijakan P50 mulai berlaku hari kalender setelah ACCEPT; order pada tanggal ACCEPT dianggap ambigu. Daily ADV dihitung dari seluruh fill yang tercatat di P48 untuk aset/tanggal tersebut, bukan volume bursa keseluruhan. Simulasi P50 harus dibuat sebelum tanggal transaksi. Kepatuhan pemecahan order dan jam intraday belum bisa dinilai karena P48 belum menyimpan parent-order link maupun timestamp eksekusi presisi.</div>';
+ h+='<div class="dnote"><small>'+esc(p51&&p51.policy||'P51 adalah monitor/audit pasca-transaksi. Alert tidak mengirim instruksi broker dan tidak mengubah posisi portofolio.')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3562,6 +3595,25 @@ if(!window.__p50AdaptiveExecutionBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=simulate?$('p50SimMsg'):$('p50Msg');if(done)done.textContent=j.message||'P50 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+/* ===== P51: refresh compliance and record admin disposition ===== */
+if(!window.__p51ComplianceMonitorBound){
+ window.__p51ComplianceMonitorBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p51Refresh'):null;
+  const review=ev.target&&ev.target.closest?ev.target.closest('[data-p51-review]'):null;
+  const target=refresh||review;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p51Msg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';};
+  const payload={action:'execution_playbook_compliance',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Memeriksa…';if(msg)msg.textContent='Membandingkan seluruh order/fill P48 dengan playbook P50 yang telah di-ACCEPT…';}
+  else{const id=review.getAttribute('data-p51-id'),decision=review.getAttribute('data-p51-review'),key=String(id||'').replace(/[^A-Za-z0-9]/g,''),reason=val('p51Reason_'+key);if(reason.length<8){if(msg)msg.textContent='Alasan review minimal 8 karakter.';return;}if(decision==='FALSE_POSITIVE'&&!window.confirm('Catat disposition FALSE_POSITIVE untuk temuan ini? Snapshot alert asli tidak akan dihapus atau diubah.'))return;payload.command='review';payload.evaluationId=id;payload.decision=decision;payload.reason=reason;target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Mencatat disposition admin secara immutable…';}
+  try{const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)}),j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P51 gagal diproses.');PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;const done=$('p51Msg');if(done)done.textContent=j.message||'P51 diperbarui.';}
+  catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
 
