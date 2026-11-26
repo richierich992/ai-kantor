@@ -2094,6 +2094,48 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  if(p40&&p40.policy)h+='<div class="dnote"><small>'+esc(p40.policy)+'</small></div>';
 }
 
+
+/* ===== P41: Portfolio Performance Attribution & Benchmarking ===== */
+const p41=P.portfolioPerformance||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p41pct=n=>n==null?'—':(Number(n)>=0?'+':'')+Number(n).toFixed(2)+'%';
+ const p41money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p41tone=n=>n==null?'idle':Number(n)>=0?'ok':'err';
+ h+='<h4>📊 P41 — Portfolio Performance Attribution & Benchmarking <small>('+esc(p41&&p41.generatedAt||'belum dihitung')+')</small></h4>';
+ h+='<div class="dnote">Membandingkan hasil pengelolaan modal dengan IHSG, menghitung return berbobot arus kas, drawdown, serta kontribusi P/L menurut kelas dan aset. Angka performa hanya ditampilkan ketika kualitas NAV dan histori mencukupi.</div>';
+ if(p41){
+  h+='<div class="dchips"><span class="chip '+(p41.navComplete?'ok':'warn')+'">NAV / history <b>'+(p41.navComplete?'VALID':'BELUM LENGKAP')+'</b></span><span class="chip">NAV akhir <b>'+p41money(p41.netWorth==null?p41.knownNetWorth:p41.netWorth)+'</b></span><span class="chip">Snapshot lengkap <b>'+nf(p41.coverage&&p41.coverage.completeSnapshots||0)+'</b></span><span class="chip">Coverage penuh <b>'+nf(p41.coverage&&p41.coverage.fullCoveragePct||0)+'%</b></span><span class="chip">Baris IHSG <b>'+nf(p41.coverage&&p41.coverage.ihsgRows||0)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">TWR — Modified Dietz <b>'+p41pct(p41.modifiedDietzTwrPct)+'</b></span><span class="chip">MWR — XIRR <b>'+p41pct(p41.xirrPct)+'</b></span><span class="chip">IHSG price return <b>'+p41pct(p41.ihsgPriceReturnPct)+'</b></span><span class="chip '+p41tone(p41.excessReturnPp)+'">Excess vs IHSG <b>'+(p41.excessReturnPp==null?'—':(p41.excessReturnPp>=0?'+':'')+Number(p41.excessReturnPp).toFixed(2)+' pp')+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip '+(p41.drawdown&&p41.drawdown.maxDrawdownPct<0?'warn':'ok')+'">Maximum drawdown <b>'+p41pct(p41.drawdown&&p41.drawdown.maxDrawdownPct)+'</b></span><span class="chip">Drawdown saat ini <b>'+p41pct(p41.drawdown&&p41.drawdown.currentDrawdownPct)+'</b></span><span class="chip">Peak <b>'+esc(p41.drawdown&&p41.drawdown.peakDate||'—')+'</b></span><span class="chip">Trough <b>'+esc(p41.drawdown&&p41.drawdown.troughDate||'—')+'</b></span><span class="chip">Segmen histori <b>'+nf(p41.drawdown&&p41.drawdown.segments||0)+'</b></span></div>';
+  h+='<h4>Perbandingan periode vs IHSG</h4><div class="dnote">TWR portofolio memakai Modified Dietz yang di-link antar snapshot NAV lengkap. Periode yang melintasi celah data tidak diberi hasil TWR.</div>';
+  h+='<div style="overflow-x:auto"><table><tr><th>Periode</th><th>Tanggal NAV</th><th>TWR portofolio</th><th>IHSG price return</th><th>Excess</th><th>Jumlah snapshot</th></tr>';
+  (p41.periods||[]).forEach(function(p){
+   const r=p.result||{};
+   h+='<tr><td><b>'+esc(p.period)+'</b></td><td>'+esc(r.startDate||'—')+' – '+esc(r.endDate||'—')+'</td><td><span class="bdg '+p41tone(r.twrPct)+'">'+p41pct(r.twrPct)+'</span></td><td>'+p41pct(r.ihsgPriceReturnPct)+'</td><td><span class="bdg '+p41tone(r.excessPp)+'">'+(r.excessPp==null?'—':(r.excessPp>=0?'+':'')+Number(r.excessPp).toFixed(2)+' pp')+'</span></td><td>'+nf(r.snapshots||0)+'</td></tr>';
+   if(r.reason)h+='<tr><td colspan="6"><small>'+esc(r.reason)+'</small></td></tr>';
+  });
+  h+='</table></div>';
+  h+='<h4>Attribution P/L menurut kelas aset</h4><div class="dnote">P/L terukur = realized P/L dari ledger saham P39 + unrealized P/L pada valuasi P40. Ini bukan Brinson attribution dan bukan kontribusi kausal terhadap TWR.</div>';
+  h+='<div style="overflow-x:auto"><table><tr><th>Kelas aset</th><th>Jumlah aset</th><th>Nilai pasar</th><th>Cost basis</th><th>Realized P/L</th><th>Unrealized P/L</th><th>Total P/L</th></tr>';
+  (p41.attribution&&p41.attribution.classes||[]).forEach(function(a){h+='<tr><td><b>'+esc(a.assetClass)+'</b>'+(a.unpriced?' <span class="bdg warn">Unpriced '+nf(a.unpriced)+'</span>':'')+'</td><td>'+nf(a.assets)+'</td><td>'+p41money(a.marketValue)+'</td><td>'+p41money(a.costBasis)+'</td><td>'+p41money(a.realizedPnl)+'</td><td>'+p41money(a.unrealizedPnl)+'</td><td><span class="bdg '+p41tone(a.totalPnl)+'">'+p41money(a.totalPnl)+'</span></td></tr>';});
+  if(!(p41.attribution&&p41.attribution.classes||[]).length)h+='<tr><td colspan="7">Belum ada aset untuk dianalisis.</td></tr>';
+  h+='</table></div>';
+  h+='<h4>Top / bottom aset berdasarkan P/L</h4><div style="overflow-x:auto"><table><tr><th>Kelas / aset</th><th>Nilai pasar</th><th>Cost basis</th><th>Realized</th><th>Unrealized</th><th>Total P/L</th><th>Sumber</th></tr>';
+  (p41.attribution&&p41.attribution.assets||[]).slice(0,30).forEach(function(a){h+='<tr><td><b>'+esc(a.assetCode)+'</b><br><small>'+esc(a.assetName)+' • '+esc(a.assetClass)+'</small></td><td>'+p41money(a.marketValue)+'</td><td>'+p41money(a.costBasis)+'</td><td>'+p41money(a.realizedPnl)+'</td><td>'+p41money(a.unrealizedPnl)+'</td><td><span class="bdg '+p41tone(a.totalPnl)+'">'+p41money(a.totalPnl)+'</span></td><td><small>'+esc(a.source||'')+(a.unpriced?' • valuasi belum lengkap':'')+'</small></td></tr>';});
+  if(!(p41.attribution&&p41.attribution.assets||[]).length)h+='<tr><td colspan="7">Belum ada atribusi per aset.</td></tr>';
+  h+='</table></div>';
+  const inc=p41.incomeCost||{};
+  h+='<h4>Pendapatan dan biaya tercatat</h4><div class="dchips"><span class="chip">Dividen <b>'+p41money(inc.dividend)+'</b></span><span class="chip">Bunga <b>'+p41money(inc.interest)+'</b></span><span class="chip">Pendapatan lain <b>'+p41money(inc.otherIncome)+'</b></span><span class="chip">Fee <b>'+p41money(inc.fees)+'</b></span><span class="chip">Pajak <b>'+p41money(inc.tax)+'</b></span><span class="chip">Biaya lain <b>'+p41money(inc.otherExpense)+'</b></span></div>';
+  h+='<div class="dnote">Pendapatan dan biaya diambil dari event P40 sebagai atribusi. Tidak ditambahkan lagi ke NAV atau return karena seharusnya telah tercermin pada saldo kas statement.</div>';
+  h+='<h4>Riwayat indeks TWR</h4><div style="overflow-x:auto"><table><tr><th>Tanggal</th><th>Index portofolio (awal 100)</th><th>NAV</th><th>Return interval</th></tr>';
+  (p41.history||[]).slice(-30).reverse().forEach(function(x){h+='<tr><td>'+esc(x.date)+'</td><td>'+Number(x.index).toFixed(4)+'</td><td>'+p41money(x.nav)+'</td><td>'+p41pct(x.periodReturn)+'</td></tr>';});
+  h+='</table></div>';
+  if((p41.warnings||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p41.warnings.map(function(w){return '⚠ '+esc(w);}).join('<br>')+'</div>';
+  h+='<div class="dnote"><small>'+esc(p41.methodology||'')+'</small></div>';
+ }else h+='<div class="dnote">Belum ada laporan P41. Pastikan P40 NAV, baseline modal, histori IHSG MarketHist, dan snapshot valuasi sudah tersedia.</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p41RefreshPerformance" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh performance & benchmark</button><span id="p41PerformanceMsg" class="dnote">Refresh setelah harga penutupan, statement kas, dan valuasi aset diperbarui. P41 menyimpan snapshot P40 harian secara idempotent.</span></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2806,6 +2848,27 @@ if(!window.__p40PortfolioCapitalBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p40CapitalMsg');if(done)done.textContent=j.message||'P40 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+
+/* ===== P41: authenticated portfolio performance / benchmark refresh ===== */
+if(!window.__p41PerformanceBenchmarkBound){
+ window.__p41PerformanceBenchmarkBound=true;
+ document.addEventListener('click',async function(ev){
+  const btn=ev.target&&ev.target.closest?ev.target.closest('#p41RefreshPerformance'):null;
+  if(!btn)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p41PerformanceMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  btn.disabled=true;btn.textContent='Menghitung performa…';
+  if(msg)msg.textContent='Memperbarui NAV P40, Modified Dietz TWR, XIRR, IHSG, drawdown dan atribusi aset…';
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'portfolio_performance_refresh',token:token,command:'refresh'})});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P41 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p41PerformanceMsg');if(done)done.textContent=j.message||'P41 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh performance & benchmark';}
  });
 }
 
