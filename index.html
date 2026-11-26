@@ -2180,6 +2180,53 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  }else h+='<div class="dnote">Belum ada laporan P42. Refresh setelah P41 dan MarketHist menyediakan setidaknya 61 sesi IHSG.</div>';
 }
 
+
+/* ===== P43: Covariance-Based Portfolio Optimizer ===== */
+const p43=P.portfolioCovarianceOptimizer||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p43money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p43pct=n=>n==null?'—':(Number(n)>=0?'+':'')+Number(n).toFixed(2)+'%';
+ const p43num=n=>n==null?'—':Number(n).toFixed(3);
+ const p43tone=n=>n==null?'idle':Number(n)>=0?'ok':'err';
+ const p43key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ const opt=p43&&p43.optimizer||{};
+ h+='<h4>🧮 P43 — AI Covariance-Based Portfolio Optimizer <small>('+esc(p43&&p43.generatedAt||'belum dihitung')+')</small></h4>';
+ h+='<div class="dnote">Menggunakan histori return harian per kelas aset, covariance dan correlation matrix, lalu membentuk minimum-variance allocation dan beberapa kandidat efficient frontier. Ini optimasi long-only untuk kelas aset yang memiliki histori selaras. Kas dipertahankan sebagai reserve di luar universe optimasi.</div>';
+ if(p43){
+  h+='<div class="dchips"><span class="chip '+(p43.ready?'ok':'warn')+'">Status <b>'+(p43.ready?'OPTIMIZER READY':'INSUFFICIENT HISTORY')+'</b></span><span class="chip">Return intervals <b>'+nf(p43.observations||0)+'/'+nf(p43.requiredObservations||30)+'</b></span><span class="chip">Tanggal bersama <b>'+nf(p43.alignedDates||0)+'</b></span><span class="chip">Kelas masuk optimasi <b>'+nf((p43.assetClasses||[]).length)+'</b></span><span class="chip">Riwayat terakhir <b>'+esc(p43.historyCapture&&p43.historyCapture.latestDate||'—')+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">NAV P40 <b>'+(p43.navComplete?p43money(p43.navValue):'BELUM LENGKAP')+'</b></span><span class="chip">History rows <b>'+nf(p43.historyCapture&&p43.historyCapture.storedRows||0)+'</b></span><span class="chip">Cash <b>RESERVE / DIKECUALIKAN</b></span></div>';
+  if(!p43.ready)h+='<div class="dnote"><span class="bdg warn">BELUM CUKUP DATA</span> '+esc(p43.reason||'Histori return antar kelas belum mencukupi.')+'</div>';
+  if((p43.excluded||[]).length)h+='<div class="dnote">Kelas yang dikecualikan: '+p43.excluded.map(function(x){return esc(x.assetClass)+' ('+nf(x.observations)+' tanggal: '+esc(x.reason)+')';}).join(' • ')+'</div>';
+  if(p43.ready&&opt.minVariance){
+   const mv=opt.minVariance;
+   h+='<h4>Minimum-variance allocation</h4><div class="dchips"><span class="chip">Expected return historis <b>'+p43pct(mv.expectedReturnPct)+'</b></span><span class="chip">Volatilitas tahunan <b>'+p43pct(mv.annualizedVolatilityPct)+'</b></span><span class="chip">Metode <b>Long-only / covariance</b></span><span class="chip">Shrinkage <b>'+p43num(opt.shrinkagePct)+'%</b></span></div>';
+   h+='<div style="overflow-x:auto"><table><tr><th>Kelas aset</th><th>Return historis tahunan</th><th>Volatilitas historis</th><th>Bobot minimum variance</th><th>Batas maksimum</th><th>Risk contribution</th></tr>';
+   (opt.classes||[]).forEach(function(c,i){const weight=(mv.weights||[]).find(function(w){return w.assetClass===c.assetClass;})||{},bound=(opt.constraints||[]).find(function(x){return x.assetClass===c.assetClass;})||{};h+='<tr><td><b>'+esc(c.assetClass)+'</b></td><td>'+p43pct(c.expectedAnnualReturnPct)+'</td><td>'+p43pct(c.volatilityAnnualPct)+'</td><td><b>'+p43pct(weight.weightPct)+'</b></td><td>'+p43pct(bound.maxWeightPct)+'</td><td>'+p43pct(mv.riskContributionsPct&&mv.riskContributionsPct[i])+'</td></tr>';});
+   h+='</table></div>';
+   if(opt.currentPortfolio)h+='<div class="dnote">Portofolio saat ini pada universe eligible: expected return historis '+p43pct(opt.currentPortfolio.expectedReturnPct)+' • volatilitas '+p43pct(opt.currentPortfolio.annualizedVolatilityPct)+'. Minimum variance adalah estimasi berdasarkan covariance histori, bukan janji return.</div>';
+   h+='<h4>Efficient frontier candidates</h4><div class="dnote">Titik-titik ini adalah solusi diskret untuk beberapa tingkat risk aversion. Return menggunakan rata-rata historis annualized, bukan forecast. Hanya kelas yang lolos histori minimum dapat dialokasikan.</div>';
+   h+='<div style="overflow-x:auto"><table><tr><th>Risk aversion</th><th>Expected return tahunan</th><th>Volatilitas tahunan</th><th>Alokasi</th></tr>';
+   (opt.frontier||[]).forEach(function(x){h+='<tr><td>'+p43num(x.riskAversion)+'</td><td>'+p43pct(x.expectedReturnPct)+'</td><td>'+p43pct(x.annualizedVolatilityPct)+'</td><td>'+(x.weights||[]).map(function(w){return esc(w.assetClass)+' '+p43pct(w.weightPct);}).join('<br>')+'</td></tr>';});
+   h+='</table></div>';
+   h+='<h4>Covariance / correlation matrix</h4><div style="overflow-x:auto"><table><tr><th>Daily aligned returns</th>'+(opt.classes||[]).map(function(c){return '<th>'+esc(c.assetClass)+'</th>';}).join('')+'</tr>';
+   (opt.classes||[]).forEach(function(c,i){h+='<tr><th>'+esc(c.assetClass)+'</th>'+(opt.correlation||[])[i].map(function(v){return '<td>'+(v==null?'—':Number(v).toFixed(3))+'</td>';}).join('')+'</tr>';});
+   h+='</table></div>';
+   h+='<h4>Proposal optimasi untuk review manual</h4><div class="dnote">Approval hanya menyetujui kandidat untuk review manual. Tidak mengubah target P13/P42, tidak membuat transaksi, dan tidak mengirim order.</div>';
+   if((p43.proposals||[]).length){
+    h+='<div style="overflow-x:auto"><table><tr><th>Tanggal</th><th>Status</th><th>Observasi</th><th>Minimum variance</th><th>Keputusan</th></tr>';
+    (p43.proposals||[]).forEach(function(x){const k=p43key(x.proposalId);h+='<tr><td>'+esc(x.snapshotDate)+'</td><td><span class="bdg '+(x.status==='APPROVED_FOR_MANUAL_REVIEW'?'ok':x.status==='DRAFT'?'warn':'idle')+'">'+esc(x.status)+'</span></td><td>'+nf(x.observationCount)+'</td><td>'+(x.minVariance&&x.minVariance.weights||[]).map(function(w){return esc(w.assetClass)+' '+p43pct(w.weightPct);}).join('<br>')+'</td><td>';
+     if(x.status==='DRAFT')h+='<textarea id="p43Reason_'+k+'" rows="2" maxlength="500" placeholder="Alasan review minimal 8 karakter" style="width:180px;padding:7px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap"><button type="button" data-p43-decision="APPROVE" data-p43-id="'+esc(x.proposalId)+'">Approve review</button><button type="button" data-p43-decision="DEFER" data-p43-id="'+esc(x.proposalId)+'">Defer</button><button type="button" data-p43-decision="REJECT" data-p43-id="'+esc(x.proposalId)+'">Reject</button></div>';
+     else h+='<small>'+esc(x.decision||'')+' • '+esc(x.decisionReason||'')+'</small>';
+     h+='</td></tr>';});
+    h+='</table></div>';
+   }else h+='<div class="dnote">Belum ada proposal; proposal hanya dibuat saat covariance siap dan NAV P40 lengkap.</div>';
+  }
+  if((p43.warnings||[]).length)h+='<div class="dnote">'+p43.warnings.map(function(w){return '⚠ '+esc(w);}).join('<br>')+'</div>';
+  h+='<div class="dnote">'+esc(p43.policy||'')+'</div>';
+ }else h+='<div class="dnote">Belum ada data P43. Refresh setelah P40/P41/P42 siap, lalu lakukan refresh harian untuk membangun histori antar kelas aset.</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p43RefreshOptimizer" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh covariance optimizer</button><span id="p43OptimizerMsg" class="dnote">Refresh harian setelah market close dan valuasi seluruh kelas aset diperbarui.</span></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2941,6 +2988,35 @@ if(!window.__p42PortfolioRiskBound){
    const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P42 gagal diperbarui.');
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p42RiskMsg');if(done)done.textContent=j.message||'P42 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+
+/* ===== P43: covariance optimizer refresh and manual proposal decision ===== */
+if(!window.__p43CovarianceOptimizerBound){
+ window.__p43CovarianceOptimizerBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p43RefreshOptimizer'):null;
+  const decision=ev.target&&ev.target.closest?ev.target.closest('[data-p43-decision]'):null;
+  const target=refresh||decision;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p43OptimizerMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  let payload={action:'portfolio_covariance_optimizer',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Menghitung covariance…';if(msg)msg.textContent='Memperbarui P42/P41/P40, menyimpan histori kelas aset, menghitung covariance dan minimum-variance frontier…';}
+  else{
+   const id=decision.getAttribute('data-p43-id'),kind=decision.getAttribute('data-p43-decision'),key=String(id||'').replace(/[^A-Za-z0-9]/g,''),el=$('p43Reason_'+key),reason=el?el.value.trim():'';
+   if(reason.length<8){if(msg)msg.textContent='Alasan keputusan minimal 8 karakter.';return;}
+   if(kind==='APPROVE'&&!window.confirm('Setujui proposal P43 hanya untuk review manual? Tidak ada perubahan alokasi dan tidak ada order dikirim.'))return;
+   payload.command='decide';payload.proposalId=id;payload.decision=kind;payload.reason=reason;
+   target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Mencatat keputusan manusia dan audit proposal…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P43 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p43OptimizerMsg');if(done)done.textContent=j.message||'P43 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
