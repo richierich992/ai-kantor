@@ -2575,6 +2575,61 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div class="dnote"><small>'+esc(p51&&p51.policy||'P51 adalah monitor/audit pasca-transaksi. Alert tidak mengirim instruksi broker dan tidak mengubah posisi portofolio.')+'</small></div>';
 }
 
+
+/* ===== P52: execution evidence & exception resolution center ===== */
+const p52=P.executionEvidenceCenter||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p52money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p52key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ const p52tone=s=>s==='HIGH'?'err':s==='MEDIUM'?'warn':s==='RESOLVED'||s==='VERIFIED'?'ok':s==='ACCEPTED_EXCEPTION'||s==='FALSE_POSITIVE'?'idle':'warn';
+ h+='<h4>📁 P52 — AI Execution Evidence & Exception Resolution Center <small>('+esc(p52&&p52.generatedAt||'belum dimuat')+')</small></h4>';
+ h+='<div class="dnote">P52 mengimpor exception P51, mencatat referensi contract note/broker statement, mencocokkan angka transkripsi dengan fill P48, dan mengelola investigasi sampai penyelesaian. Dokumen tidak diunduh, OCR, atau diverifikasi keaslian digitalnya secara otomatis; admin harus membuka sumber dan memeriksanya.</div>';
+ if(p52&&p52.runId){
+  const t=p52.totals||{};
+  h+='<div class="dchips"><span class="chip">Cases <b>'+nf(t.totalCases)+'</b></span><span class="chip">Open <b>'+nf(t.open)+'</b></span><span class="chip">Investigating <b>'+nf(t.investigating)+'</b></span><span class="chip">Waiting evidence <b>'+nf(t.waitingEvidence)+'</b></span><span class="chip">Resolved <b>'+nf(t.resolved)+'</b></span><span class="chip">Accepted exception <b>'+nf(t.acceptedException)+'</b></span><span class="chip">False positive <b>'+nf(t.falsePositive)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Evidence <b>'+nf(t.totalEvidence)+'</b></span><span class="chip">Pending verification <b>'+nf(t.pendingEvidence)+'</b></span><span class="chip">Verified <b>'+nf(t.verifiedEvidence)+'</b></span><span class="chip">With variance <b>'+nf(t.varianceEvidence)+'</b></span><span class="chip">Rejected <b>'+nf(t.rejectedEvidence)+'</b></span><span class="chip">Source P51 <b>'+esc(p52.sourceP51RunId||'—')+'</b></span></div>';
+ }else h+='<div class="dnote">Belum ada snapshot P52. Refresh akan mengimpor alert DEVIATION dari run P51 terakhir.</div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p52Refresh" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh & import exception P51</button><span id="p52Msg" class="dnote">Import case idempotent per run P51, evaluation, dan deviation code.</span></div>';
+ h+='<h4>Daftar exception / investigasi</h4><div style="overflow-x:auto"><table><tr><th>Severity / case</th><th>Order / aset</th><th>Deviation / ringkasan</th><th>Status / owner</th><th>Evidence</th><th>Pengelolaan case</th></tr>';
+ (p52&&p52.cases||[]).forEach(function(x){const k=p52key(x.caseId);h+='<tr><td><span class="bdg '+p52tone(x.severity)+'">'+esc(x.severity)+'</span><br><small>'+esc(x.caseId)+'</small><br><small>'+esc(x.openedAt)+'</small></td><td>'+esc(x.orderId)+'<br><b>'+esc(x.assetCode)+' '+esc(x.side)+'</b><br><small>'+esc(x.tradeDate)+' · '+esc(x.assetClass)+'</small></td><td><b>'+esc(x.deviationCode)+'</b><br><small>'+esc(x.summary)+'</small></td><td><span class="bdg '+p52tone(x.status)+'">'+esc(x.status)+'</span><br><small>Owner: '+esc(x.owner||'Belum ditugaskan')+'</small></td><td>'+nf(x.evidenceCount)+' dokumen<br><small>'+nf(x.verifiedEvidenceCount)+' verified · '+nf(x.varianceEvidenceCount)+' variance</small></td><td>';
+  if(['RESOLVED','ACCEPTED_EXCEPTION','FALSE_POSITIVE'].includes(x.status))h+='<small>'+esc(x.resolutionCode||'')+'<br>'+esc(x.resolutionNote||'')+'</small>';
+  else h+='<input id="p52Owner_'+k+'" maxlength="160" placeholder="PIC / owner" value="'+esc(x.owner)+'" style="width:180px;padding:7px;margin:3px 0"><select id="p52Action_'+k+'" style="width:180px;padding:7px;margin:3px 0"><option value="INVESTIGATING">Investigating</option><option value="WAITING_EVIDENCE">Waiting evidence</option><option value="RESOLVED">Resolved</option><option value="ACCEPTED_EXCEPTION">Accepted exception</option><option value="FALSE_POSITIVE">False positive</option></select><textarea id="p52Reason_'+k+'" rows="2" maxlength="800" placeholder="Alasan minimal 8 karakter" style="width:200px;padding:7px;margin:3px 0"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap"><button type="button" data-p52-case-action="ASSIGN" data-p52-id="'+esc(x.caseId)+'">Assign PIC</button><button type="button" data-p52-case-action="UPDATE" data-p52-id="'+esc(x.caseId)+'">Update status</button></div>';
+  h+='</td></tr>';});
+ if(!(p52&&p52.cases&&p52.cases.length))h+='<tr><td colspan="6">Belum ada exception. Pastikan P51 sudah menjalankan refresh dan memiliki temuan DEVIATION.</td></tr>';
+ h+='</table></div>';
+ h+='<h4>Register evidence document</h4><div class="dnote">Gunakan tautan Google Drive/Docs atau file ID yang sudah tersedia bagi admin. P52 hanya menyimpan referensinya. Untuk pencocokan otomatis nilai, pilih FillID P48 dan isi quantity, harga, fee, atau levy dari dokumen. Keputusan VERIFY tetap memerlukan pemeriksaan manual terhadap dokumen aslinya.</div>';
+ h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0">';
+ h+='<label>Case terkait<select id="p52Case" style="width:100%;padding:8px"><option value="">Tidak terikat case</option>';
+ (p52&&p52.cases||[]).filter(x=>!['RESOLVED','ACCEPTED_EXCEPTION','FALSE_POSITIVE'].includes(x.status)).forEach(x=>{h+='<option value="'+esc(x.caseId)+'">'+esc(x.assetCode)+' · '+esc(x.deviationCode)+' · '+esc(x.caseId)+'</option>';});
+ h+='</select></label><label>OrderID P48 (opsional)<input id="p52Order" maxlength="100" placeholder="P48O-..." style="width:100%;padding:8px"></label>';
+ h+='<label>FillID P48 (opsional)<input id="p52Fill" maxlength="100" placeholder="P48F-..." style="width:100%;padding:8px"></label>';
+ h+='<label>Jenis dokumen<select id="p52Type" style="width:100%;padding:8px"><option value="CONTRACT_NOTE">Contract note</option><option value="ORDER_CONFIRMATION">Order confirmation</option><option value="BROKER_STATEMENT">Broker statement</option><option value="TRADE_CONFIRMATION">Trade confirmation</option><option value="CASH_LEDGER">Cash ledger</option><option value="OTHER">Other</option></select></label>';
+ h+='<label>Document / evidence reference<input id="p52DocRef" maxlength="180" placeholder="Nomor dokumen unik" style="width:100%;padding:8px"></label>';
+ h+='<label>Document URL (HTTPS)<input id="p52Url" maxlength="500" placeholder="https://drive.google.com/..." style="width:100%;padding:8px"></label>';
+ h+='<label>Google Drive File ID<input id="p52DriveId" maxlength="180" placeholder="ID file (opsional)" style="width:100%;padding:8px"></label>';
+ h+='<label>Statement reference<input id="p52Statement" maxlength="160" placeholder="Ref pada broker statement" style="width:100%;padding:8px"></label>';
+ h+='<label>Tanggal dokumen<input id="p52DocDate" type="date" style="width:100%;padding:8px"></label><label>Tanggal transaksi<input id="p52TradeDate" type="date" style="width:100%;padding:8px"></label>';
+ h+='<label>Qty dari dokumen<input id="p52Qty" type="number" min="0" step="any" style="width:100%;padding:8px"></label><label>Harga dari dokumen<input id="p52Price" type="number" min="0" step="any" style="width:100%;padding:8px"></label>';
+ h+='<label>Fee aktual (Rp)<input id="p52Fee" type="number" min="0" step="1" style="width:100%;padding:8px"></label><label>Levy aktual (Rp)<input id="p52Levy" type="number" min="0" step="1" style="width:100%;padding:8px"></label>';
+ h+='<label>SHA-256 dokumen (opsional)<input id="p52Hash" maxlength="64" placeholder="64 hex chars" style="width:100%;padding:8px"></label><label style="grid-column:1/-1">Catatan / sumber verifikasi<input id="p52Notes" maxlength="800" placeholder="Lokasi file, sumber statement, catatan pemeriksaan..." style="width:100%;padding:8px"></label></div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p52AddEvidence" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#0f766e;color:#fff;font-weight:800;cursor:pointer">Register evidence</button><span id="p52EvidenceMsg" class="dnote">Evidence akan masuk status PENDING_VERIFICATION.</span></div>';
+ h+='<h4>Evidence verification queue</h4><div style="overflow-x:auto"><table><tr><th>Dokumen / tautan</th><th>Order / fill</th><th>Angka transkripsi</th><th>Status verifikasi</th><th>Keputusan admin</th></tr>';
+ (p52&&p52.evidence||[]).forEach(function(x){const k=p52key(x.evidenceId);h+='<tr><td><b>'+esc(x.evidenceType)+'</b><br>'+esc(x.documentRef)+'<br><small>'+esc(x.statementRef)+'</small>'+(x.documentUrl?'<br><a href="'+esc(x.documentUrl)+'" target="_blank" rel="noopener noreferrer">Buka dokumen</a>':'')+(x.sha256?'<br><small>SHA-256: '+esc(x.sha256)+'</small>':'')+'</td><td>'+esc(x.orderId)+'<br><small>'+esc(x.fillId)+'</small><br>'+esc(x.assetCode)+' '+esc(x.side)+'</td><td>Qty '+nf(x.qty)+' · Price '+p52money(x.price)+'<br>Fee '+p52money(x.feeIdr)+' · Levy '+p52money(x.levyIdr)+'</td><td><span class="bdg '+(x.status==='VERIFIED'?'ok':x.status==='REJECTED'?'err':'warn')+'">'+esc(x.status)+'</span><br><small>'+esc(x.verificationOutcome||'')+'</small><br><small>'+esc(x.verifiedBy||'')+' '+esc(x.verifiedAt||'')+'</small>';
+  if(x.varianceJSON&&x.varianceJSON!=='[]')h+='<br><small>'+esc(x.varianceJSON)+'</small>';
+  h+='</td><td>';
+  if(x.status==='PENDING_VERIFICATION')h+='<textarea id="p52VerifyReason_'+k+'" rows="2" maxlength="800" placeholder="Alasan pemeriksaan minimal 8 karakter" style="width:210px;padding:7px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><button type="button" data-p52-evidence-action="VERIFY" data-p52-id="'+esc(x.evidenceId)+'">Verify</button><button type="button" data-p52-evidence-action="REJECT" data-p52-id="'+esc(x.evidenceId)+'">Reject</button></div>';
+  else h+='<small>'+esc(x.verificationReason||'')+'</small>';
+  h+='</td></tr>';});
+ if(!(p52&&p52.evidence&&p52.evidence.length))h+='<tr><td colspan="5">Belum ada evidence terdaftar.</td></tr>';
+ h+='</table></div>';
+ h+='<h4>Exception report & audit trail</h4><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0"><label>Dari tanggal<input id="p52From" type="date" style="width:100%;padding:8px"></label><label>Sampai tanggal<input id="p52To" type="date" style="width:100%;padding:8px"></label></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p52Report" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer">Buat laporan exception</button><span id="p52ReportMsg" class="dnote"></span></div>';
+ (p52&&p52.reports||[]).slice(0,5).forEach(function(r){h+='<div class="dnote" style="margin:6px 0"><b>'+esc(r.reportId)+'</b> · '+esc(r.dateFrom)+' → '+esc(r.dateTo)+' · '+esc(r.generatedAt)+'<br>Cases '+nf(r.counts&&r.counts.cases)+' · Evidence '+nf(r.counts&&r.counts.evidence)+' · Verified '+nf(r.counts&&r.counts.verified)+' · Pending '+nf(r.counts&&r.counts.pending)+' · Variance '+nf(r.counts&&r.counts.variance)+'</div>';});
+ h+='<div style="overflow-x:auto"><table><tr><th>Waktu</th><th>Aktivitas</th><th>Target</th><th>Admin</th><th>Catatan</th></tr>';
+ (p52&&p52.events||[]).slice(0,30).forEach(function(x){h+='<tr><td>'+esc(x.eventAt)+'</td><td>'+esc(x.eventType)+'</td><td>'+esc(x.targetType)+'<br><small>'+esc(x.targetId)+'</small></td><td>'+esc(x.actor)+'</td><td>'+esc(x.note)+'</td></tr>';});
+ if(!(p52&&p52.events&&p52.events.length))h+='<tr><td colspan="5">Belum ada event audit.</td></tr>';h+='</table></div>';
+ h+='<div class="dnote"><small>'+esc(p52&&p52.config&&p52.config.policy||'P52 hanya menyimpan referensi dokumen dan angka transkripsi admin. VERIFIED_MATCH berarti angka yang dimasukkan cocok dengan P48 pada toleransi konfigurasi; keaslian dokumen tetap tanggung jawab pemeriksa. Tidak ada pengiriman order atau mutasi portofolio.')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3614,6 +3669,54 @@ if(!window.__p51ComplianceMonitorBound){
   else{const id=review.getAttribute('data-p51-id'),decision=review.getAttribute('data-p51-review'),key=String(id||'').replace(/[^A-Za-z0-9]/g,''),reason=val('p51Reason_'+key);if(reason.length<8){if(msg)msg.textContent='Alasan review minimal 8 karakter.';return;}if(decision==='FALSE_POSITIVE'&&!window.confirm('Catat disposition FALSE_POSITIVE untuk temuan ini? Snapshot alert asli tidak akan dihapus atau diubah.'))return;payload.command='review';payload.evaluationId=id;payload.decision=decision;payload.reason=reason;target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Mencatat disposition admin secara immutable…';}
   try{const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)}),j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P51 gagal diproses.');PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;const done=$('p51Msg');if(done)done.textContent=j.message||'P51 diperbarui.';}
   catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+/* ===== P52: evidence registration, verification, case resolution and reports ===== */
+if(!window.__p52EvidenceCenterBound){
+ window.__p52EvidenceCenterBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p52Refresh'):null;
+  const add=ev.target&&ev.target.closest?ev.target.closest('#p52AddEvidence'):null;
+  const report=ev.target&&ev.target.closest?ev.target.closest('#p52Report'):null;
+  const caseBtn=ev.target&&ev.target.closest?ev.target.closest('[data-p52-case-action]'):null;
+  const evidenceBtn=ev.target&&ev.target.closest?ev.target.closest('[data-p52-evidence-action]'):null;
+  const target=refresh||add||report||caseBtn||evidenceBtn;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl();
+  const msg=add?$('p52EvidenceMsg'):report?$('p52ReportMsg'):$('p52Msg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';};
+  const num=id=>val(id)===''?null:Number(val(id));
+  const payload={action:'execution_evidence_center',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Importing…';if(msg)msg.textContent='Mengimpor temuan DEVIATION dari run P51 terakhir…';}
+  else if(add){
+   payload.command='add_evidence';payload.caseId=val('p52Case');payload.orderId=val('p52Order');payload.fillId=val('p52Fill');payload.evidenceType=val('p52Type');payload.documentRef=val('p52DocRef');payload.documentUrl=val('p52Url');payload.driveFileId=val('p52DriveId');payload.statementRef=val('p52Statement');payload.documentDate=val('p52DocDate');payload.tradeDate=val('p52TradeDate');payload.qty=num('p52Qty');payload.price=num('p52Price');payload.feeIdr=num('p52Fee');payload.levyIdr=num('p52Levy');payload.sha256=val('p52Hash');payload.notes=val('p52Notes');
+   if(!payload.caseId&&!payload.orderId&&!payload.fillId){if(msg)msg.textContent='Pilih case atau isi OrderID / FillID P48.';return;}
+   if(!payload.documentRef||(!payload.documentUrl&&!payload.driveFileId&&!payload.statementRef)){if(msg)msg.textContent='Isi document reference dan salah satu tautan / Drive File ID / statement reference.';return;}
+   target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Memvalidasi relasi case, order dan fill P48 lalu menyimpan referensi dokumen…';
+  }else if(report){
+   payload.command='report';payload.dateFrom=val('p52From');payload.dateTo=val('p52To');target.disabled=true;target.textContent='Membuat report…';if(msg)msg.textContent='Menyusun report exception dan bukti berdasarkan rentang tanggal…';
+  }else if(caseBtn){
+   const id=caseBtn.getAttribute('data-p52-id'),kind=caseBtn.getAttribute('data-p52-case-action'),key=String(id||'').replace(/[^A-Za-z0-9]/g,'');
+   payload.command='update_case';payload.caseId=id;payload.owner=val('p52Owner_'+key);payload.reason=val('p52Reason_'+key);
+   payload.actionType=kind==='ASSIGN'?'ASSIGN':val('p52Action_'+key);
+   if(payload.reason.length<8){if(msg)msg.textContent='Alasan update case minimal 8 karakter.';return;}
+   if(['RESOLVED','ACCEPTED_EXCEPTION','FALSE_POSITIVE'].includes(payload.actionType)&&!window.confirm('Konfirmasi status terminal '+payload.actionType+'? Case tidak dapat diedit kembali setelah ditutup.'))return;
+   target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Memvalidasi bukti terverifikasi dan mencatat perubahan case…';
+  }else if(evidenceBtn){
+   const id=evidenceBtn.getAttribute('data-p52-id'),kind=evidenceBtn.getAttribute('data-p52-evidence-action'),key=String(id||'').replace(/[^A-Za-z0-9]/g,'');
+   payload.command='verify_evidence';payload.evidenceId=id;payload.decision=kind;payload.reason=val('p52VerifyReason_'+key);
+   if(payload.reason.length<8){if(msg)msg.textContent='Alasan verifikasi minimal 8 karakter.';return;}
+   if(kind==='VERIFY'&&!window.confirm('Anda sudah membuka dokumen asli dan mencocokkannya dengan sumber broker? P52 hanya membandingkan angka yang diinput dengan P48.'))return;
+   target.disabled=true;target.textContent='Memverifikasi…';if(msg)msg.textContent='Memeriksa nilai bukti terhadap fill P48 dan mencatat hasil verifikasi…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)}),j=await res.json();
+   if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P52 gagal diproses.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=add?$('p52EvidenceMsg'):report?$('p52ReportMsg'):$('p52Msg');if(done)done.textContent=j.message||'P52 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
 
