@@ -2673,6 +2673,77 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div class="dnote"><small>P53 adalah indeks audit internal, bukan jaminan kelengkapan seluruh aktivitas di luar ledger. P39 hanya mencerminkan aktivitas yang masuk ke sistem; P49 adalah konteks insight; kebijakan P50 bersifat advisory; P51 memonitor pasca-transaksi; verifikasi dokumen P52 tetap bergantung pada pemeriksaan manusia.</small></div>';
 }
 
+
+/* ===== P54: investment mandate & risk policy control center ===== */
+const p54=P.investmentMandateControl||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p54money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p54tone=s=>s==='HIGH'||s==='POLICY_CONFLICT'?'err':s==='BREACH'||s==='SUBMITTED'?'warn':s==='COMPLIANT'||s==='ACTIVE'||s==='APPROVED'?'ok':'idle';
+ const p54key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ h+='<h4>🧭 P54 — AI Investment Mandate & Risk Policy Control Center <small>('+esc(p54&&p54.generatedAt||'belum dievaluasi')+')</small></h4>';
+ h+='<div class="dnote">P54 mengelola aturan investasi berversi dan mengevaluasi order/fill yang sudah tercatat di P48. Aktivasi mandate berlaku berdasarkan tanggal dan kelas aset. Ini adalah kontrol tata kelola/post-trade, bukan pre-trade gate: P54 tidak memblokir order baru, tidak mengirim order broker, dan tidak mengubah ledger transaksi.</div>';
+ if(p54&&p54.runId){
+  const t=p54.totals||{};
+  h+='<div class="dchips"><span class="chip">Mandates <b>'+nf(t.policies)+'</b></span><span class="chip">Draft <b>'+nf(t.drafts)+'</b></span><span class="chip">Submitted <b>'+nf(t.submitted)+'</b></span><span class="chip">Active <b>'+nf(t.active)+'</b></span><span class="chip">Orders evaluated <b>'+nf(t.orders)+'</b></span><span class="chip">Covered <b>'+nf(t.covered)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Compliant <b>'+nf(t.compliant)+'</b></span><span class="chip">Breaches <b>'+nf(t.breaches)+'</b></span><span class="chip">Not covered <b>'+nf(t.notCovered)+'</b></span><span class="chip">Policy conflicts <b>'+nf(t.conflicts)+'</b></span><span class="chip">Pending exceptions <b>'+nf(t.pendingExceptions)+'</b></span><span class="chip">Approved exceptions <b>'+nf(t.approvedExceptions)+'</b></span></div>';
+  h+='<div class="dnote">Run <b>'+esc(p54.runId)+'</b> · P53 source run <b>'+esc(p54.sourceP53RunId||'—')+'</b></div>';
+ }else h+='<div class="dnote">Belum ada evaluation run P54. Buat mandate, aktifkan sesuai tanggal efektif, lalu jalankan evaluasi P48.</div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p54Refresh" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#1d4ed8;color:#fff;font-weight:800;cursor:pointer">Refresh & evaluate P48</button><span id="p54Msg" class="dnote">Evaluasi baru membuat snapshot per order dan tidak mengubah sumber.</span></div>';
+ h+='<h4>Mandate builder & version control</h4><div class="dnote">Isi daftar kode, broker, dan akun dipisahkan koma. Daftar kosong berarti tidak membatasi dimensi tersebut; default side adalah BUY. Nominal memakai Rupiah. Buat versi baru dari policy yang sudah ada untuk merevisi aturan tanpa menimpa versi terdahulu.</div>';
+ h+='<input id="p54SourcePolicy" type="hidden" value="">';
+ h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0">';
+ h+='<label>Policy code<input id="p54Code" maxlength="40" placeholder="CORE_STOCK" style="width:100%;padding:8px"></label>';
+ h+='<label>Nama mandate<input id="p54Name" maxlength="120" placeholder="Core Indonesian equity" style="width:100%;padding:8px"></label>';
+ h+='<label>Scope asset class<input id="p54Scope" maxlength="80" value="STOCK" placeholder="STOCK / CRYPTO / ALL" style="width:100%;padding:8px"></label>';
+ h+='<label>Allowed asset codes<input id="p54Allowed" maxlength="1000" placeholder="BBCA, BBRI, TLKM" style="width:100%;padding:8px"></label>';
+ h+='<label>Restricted asset codes<input id="p54Restricted" maxlength="1000" placeholder="GOTO, ..." style="width:100%;padding:8px"></label>';
+ h+='<label>Allowed sides<input id="p54Sides" maxlength="30" value="BUY" placeholder="BUY,SELL" style="width:100%;padding:8px"></label>';
+ h+='<label>Allowed brokers<input id="p54Brokers" maxlength="1000" placeholder="Broker A, Broker B" style="width:100%;padding:8px"></label>';
+ h+='<label>Allowed accounts<input id="p54Accounts" maxlength="1000" placeholder="Account-01, Account-02" style="width:100%;padding:8px"></label>';
+ h+='<label>Max single order (Rp)<input id="p54MaxOrder" type="number" min="1" step="1" placeholder="100000000" style="width:100%;padding:8px"></label>';
+ h+='<label>Max daily gross/account + asset class (Rp)<input id="p54MaxDaily" type="number" min="1" step="1" placeholder="500000000" style="width:100%;padding:8px"></label>';
+ h+='<label>Max daily gross/account + asset code (Rp)<input id="p54MaxAssetDaily" type="number" min="1" step="1" placeholder="150000000" style="width:100%;padding:8px"></label>';
+ h+='<label>Max ADV participation (%)<input id="p54MaxPart" type="number" min="0.01" max="100" step="0.01" placeholder="10" style="width:100%;padding:8px"></label>';
+ h+='<label style="display:flex;gap:7px;align-items:center"><input id="p54RequireP38" type="checkbox" checked> Wajib P38 human APPROVE</label>';
+ h+='<label style="display:flex;gap:7px;align-items:center"><input id="p54RequireP50" type="checkbox"> Wajib P50 playbook + review ACCEPT yang dirujuk P51</label>';
+ h+='<label style="grid-column:1/-1">Deskripsi mandate<input id="p54Desc" maxlength="700" placeholder="Tujuan, strategi, dan batas penggunaan mandate" style="width:100%;padding:8px"></label>';
+ h+='<label style="grid-column:1/-1">Alasan pembuatan / revisi<textarea id="p54ChangeReason" rows="2" maxlength="900" placeholder="Minimal 8 karakter; catat dasar kebijakan dan perubahan risiko" style="width:100%;padding:8px"></textarea></label></div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p54Create" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#0f766e;color:#fff;font-weight:800;cursor:pointer">Simpan draft mandate</button><button id="p54Clear" type="button">Clear form</button><span id="p54CreateMsg" class="dnote"></span></div>';
+ h+='<h4>Mandate register & approval workflow</h4><div style="overflow-x:auto"><table><tr><th>Policy / version</th><th>Rules & scope</th><th>Lifecycle</th><th>Effective period</th><th>Workflow action</th></tr>';
+ (p54&&p54.policies||[]).forEach(function(x){const k=p54key(x.policyId);h+='<tr><td><b>'+esc(x.policyCode)+' v'+nf(x.version)+'</b><br>'+esc(x.name)+'<br><small>'+esc(x.policyId)+'</small><br><small>By '+esc(x.createdBy)+' · approver '+esc(x.approvedBy||'—')+'</small><br><small>'+esc(x.changeReason)+'</small></td>';
+  h+='<td>'+esc((x.scopeAssetClasses||[]).join(', '))+'<br><small>Allowed: '+esc((x.allowedAssetCodes||[]).join(', ')||'all')+'</small><br><small>Restricted: '+esc((x.restrictedAssetCodes||[]).join(', ')||'none')+'</small><br><small>Side: '+esc((x.allowedSides||[]).join(', '))+' · broker: '+esc((x.allowedBrokers||[]).join(', ')||'all')+' · account: '+esc((x.allowedAccounts||[]).join(', ')||'all')+'</small><br><small>Order '+p54money(x.maxOrderNotionalIdr)+' · Daily '+p54money(x.maxDailyGrossNotionalIdr)+' · Asset/day '+p54money(x.maxAssetDailyGrossNotionalIdr)+' · ADV '+(x.maxParticipationPct==null?'—':x.maxParticipationPct+'%')+'</small><br><small>P38 '+(x.requireP38Approval?'required':'optional')+' · P50 '+(x.requireP50AcceptedPlaybook?'required':'optional')+'</small></td>';
+  h+='<td><span class="bdg '+p54tone(x.status)+'">'+esc(x.status)+'</span><br><small>Submitted '+esc(x.submittedBy||'—')+'<br>Approved '+esc(x.approvedBy||'—')+'</small></td><td>'+esc(x.effectiveFrom||'—')+'<br><small>to '+esc(x.effectiveTo||'open')+'</small><br><small>Supersedes '+esc(x.supersedesPolicyId||'—')+'</small></td><td>';
+  if(['ACTIVE','SUPERSEDED','SUSPENDED','RETIRED'].includes(x.status))h+='<button type="button" data-p54-clone="'+esc(x.policyId)+'">New version / edit</button><br>';
+  if(x.status==='DRAFT')h+='<button type="button" data-p54-policy-action="SUBMIT" data-p54-id="'+esc(x.policyId)+'">Submit for review</button>';
+  else if(x.status==='SUBMITTED')h+='<button type="button" data-p54-policy-action="APPROVE" data-p54-id="'+esc(x.policyId)+'">Approve (independent)</button>';
+  else if(x.status==='APPROVED')h+='<label>Effective from<input id="p54From_'+k+'" type="date" style="width:150px;padding:6px"></label><br><label>Effective to (optional)<input id="p54To_'+k+'" type="date" style="width:150px;padding:6px"></label><br><button type="button" data-p54-policy-action="ACTIVATE" data-p54-id="'+esc(x.policyId)+'">Activate</button>';
+  else if(x.status==='ACTIVE')h+='<label>End date<input id="p54To_'+k+'" type="date" style="width:150px;padding:6px"></label><br><button type="button" data-p54-policy-action="SUSPEND" data-p54-id="'+esc(x.policyId)+'">Suspend</button> <button type="button" data-p54-policy-action="RETIRE" data-p54-id="'+esc(x.policyId)+'">Retire</button>';
+  else h+='<small>No lifecycle action</small>';
+  if(!['SUPERSEDED','RETIRED'].includes(x.status))h+='<textarea id="p54Reason_'+k+'" rows="2" maxlength="900" placeholder="Reason min 8 chars" style="width:180px;padding:6px;margin-top:5px"></textarea>';
+  h+='</td></tr>';});
+ if(!(p54&&p54.policies&&p54.policies.length))h+='<tr><td colspan="5">Belum ada mandate. Buat draft pertama di atas.</td></tr>';h+='</table></div>';
+ h+='<h4>Post-trade mandate compliance</h4><div class="dnote">Evaluasi membandingkan P48 orders/fills dengan policy version yang berlaku pada TradeDate. Daily gross dihitung dari fill P48 untuk akun + asset class dan akun + asset code pada tanggal yang sama. ADV dibaca dari evaluasi P51 terakhir. Data yang tidak tersedia tidak dianggap lulus diam-diam.</div>';
+ h+='<div style="overflow-x:auto"><table><tr><th>Order / policy</th><th>Value & exposure</th><th>Compliance</th><th>Governance / exception</th><th>Exception request</th></tr>';
+ (p54&&p54.evaluations||[]).forEach(function(x){const k=p54key(x.evaluationId);h+='<tr><td><b>'+esc(x.orderId)+' · '+esc(x.assetCode)+' '+esc(x.side)+'</b><br>'+esc(x.tradeDate)+' · '+esc(x.assetClass)+'<br><small>'+esc(x.policyCode||'no policy')+' '+(x.policyVersion?'v'+esc(x.policyVersion):'')+'</small><br><small>'+esc(x.account)+' · '+esc(x.broker)+'</small></td>';
+  h+='<td>Planned '+p54money(x.plannedNotional)+'<br>Filled '+p54money(x.filledNotional)+'<br><small>Daily '+p54money(x.dailyGrossNotional)+' · Asset/day '+p54money(x.assetDailyGrossNotional)+' · ADV '+(x.dailyParticipationPct==null?'—':x.dailyParticipationPct+'%')+'</small><br><small>'+esc(x.decisionId||'no P38 link')+'</small></td>';
+  h+='<td><span class="bdg '+p54tone(x.complianceStatus)+'">'+esc(x.complianceStatus)+'</span> <span class="bdg '+p54tone(x.severity)+'">'+esc(x.severity)+'</span><br><small>'+esc((x.violationCodes||[]).join(', ')||'No rule violation')+'</small><br><small>'+esc(x.detail)+'</small></td>';
+  h+='<td>P53 '+esc(x.p53GovernanceStatus||'—')+'<br>Exception <span class="bdg '+p54tone(x.exceptionStatus)+'">'+esc(x.exceptionStatus||'NONE')+'</span><br><small>'+esc(x.exceptionId||'')+'</small></td><td>';
+  if(x.complianceStatus==='BREACH')h+='<textarea id="p54ExReason_'+k+'" rows="2" maxlength="900" placeholder="Exception reason min 12 chars" style="width:200px;padding:6px"></textarea><br><button type="button" data-p54-request-exception="'+esc(x.evaluationId)+'">Request exception</button>';
+  else h+='<small>—</small>';h+='</td></tr>';});
+ if(!(p54&&p54.evaluations&&p54.evaluations.length))h+='<tr><td colspan="5">Belum ada evaluasi. Klik Refresh & evaluate P48 setelah mandate diaktifkan.</td></tr>';h+='</table></div>';
+ h+='<h4>Exception request approval queue</h4><div style="overflow-x:auto"><table><tr><th>Exception / order</th><th>Policy violations</th><th>Requester / reason</th><th>Status / decision</th><th>Action</th></tr>';
+ (p54&&p54.exceptions||[]).forEach(function(x){const k=p54key(x.exceptionId);h+='<tr><td>'+esc(x.exceptionId)+'<br>'+esc(x.orderId)+'<br><small>'+esc(x.policyId)+'</small></td><td>'+esc((x.violationCodes||[]).join(', '))+'</td><td>'+esc(x.requester)+'<br><small>'+esc(x.reason)+'</small></td><td><span class="bdg '+p54tone(x.status)+'">'+esc(x.status)+'</span><br><small>'+esc(x.approver||'')+' '+esc(x.decisionReason||'')+'</small></td><td>';
+  if(x.status==='SUBMITTED')h+='<textarea id="p54ExDecisionReason_'+k+'" rows="2" maxlength="900" placeholder="Decision reason min 12 chars" style="width:200px;padding:6px"></textarea><br><button type="button" data-p54-exception-action="APPROVE" data-p54-id="'+esc(x.exceptionId)+'">Approve</button> <button type="button" data-p54-exception-action="REJECT" data-p54-id="'+esc(x.exceptionId)+'">Reject</button>';
+  else h+='<small>Terminal decision</small>';h+='</td></tr>';});
+ if(!(p54&&p54.exceptions&&p54.exceptions.length))h+='<tr><td colspan="5">Belum ada exception request.</td></tr>';h+='</table></div>';
+ h+='<h4>Mandate reporting & audit events</h4><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0"><label>From<input id="p54ReportFrom" type="date" style="width:100%;padding:8px"></label><label>To<input id="p54ReportTo" type="date" style="width:100%;padding:8px"></label></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p54Report" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer">Generate mandate report</button><span id="p54ReportMsg" class="dnote"></span></div>';
+ (p54&&p54.reports||[]).slice(0,10).forEach(function(r){const c=r.counts||{};h+='<div class="dnote" style="margin:5px 0"><b>'+esc(r.reportId)+'</b> · '+esc(r.dateFrom)+' → '+esc(r.dateTo)+' · evaluations '+nf(c.evaluations)+' · breaches '+nf(c.breaches)+' · high '+nf(c.critical)+' · open exceptions '+nf(c.openExceptions)+'</div>';});
+ h+='<div style="overflow-x:auto"><table><tr><th>Waktu</th><th>Event</th><th>Target</th><th>Actor</th><th>Note</th></tr>';
+ (p54&&p54.events||[]).slice(0,40).forEach(function(x){h+='<tr><td>'+esc(x.eventAt)+'</td><td>'+esc(x.eventType)+'</td><td>'+esc(x.targetType)+'<br><small>'+esc(x.targetId)+'</small></td><td>'+esc(x.actor)+'</td><td>'+esc(x.note)+'</td></tr>';});
+ if(!(p54&&p54.events&&p54.events.length))h+='<tr><td colspan="5">Belum ada audit event.</td></tr>';h+='</table></div>';
+ h+='<div class="dnote"><small>Limitasi: daily gross menggunakan semua fill yang tercatat di P48 untuk tanggal/akun/aset yang sama; tidak mencakup transaksi eksternal yang tidak dimasukkan. P51 ADV adalah data internal, bukan order-book/exchange-wide. P53 governance status adalah snapshot terakhir. Policy evaluation bersifat post-trade advisory, bukan jaminan atau pemblokir transaksi.</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3795,6 +3866,61 @@ if(!window.__p53GovernanceAuditBound){
    if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P53 gagal diproses.');
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=refresh?$('p53Msg'):review?$('p53ReviewMsg'):$('p53ReportMsg');if(done)done.textContent=j.message||'P53 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+/* ===== P54: mandate workflow, evaluation and exception controls ===== */
+if(!window.__p54MandateControlBound){
+ window.__p54MandateControlBound=true;
+ document.addEventListener('click',async function(ev){
+  const closest=s=>ev.target&&ev.target.closest?ev.target.closest(s):null;
+  const refresh=closest('#p54Refresh'),create=closest('#p54Create'),clear=closest('#p54Clear'),report=closest('#p54Report'),clone=closest('[data-p54-clone]'),policy=closest('[data-p54-policy-action]'),request=closest('[data-p54-request-exception]'),exDecision=closest('[data-p54-exception-action]');
+  const target=refresh||create||clear||report||clone||policy||request||exDecision;if(!target)return;
+  if(clear){const ids=['p54SourcePolicy','p54Code','p54Name','p54Desc','p54Scope','p54Allowed','p54Restricted','p54Sides','p54Brokers','p54Accounts','p54MaxOrder','p54MaxDaily','p54MaxAssetDaily','p54MaxPart','p54ChangeReason'];ids.forEach(id=>{const e=$(id);if(e)e.value='';});if($('p54Scope'))$('p54Scope').value='STOCK';if($('p54Sides'))$('p54Sides').value='BUY';if($('p54RequireP38'))$('p54RequireP38').checked=true;if($('p54RequireP50'))$('p54RequireP50').checked=false;if($('p54CreateMsg'))$('p54CreateMsg').textContent='Form dikosongkan.';return;}
+  const token=localStorage.getItem('admin_token'),url=bkUrl();const msg=create?$('p54CreateMsg'):report?$('p54ReportMsg'):$('p54Msg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';},num=id=>val(id)===''?null:Number(val(id));
+  const payload={action:'investment_mandate_control',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Evaluating…';if(msg)msg.textContent='Membaca P48 orders/fills, P38 decisions, P50 review, P51 ADV, dan P53 audit snapshot…';}
+  else if(create){
+   payload.command=val('p54SourcePolicy')?'new_version':'create_draft';payload.sourcePolicyId=val('p54SourcePolicy');payload.policyCode=val('p54Code');payload.name=val('p54Name');payload.description=val('p54Desc');payload.scopeAssetClasses=val('p54Scope');payload.allowedAssetCodes=val('p54Allowed');payload.restrictedAssetCodes=val('p54Restricted');payload.allowedSides=val('p54Sides');payload.allowedBrokers=val('p54Brokers');payload.allowedAccounts=val('p54Accounts');payload.maxOrderNotionalIdr=num('p54MaxOrder');payload.maxDailyGrossNotionalIdr=num('p54MaxDaily');payload.maxAssetDailyGrossNotionalIdr=num('p54MaxAssetDaily');payload.maxParticipationPct=num('p54MaxPart');payload.requireP38Approval=!!($('p54RequireP38')&&$('p54RequireP38').checked);payload.requireP50AcceptedPlaybook=!!($('p54RequireP50')&&$('p54RequireP50').checked);payload.changeReason=val('p54ChangeReason');
+   target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Memvalidasi rule, scope dan versi policy…';
+  }else if(clone){
+   const id=clone.getAttribute('data-p54-clone'),p=PF&&PF.portfolio&&PF.portfolio.investmentMandateControl&&PF.portfolio.investmentMandateControl.policies&&PF.portfolio.investmentMandateControl.policies.find(x=>x.policyId===id);
+   if(!p){if(msg)msg.textContent='Mandate sumber tidak ditemukan pada read model.';return;}
+   const set=(id,v)=>{const e=$(id);if(e)e.value=v==null?'':String(v);};
+   set('p54SourcePolicy',p.policyId);set('p54Code',p.policyCode);set('p54Name',p.name);set('p54Desc',p.description);set('p54Scope',(p.scopeAssetClasses||[]).join(','));set('p54Allowed',(p.allowedAssetCodes||[]).join(','));set('p54Restricted',(p.restrictedAssetCodes||[]).join(','));set('p54Sides',(p.allowedSides||[]).join(','));set('p54Brokers',(p.allowedBrokers||[]).join(','));set('p54Accounts',(p.allowedAccounts||[]).join(','));set('p54MaxOrder',p.maxOrderNotionalIdr);set('p54MaxDaily',p.maxDailyGrossNotionalIdr);set('p54MaxAssetDaily',p.maxAssetDailyGrossNotionalIdr);set('p54MaxPart',p.maxParticipationPct);set('p54RequireP38',p.requireP38Approval?'true':'false');if($('p54RequireP38'))$('p54RequireP38').checked=!!p.requireP38Approval;if($('p54RequireP50'))$('p54RequireP50').checked=!!p.requireP50AcceptedPlaybook;set('p54ChangeReason','Revisi '+p.policyCode+' dari versi '+p.version+': ');if($('p54CreateMsg'))$('p54CreateMsg').textContent='Form terisi dari '+p.policyCode+' v'+p.version+'. Sesuaikan rule lalu simpan sebagai versi baru.';
+   const box=$('dbody');if(box){const f=$('p54Create');if(f)f.scrollIntoView({block:'center',behavior:'smooth'});}return;
+  }else if(policy){
+   const id=policy.getAttribute('data-p54-id'),actionType=policy.getAttribute('data-p54-policy-action'),k=String(id||'').replace(/[^A-Za-z0-9]/g,'');
+   payload.command='workflow';payload.policyId=id;payload.policyAction=actionType;payload.reason=val('p54Reason_'+k);payload.effectiveFrom=val('p54From_'+k);payload.effectiveTo=val('p54To_'+k);
+   if(payload.reason.length<8){if(msg)msg.textContent='Alasan workflow minimal 8 karakter.';return;}
+   if(actionType==='APPROVE'&&!window.confirm('Four-eyes approval: Anda adalah admin berbeda dari pembuat/pengaju?'))return;
+   if(actionType==='ACTIVATE'&&!window.confirm('Aktifkan mandate ini mulai tanggal efektif yang dipilih? Policy scope overlap akan ditolak.'))return;
+   if(actionType==='RETIRE'&&!window.confirm('Pensiunkan policy pada tanggal akhir yang dipilih?'))return;
+   target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Memvalidasi lifecycle policy dan mencatat event…';
+  }else if(request){
+   const id=request.getAttribute('data-p54-request-exception'),k=String(id||'').replace(/[^A-Za-z0-9]/g,'');
+   payload.command='request_exception';payload.evaluationId=id;payload.reason=val('p54ExReason_'+k);
+   if(payload.reason.length<12){if(msg)msg.textContent='Alasan exception minimal 12 karakter.';return;}
+   target.disabled=true;target.textContent='Submitting…';if(msg)msg.textContent='Mengajukan exception tanpa menghapus breach…';
+  }else if(exDecision){
+   const id=exDecision.getAttribute('data-p54-id'),k=String(id||'').replace(/[^A-Za-z0-9]/g,'');
+   payload.command='decide_exception';payload.exceptionId=id;payload.decision=exDecision.getAttribute('data-p54-exception-action');payload.reason=val('p54ExDecisionReason_'+k);
+   if(payload.reason.length<12){if(msg)msg.textContent='Alasan keputusan minimal 12 karakter.';return;}
+   if(!window.confirm('Keputusan exception '+payload.decision+' akan disimpan. Breach asli tetap ada.'))return;
+   target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Memvalidasi keputusan independen…';
+  }else if(report){
+   payload.command='report';payload.dateFrom=val('p54ReportFrom');payload.dateTo=val('p54ReportTo');
+   if(!payload.dateFrom||!payload.dateTo){if(msg)msg.textContent='Isi tanggal awal dan akhir laporan.';return;}
+   target.disabled=true;target.textContent='Generating…';if(msg)msg.textContent='Menyusun laporan mandate dan policy compliance…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)}),j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P54 gagal diproses.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=create?$('p54CreateMsg'):report?$('p54ReportMsg'):$('p54Msg');if(done)done.textContent=j.message||'P54 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
