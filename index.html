@@ -3781,7 +3781,7 @@ if(!window.__p53GovernanceAuditBound){
   else if(review){
    const selected=val('p53Target'),parts=selected.split('::');
    if(parts.length!==2||!parts[1]){if(msg)msg.textContent='Pilih chain atau finding yang akan direview.';return;}
-   payload.command='review';payload.runId=(P&&P.investmentGovernanceAudit&&P.investmentGovernanceAudit.runId)||'';payload.targetType=parts[0];payload.targetId=parts[1];payload.decision=val('p53Decision');payload.owner=val('p53Owner');payload.reason=val('p53Reason');
+   payload.command='review';payload.runId=(PF&&PF.portfolio&&PF.portfolio.investmentGovernanceAudit&&PF.portfolio.investmentGovernanceAudit.runId)||'';payload.targetType=parts[0];payload.targetId=parts[1];payload.decision=val('p53Decision');payload.owner=val('p53Owner');payload.reason=val('p53Reason');
    if(payload.reason.length<8){if(msg)msg.textContent='Catatan review minimal 8 karakter.';return;}
    if(payload.decision==='ACTION_ASSIGNED'&&!payload.owner){if(msg)msg.textContent='Owner wajib untuk ACTION_ASSIGNED.';return;}
    target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Menyimpan catatan review append-only…';
