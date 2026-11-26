@@ -2630,6 +2630,49 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div class="dnote"><small>'+esc(p52&&p52.config&&p52.config.policy||'P52 hanya menyimpan referensi dokumen dan angka transkripsi admin. VERIFIED_MATCH berarti angka yang dimasukkan cocok dengan P48 pada toleransi konfigurasi; keaslian dokumen tetap tanggung jawab pemeriksa. Tidak ada pengiriman order atau mutasi portofolio.')+'</small></div>';
 }
 
+
+/* ===== P53: investment governance & audit intelligence ===== */
+const p53=P.investmentGovernanceAudit||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p53tone=s=>s==='CRITICAL'?'err':s==='ACTION_REQUIRED'?'warn':s==='MONITOR'?'idle':'ok';
+ const p53sev=s=>s==='CRITICAL'||s==='HIGH'?'err':s==='MEDIUM'?'warn':s==='LOW'?'idle':'ok';
+ const p53money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p53key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ h+='<h4>🏛️ P53 — AI Investment Governance & Audit Intelligence <small>('+esc(p53&&p53.generatedAt||'belum diaudit')+')</small></h4>';
+ h+='<div class="dnote">P53 menyusun jejak audit lintas P38–P52: keputusan manusia → order/fill → rekonsiliasi P39 → insight P49 → playbook dan persetujuan P50 → compliance P51 → evidence dan exception P52. Snapshot bersifat historis dan read-only terhadap ledger sumber.</div>';
+ if(p53&&p53.runId){
+  const t=p53.totals||{},v=p53.sourceVersions||{};
+  h+='<div class="dchips"><span class="chip">Audit chains <b>'+nf(t.chains)+'</b></span><span class="chip">Clear <b>'+nf(t.clearChains)+'</b></span><span class="chip">Monitor <b>'+nf(t.monitorChains)+'</b></span><span class="chip">Action required <b>'+nf(t.actionChains)+'</b></span><span class="chip">Critical <b>'+nf(t.criticalChains)+'</b></span><span class="chip">Findings <b>'+nf(t.findings)+'</b></span><span class="chip">Unreconciled fills <b>'+nf(t.unreconciledFills)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Decision P38 <b>'+nf(v.p38DecisionCount)+'</b></span><span class="chip">Order / fill P48 <b>'+nf(v.p48OrderCount)+' / '+nf(v.p48FillCount)+'</b></span><span class="chip">P39 activity <b>'+nf(v.p39ActivityCount)+'</b></span><span class="chip">P49 insight <b>'+nf(v.p49InsightCount)+'</b></span><span class="chip">P50 playbook <b>'+nf(v.p50PlaybookCount)+'</b></span><span class="chip">P51 eval <b>'+nf(v.p51EvaluationCount)+'</b></span><span class="chip">P52 case <b>'+nf(v.p52CaseCount)+'</b></span></div>';
+  h+='<div class="dnote">Run <b>'+esc(p53.runId)+'</b> · P51 source <b>'+esc(v.p51LatestRunId||'—')+'</b> · P52 source <b>'+esc(v.p52LatestRunId||'—')+'</b></div>';
+ }else h+='<div class="dnote">Belum ada snapshot audit P53. Refresh akan membaca ledger P38–P52 dan membuat snapshot baru.</div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p53Refresh" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#1d4ed8;color:#fff;font-weight:800;cursor:pointer">Refresh Governance Audit</button><span id="p53Msg" class="dnote">Refresh membuat snapshot baru; tidak mengubah keputusan, order, fill, atau case sumber.</span></div>';
+ h+='<h4>Governance chain register</h4><div style="overflow-x:auto"><table><tr><th>Status / chain</th><th>Keputusan manusia</th><th>Order / fill aktual</th><th>P49 / P50 / P51 / P52</th><th>Temuan / review</th></tr>';
+ (p53&&p53.chains||[]).forEach(function(x){h+='<tr><td><span class="bdg '+p53tone(x.governanceStatus)+'">'+esc(x.governanceStatus)+'</span><br><b>'+esc(x.assetCode||'—')+' '+esc(x.side||'')+'</b><br><small>'+esc(x.chainType)+' · '+esc(x.tradeDate||'tanpa tanggal transaksi')+'</small><br><small>'+esc(x.chainId)+'</small><br><small>Decision '+esc(x.decisionId||'—')+'</small></td>';
+  h+='<td>'+esc(x.humanDecision||'—')+'<br><small>'+esc(x.decisionStatus||'')+'</small><br><small>'+esc(x.humanActor||'')+'</small><br><small>'+esc(x.humanReason||'')+'</small></td>';
+  h+='<td>'+esc(x.orderId||'—')+'<br>'+esc(x.orderBroker||'')+' / '+esc(x.orderAccount||'')+'<br><small>'+esc(x.orderStatus||'')+' · filled '+nf(x.filledQty)+' / '+nf(x.fillCount)+' fill</small><br><small>'+p53money(x.filledNotional)+'</small><br><small>P39 reconciled '+nf(x.reconciledFillCount)+'/'+nf(x.fillCount)+'</small></td>';
+  h+='<td>P49 insight '+nf(x.p49InsightCount)+' · ACCEPT '+nf(x.p49AcceptedReviewCount)+'<br>P50 '+esc(x.playbookId||'—')+' · '+esc(x.playbookReviewDecision||'no review')+'<br>P51 '+esc(x.p51ComplianceStatus||'—')+' '+esc(x.p51Severity||'')+'<br><small>P52 cases '+nf(x.p52CaseCount)+' · open '+nf(x.p52OpenCaseCount)+' · verified evidence '+nf(x.p52VerifiedEvidenceCount)+' · pending '+nf(x.p52PendingEvidenceCount)+' · variance '+nf(x.p52VarianceEvidenceCount)+'</small></td>';
+  h+='<td>'+nf(x.findingCount)+' finding<br><small>'+esc((x.findingCodes||[]).join(', '))+'</small><br><small>Review: '+esc(x.reviewDecision||'belum direview')+(x.reviewOwner?' · '+esc(x.reviewOwner):'')+'</small><br><small>'+esc(x.reviewReason||'')+'</small></td></tr>';});
+ if(!(p53&&p53.chains&&p53.chains.length))h+='<tr><td colspan="5">Belum ada chain audit. Jalankan Refresh Governance Audit.</td></tr>';
+ h+='</table></div>';
+ h+='<h4>Governance findings</h4><div style="overflow-x:auto"><table><tr><th>Severity / kode</th><th>Sumber</th><th>Subjek / detail</th><th>Chain</th><th>Review manajemen</th></tr>';
+ (p53&&p53.findings||[]).forEach(function(x){h+='<tr><td><span class="bdg '+p53sev(x.severity)+'">'+esc(x.severity)+'</span><br><b>'+esc(x.code)+'</b></td><td>'+esc(x.sourceModule)+'<br><small>'+esc(x.sourceId)+'</small></td><td><b>'+esc(x.subject)+'</b><br><small>'+esc(x.detail)+'</small></td><td><small>'+esc(x.chainId)+'</small></td><td>'+esc(x.reviewDecision||'belum direview')+(x.reviewOwner?'<br>'+esc(x.reviewOwner):'')+(x.reviewReason?'<br><small>'+esc(x.reviewReason)+'</small>':'')+'</td></tr>';});
+ if(!(p53&&p53.findings&&p53.findings.length))h+='<tr><td colspan="5">Tidak ada finding pada snapshot terbaru.</td></tr>';h+='</table></div>';
+ h+='<h4>Management review journal</h4><div class="dnote">Review P53 adalah catatan tindak lanjut manajemen, bukan approval order dan bukan pengganti resolusi case P52. Catatan hanya ditambahkan; histori sebelumnya tidak ditimpa.</div>';
+ h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0"><label>Target audit<select id="p53Target" style="width:100%;padding:8px"><option value="">Pilih chain atau finding…</option>';
+ (p53&&p53.chains||[]).forEach(x=>{h+='<option value="CHAIN::'+esc(x.chainId)+'">CHAIN · '+esc(x.assetCode||x.chainId)+' · '+esc(x.governanceStatus)+'</option>';});
+ (p53&&p53.findings||[]).forEach(x=>{h+='<option value="FINDING::'+esc(x.findingId)+'">FINDING · '+esc(x.code)+' · '+esc(x.severity)+'</option>';});
+ h+='</select></label><label>Keputusan review<select id="p53Decision" style="width:100%;padding:8px"><option value="ACKNOWLEDGED">ACKNOWLEDGED</option><option value="ACTION_ASSIGNED">ACTION_ASSIGNED</option><option value="ESCALATED">ESCALATED</option></select></label><label>Owner / PIC<input id="p53Owner" maxlength="160" placeholder="Wajib untuk ACTION_ASSIGNED" style="width:100%;padding:8px"></label><label style="grid-column:1/-1">Alasan dan catatan tindak lanjut<textarea id="p53Reason" rows="2" maxlength="900" placeholder="Minimal 8 karakter; jelaskan pemeriksaan atau tindakan manajemen" style="width:100%;padding:8px"></textarea></label></div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p53Review" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#0f766e;color:#fff;font-weight:800;cursor:pointer">Simpan management review</button><span id="p53ReviewMsg" class="dnote"></span></div>';
+ h+='<h4>Governance reporting</h4><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0"><label>Tanggal transaksi dari<input id="p53From" type="date" style="width:100%;padding:8px"></label><label>Tanggal transaksi sampai<input id="p53To" type="date" style="width:100%;padding:8px"></label></div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p53Report" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer">Buat laporan governance</button><span id="p53ReportMsg" class="dnote">Laporan mencakup chain dengan tanggal transaksi nyata pada rentang tersebut.</span></div>';
+ (p53&&p53.reports||[]).slice(0,10).forEach(function(r){const c=r.counts||{};h+='<div class="dnote" style="margin:6px 0"><b>'+esc(r.reportId)+'</b> · '+esc(r.dateFrom)+' → '+esc(r.dateTo)+' · '+esc(r.generatedAt)+'<br>Chains '+nf(c.chains)+' · Findings '+nf(c.findings)+' · Critical '+nf(c.critical)+' · Action required '+nf(c.actionRequired)+' · Open P52 '+nf(c.openP52Cases)+' · Pending evidence '+nf(c.pendingEvidence)+'</div>';});
+ h+='<h4>Governance audit events</h4><div style="overflow-x:auto"><table><tr><th>Waktu</th><th>Aktivitas</th><th>Target</th><th>Actor</th><th>Catatan</th></tr>';
+ (p53&&p53.events||[]).slice(0,40).forEach(function(x){h+='<tr><td>'+esc(x.eventAt)+'</td><td>'+esc(x.eventType)+'</td><td>'+esc(x.targetType)+'<br><small>'+esc(x.targetId)+'</small></td><td>'+esc(x.actor)+'</td><td>'+esc(x.note)+'</td></tr>';});
+ if(!(p53&&p53.events&&p53.events.length))h+='<tr><td colspan="5">Belum ada event governance.</td></tr>';h+='</table></div>';
+ h+='<div class="dnote"><small>P53 adalah indeks audit internal, bukan jaminan kelengkapan seluruh aktivitas di luar ledger. P39 hanya mencerminkan aktivitas yang masuk ke sistem; P49 adalah konteks insight; kebijakan P50 bersifat advisory; P51 memonitor pasca-transaksi; verifikasi dokumen P52 tetap bergantung pada pemeriksaan manusia.</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3716,6 +3759,42 @@ if(!window.__p52EvidenceCenterBound){
    if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P52 gagal diproses.');
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=add?$('p52EvidenceMsg'):report?$('p52ReportMsg'):$('p52Msg');if(done)done.textContent=j.message||'P52 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+/* ===== P53: investment governance audit controls ===== */
+if(!window.__p53GovernanceAuditBound){
+ window.__p53GovernanceAuditBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p53Refresh'):null;
+  const review=ev.target&&ev.target.closest?ev.target.closest('#p53Review'):null;
+  const report=ev.target&&ev.target.closest?ev.target.closest('#p53Report'):null;
+  const target=refresh||review||report;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl();
+  const msg=refresh?$('p53Msg'):review?$('p53ReviewMsg'):$('p53ReportMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';};
+  const payload={action:'investment_governance_audit',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Auditing…';if(msg)msg.textContent='Membaca data P38–P52, menghubungkan decision/order/fill/evidence, dan membuat snapshot audit…';}
+  else if(review){
+   const selected=val('p53Target'),parts=selected.split('::');
+   if(parts.length!==2||!parts[1]){if(msg)msg.textContent='Pilih chain atau finding yang akan direview.';return;}
+   payload.command='review';payload.runId=(P&&P.investmentGovernanceAudit&&P.investmentGovernanceAudit.runId)||'';payload.targetType=parts[0];payload.targetId=parts[1];payload.decision=val('p53Decision');payload.owner=val('p53Owner');payload.reason=val('p53Reason');
+   if(payload.reason.length<8){if(msg)msg.textContent='Catatan review minimal 8 karakter.';return;}
+   if(payload.decision==='ACTION_ASSIGNED'&&!payload.owner){if(msg)msg.textContent='Owner wajib untuk ACTION_ASSIGNED.';return;}
+   target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Menyimpan catatan review append-only…';
+  }else{
+   payload.command='report';payload.dateFrom=val('p53From');payload.dateTo=val('p53To');
+   if(!payload.dateFrom||!payload.dateTo){if(msg)msg.textContent='Isi tanggal awal dan akhir laporan.';return;}
+   target.disabled=true;target.textContent='Generating…';if(msg)msg.textContent='Menyusun laporan governance berdasarkan tanggal transaksi…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)}),j=await res.json();
+   if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P53 gagal diproses.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=refresh?$('p53Msg'):review?$('p53ReviewMsg'):$('p53ReportMsg');if(done)done.textContent=j.message||'P53 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
