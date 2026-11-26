@@ -2400,6 +2400,7 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
   h+='<label>Minimum unit<input id="p47MinQty" type="number" min="0" step="any" style="width:100%;padding:8px"></label>';
   h+='<label>Harga referensi (Rp)<input id="p47RefPrice" type="number" min="0" step="any" placeholder="Wajib EXCHANGE / OTC" style="width:100%;padding:8px"></label>';
   h+='<label>Available cash akun (Rp)<input id="p47Cash" type="number" min="0" step="1" placeholder="Wajib jika ada BUY" style="width:100%;padding:8px"></label>';
+  h+='<label>Jumlah saham tersedia di akun<input id="p47PosQty" type="number" min="0" step="1" placeholder="Wajib untuk SELL saham" style="width:100%;padding:8px"></label>';
   h+='<label style="grid-column:1/-1">Sumber / catatan<input id="p47Notes" maxlength="500" placeholder="Sumber data, periode ADV, catatan verifikasi..." style="width:100%;padding:8px"></label>';
   h+='</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p47SaveLiquidity" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Simpan profil likuiditas</button><button id="p47RefreshExecution" type="button" style="padding:9px 13px;border:1px solid #64748b;border-radius:8px;background:transparent;color:inherit;font-weight:800;cursor:pointer">Refresh readiness & biaya</button><span id="p47ExecutionMsg" class="dnote">Simpan input terbaru, lalu refresh. Data manual tetap perlu diverifikasi.</span></div>';
   h+='<h4>Persetujuan hasil pemeriksaan</h4><div class="dnote">APPROVE hanya memberi status REVIEW_APPROVED_NOT_EXECUTED. Status tersebut tidak membuat instruksi, tidak mengirim order ke broker, dan tidak memperbarui posisi aktual.</div>';
@@ -3305,7 +3306,7 @@ if(!window.__p47ExecutionReadinessBound){
   else if(save){
    payload.command='record_liquidity';
    payload.assetClass=val('p47Class');payload.assetCode=val('p47Code').toUpperCase();payload.account=val('p47Account');payload.asOfDate=val('p47Date');payload.liquidityType=val('p47Type');
-   payload.avgDailyValue=num('p47Adv');payload.avgDailyVolume=num('p47AdvVol');payload.spreadPct=num('p47Spread');payload.impactPctAt10PctADV=num('p47Impact');payload.maxParticipationPct=num('p47Part');payload.settlementDays=num('p47Settle');payload.cutoffTime=val('p47Cutoff');payload.minOrderValue=num('p47MinValue');payload.minOrderQty=num('p47MinQty');payload.referencePrice=num('p47RefPrice');payload.availableCashIdr=num('p47Cash');payload.notes=val('p47Notes');
+   payload.avgDailyValue=num('p47Adv');payload.avgDailyVolume=num('p47AdvVol');payload.spreadPct=num('p47Spread');payload.impactPctAt10PctADV=num('p47Impact');payload.maxParticipationPct=num('p47Part');payload.settlementDays=num('p47Settle');payload.cutoffTime=val('p47Cutoff');payload.minOrderValue=num('p47MinValue');payload.minOrderQty=num('p47MinQty');payload.referencePrice=num('p47RefPrice');payload.availableCashIdr=num('p47Cash');payload.availablePositionQty=num('p47PosQty');payload.notes=val('p47Notes');
    if(!payload.assetCode||!payload.account||!payload.asOfDate||payload.settlementDays===null){if(msg)msg.textContent='Lengkapi kode aset, akun, tanggal snapshot dan settlement.';return;}
    target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Menyimpan profil likuiditas manual ke ledger audit P47…';
   }else{
