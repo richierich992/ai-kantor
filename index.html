@@ -2272,6 +2272,52 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p44RefreshStress" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh stress test & crisis simulator</button><span id="p44StressMsg" class="dnote">Refresh setelah market close; laporan dan proposal disimpan satu kali per tanggal.</span></div>';
 }
 
+
+/* ===== P45: Portfolio Resilience & Dynamic Defense Planner ===== */
+const p45=P.portfolioResilience||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p45money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p45pct=n=>n==null?'—':(Number(n)>=0?'+':'')+Number(n).toFixed(2)+'%';
+ const p45tone=s=>s==='CRITICAL'?'err':s==='DEFENSE_REQUIRED'?'warn':s==='WITHIN_STRESS_BUDGET'?'ok':'idle';
+ const p45key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ h+='<h4>🛡️ P45 — AI Portfolio Resilience & Dynamic Defense Planner <small>('+esc(p45&&p45.generatedAt||'belum dihitung')+')</small></h4>';
+ h+='<div class="dnote">Menyusun rencana pertahanan berbasis stress test P44, regime IHSG P42 dan NAV P40. Sistem mengidentifikasi sumber kerugian terbesar, menghitung cash reserve target, dan menyusun usulan pengurangan exposure bertahap. Semua angka adalah rencana simulasi; tidak ada aset yang dijual atau alokasi yang diubah.</div>';
+ if(p45){
+  h+='<div class="dchips"><span class="chip '+p45tone(p45.defenseLevel)+'">Defense level <b>'+esc(p45.defenseLevel)+'</b></span><span class="chip '+(p45.navComplete?'ok':'warn')+'">NAV <b>'+(p45.navComplete?'LENGKAP':'PARSIAL')+'</b></span><span class="chip">NAV <b>'+p45money(p45.navValue)+'</b></span><span class="chip">IHSG <b>'+esc(p45.marketRegime||'UNKNOWN')+'</b></span><span class="chip">Worst scenario <b>'+esc(p45.worstScenario&&p45.worstScenario.label||'—')+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip '+(p45.worstScenario&&p45.worstScenario.lossPct>p45.stressBudget.maxStressLossPct?'err':'ok')+'">Stress loss <b>'+p45pct(p45.worstScenario&&p45.worstScenario.lossPct)+'</b></span><span class="chip">Stress-loss budget <b>'+p45pct(-p45.stressBudget.maxStressLossPct)+'</b></span><span class="chip">Cash saat ini <b>'+p45pct(p45.cashReservePct)+'</b></span><span class="chip">Cash reserve target <b>'+p45pct(p45.stressBudget.regimeAdjustedCashReservePct)+'</b></span><span class="chip">Top-up reserve indikatif <b>'+p45money(p45.requiredCashTopUp)+'</b></span></div>';
+  h+='<div class="dnote">Regime '+esc(p45.regime&&p45.regime.code||'UNKNOWN')+' • IHSG 20 sesi '+p45pct(p45.regime&&p45.regime.return20Pct)+' • 60 sesi '+p45pct(p45.regime&&p45.regime.return60Pct)+' • volatilitas 20 sesi '+p45pct(p45.regime&&p45.regime.annualizedVol20Pct)+'. Batas default: stress-loss '+p45pct(p45.stressBudget.maxStressLossPct)+'; reserve minimum '+p45pct(p45.stressBudget.minCashReservePct)+'; pengurangan maksimum '+p45pct(p45.stressBudget.maxClassReductionPct)+' per kelas dan '+p45pct(p45.stressBudget.maxTotalReductionPct)+' total exposure.</div>';
+  h+='<h4>Sumber risiko terbesar pada worst scenario</h4><div style="overflow-x:auto"><table><tr><th>Prioritas kerugian nominal</th><th>Nilai posisi</th><th>Market P/L stress</th><th>Kontribusi gross loss</th><th>Shock per Rp</th><th>Kontribusi terhadap NAV</th></tr>';
+  (p45.classRiskContributions||[]).forEach(function(x,i){h+='<tr><td><b>'+(i+1)+'. '+esc(x.assetClass)+'</b></td><td>'+p45money(x.marketValue)+'</td><td><span class="bdg '+(x.marketPnl<0?'err':'ok')+'">'+p45money(x.marketPnl)+'</span></td><td>'+p45pct(x.contributionOfGrossLossPct)+'</td><td>'+p45pct(x.shockPct)+'</td><td>'+p45pct(x.contributionOfNavPct)+'</td></tr>';});
+  if(!(p45.classRiskContributions||[]).length)h+='<tr><td colspan="6">Data kontribusi risiko belum tersedia.</td></tr>';
+  h+='</table></div>';
+  h+='<h4>Rencana pertahanan terarah</h4>';
+  const plan=p45.targetedDefensePlan||{};
+  h+='<div class="dchips"><span class="chip '+(plan.lossBudgetMet?'ok':'err')+'">Loss budget <b>'+(plan.lossBudgetMet?'TERPENUHI':'BELUM TERCAPAI')+'</b></span><span class="chip '+(plan.reserveTargetMet?'ok':'warn')+'">Cash reserve <b>'+(plan.reserveTargetMet?'TERPENUHI':'BELUM TERCAPAI')+'</b></span><span class="chip">Rencana pengurangan <b>'+p45money(plan.totalReductionValue)+'</b></span><span class="chip">Friction indikatif <b>'+p45money(plan.estimatedExecutionFriction)+'</b></span><span class="chip">Stress loss setelah rencana <b>'+p45pct(plan.postPlanStressLossPct)+'</b></span><span class="chip">Cash setelah rencana <b>'+p45pct(plan.cashReserveAfterPct)+'</b></span></div>';
+  h+='<div class="dnote">Target: stress loss maksimum '+p45pct(plan.goal&&plan.goal.maxStressLossPct)+' dan cash reserve '+p45pct(plan.goal&&plan.goal.targetCashReservePct)+'. Urutan tindakan diprioritaskan berdasarkan shock negatif per rupiah; kontribusi kerugian nominal di tabel sebelumnya dapat berbeda karena ukuran posisi berbeda.</div>';
+  h+='<div style="overflow-x:auto"><table><tr><th>Prioritas / kelas</th><th>Nilai posisi</th><th>Usulan pengurangan</th><th>% posisi</th><th>Stress loss berkurang</th><th>Friction indikatif</th><th>Alasan</th></tr>';
+  (plan.actions||[]).forEach(function(x){h+='<tr><td><b>'+nf(x.priority)+'. '+esc(x.assetClass)+'</b></td><td>'+p45money(x.currentValue)+'</td><td>'+p45money(x.reductionValue)+'</td><td>'+p45pct(x.reductionPctOfClass)+'</td><td>'+p45money(x.stressLossReduction)+'</td><td>'+p45money(x.estimatedExecutionFriction)+'</td><td><small>'+esc(x.reason)+'</small></td></tr>';});
+  if(!(plan.actions||[]).length)h+='<tr><td colspan="7">Tidak ada pengurangan exposure yang diperlukan menurut batas stress dan reserve saat ini.</td></tr>';
+  h+='</table></div>';
+  if(!plan.achievable)h+='<div class="dnote"><span class="bdg warn">LIMIT NOT REACHED</span> Batas pengurangan maksimum belum cukup untuk memenuhi semua sasaran. Planner tidak menaikkan limit secara otomatis; perlu review batas kebijakan dan risiko secara manual.</div>';
+  h+='<h4>Perbandingan skenario pengurangan exposure</h4><div style="overflow-x:auto"><table><tr><th>Pengurangan seluruh exposure</th><th>Nilai yang dialihkan ke reserve</th><th>Cash reserve sesudah rencana</th><th>Stress loss tersisa</th><th>Stress NAV</th></tr>';
+  (p45.exposureReductionScenarios||[]).forEach(function(x){h+='<tr><td><b>'+p45pct(x.reductionPct)+'</b></td><td>'+p45money(x.reductionValue)+'</td><td>'+p45pct(x.cashReservePct)+'</td><td>'+p45pct(x.stressLossPct)+'</td><td>'+p45money((p45.navValue||0)+x.stressPnlAfter)+'</td></tr>';});
+  h+='</table></div>';
+  h+='<h4>Proposal pertahanan untuk persetujuan manusia</h4><div class="dnote">APPROVE hanya mengubah status menjadi APPROVED_FOR_MANUAL_REVIEW. Ini bukan perintah jual, bukan target alokasi yang diterapkan, dan bukan perubahan posisi P20.</div>';
+  if((p45.proposals||[]).length){
+   h+='<div style="overflow-x:auto"><table><tr><th>Tanggal / regime</th><th>Worst stress</th><th>Budget loss</th><th>Target reserve</th><th>Status / keputusan</th></tr>';
+   (p45.proposals||[]).forEach(function(x){const k=p45key(x.proposalId);h+='<tr><td>'+esc(x.snapshotDate)+'<br><small>'+esc(x.regime)+'</small></td><td>'+esc(x.worstScenario)+'<br><small>'+p45pct(x.stressLossPct)+'</small></td><td>'+p45pct(-x.stressBudgetPct)+'</td><td>'+p45pct(x.targetCashReservePct)+'</td><td><span class="bdg '+(x.status==='APPROVED_FOR_MANUAL_REVIEW'?'ok':x.status==='DRAFT'?'warn':'idle')+'">'+esc(x.status)+'</span>';
+    if(x.status==='DRAFT')h+='<br><textarea id="p45Reason_'+k+'" rows="2" maxlength="500" placeholder="Alasan review minimal 8 karakter" style="width:190px;padding:7px;margin-top:5px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><button type="button" data-p45-decision="APPROVE" data-p45-id="'+esc(x.proposalId)+'">Approve review</button><button type="button" data-p45-decision="DEFER" data-p45-id="'+esc(x.proposalId)+'">Defer</button><button type="button" data-p45-decision="REJECT" data-p45-id="'+esc(x.proposalId)+'">Reject</button></div>';
+    else h+='<br><small>'+esc(x.decision||'')+' • '+esc(x.decisionReason||'')+'</small>';
+    h+='</td></tr>';});
+   h+='</table></div>';
+  }else h+='<div class="dnote">Proposal hanya dibuat bila NAV P40 lengkap, data regime IHSG tersedia, dan stress test P44 memiliki output.</div>';
+  if((p45.reasons||[]).length)h+='<div class="dnote">'+p45.reasons.map(function(x){return '• '+esc(x);}).join('<br>')+'</div>';
+  if((p45.warnings||[]).length)h+='<div class="dnote">'+p45.warnings.map(function(x){return '⚠ '+esc(x);}).join('<br>')+'</div>';
+  h+='<div class="dnote"><small>'+esc(p45.policy||'')+'</small></div>';
+ }else h+='<div class="dnote">Belum ada planner P45. Refresh setelah P40/P42/P43/P44 diperbarui.</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p45RefreshResilience" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh resilience & defense plan</button><span id="p45ResilienceMsg" class="dnote">Refresh setelah market close. Satu proposal DRAFT per tanggal; semua usulan tetap membutuhkan tindakan manual.</span></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3091,6 +3137,35 @@ if(!window.__p44PortfolioStressBound){
    const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P44 gagal diperbarui.');
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p44StressMsg');if(done)done.textContent=j.message||'P44 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+
+/* ===== P45: resilience refresh and human defense proposal decision ===== */
+if(!window.__p45PortfolioResilienceBound){
+ window.__p45PortfolioResilienceBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p45RefreshResilience'):null;
+  const decision=ev.target&&ev.target.closest?ev.target.closest('[data-p45-decision]'):null;
+  const target=refresh||decision;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p45ResilienceMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  let payload={action:'portfolio_resilience_planner',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Menyusun defense plan…';if(msg)msg.textContent='Memperbarui P44/P43/P42/P40 lalu menghitung batas stress loss, reserve, sumber risiko dan pengurangan exposure…';}
+  else{
+   const id=decision.getAttribute('data-p45-id'),kind=decision.getAttribute('data-p45-decision'),key=String(id||'').replace(/[^A-Za-z0-9]/g,''),el=$('p45Reason_'+key),reason=el?el.value.trim():'';
+   if(reason.length<8){if(msg)msg.textContent='Alasan keputusan minimal 8 karakter.';return;}
+   if(kind==='APPROVE'&&!window.confirm('Setujui rencana P45 hanya untuk review manual? Tidak ada saham dijual, posisi diubah, atau order dikirim.'))return;
+   payload.command='decide';payload.proposalId=id;payload.decision=kind;payload.reason=reason;
+   target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Mencatat keputusan manusia dan audit proposal pertahanan…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P45 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p45ResilienceMsg');if(done)done.textContent=j.message||'P45 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
