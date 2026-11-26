@@ -2816,6 +2816,76 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div class="dnote"><small>Interpretasi: total exposure mengacu pada snapshot P12; posisi saham, reksa dana dan crypto diambil dari baris posisi P12, bukan hanya 12 besar. Sektor harus dipetakan manual. Cash reserve dihitung dari agregat Kas/IDR P12 bila tersedia. Unpriced value adalah estimasi biaya, bukan nilai pasar. Broker cash snapshot P39 dapat tidak mencakup semua akun. P55 adalah monitoring/advisory, bukan pre-trade gate. Limit hanya aktif untuk profil P55 yang disetujui dan terkait P54 mandate aktif.</small></div>';
 }
 
+
+/* ===== P56: portfolio risk budget & dynamic rebalancing intelligence ===== */
+const p56=P.portfolioRiskBudgetRebalance||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p56money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p56pct=n=>n==null?'—':Number(n).toFixed(2)+'%';
+ const p56tone=s=>s==='CRITICAL'||s==='BLOCKED'?'err':s==='HIGH'||s==='ACTION_REQUIRED'||s==='NOT_ASSESSABLE'?'warn':s==='READY_FOR_REVIEW'||s==='APPROVED_FOR_MANUAL_REVIEW'?'ok':'idle';
+ const p56key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ const p56scenarioKeys=[...new Set((p56&&p56.scenarios||[]).map(x=>x.scenarioKey))];
+ h+='<h4>🧮 P56 — AI Portfolio Risk Budget & Dynamic Rebalancing Intelligence <small>('+esc(p56&&p56.generatedAt||'belum dihitung')+')</small></h4>';
+ h+='<div class="dnote">P56 membaca target P13, posisi dan risk limits P55, skenario stres P44, serta konteks kandidat P46. Sistem membuat simulasi perpindahan nilai antarkelas aset dengan batas turnover, penyesuaian per run, minimum kas, batas bobot kelas, dan stress loss. Hasil tetap class-level; tidak membuat tiket order saham/crypto dan tidak mengirim transaksi.</div>';
+ if(p56&&p56.runId){
+  const s=p56.summary||{};
+  h+='<div class="dchips"><span class="chip">Status <b><span class="bdg '+p56tone(p56.status)+'">'+esc(p56.status)+'</span></b></span><span class="chip">Portfolio NAV <b>'+p56money(s.totalValue)+'</b></span><span class="chip">Worst stress current <b>'+p56pct(s.currentStressLossPct)+'</b></span><span class="chip">Worst stress proposed <b>'+p56pct(s.proposedStressLossPct)+'</b></span><span class="chip">Stress budget <b>'+p56pct(s.maxStressLossPct)+'</b></span><span class="chip">One-way turnover <b>'+p56pct(s.oneWayTurnoverPct)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Adjustment factor <b>'+p56pct(s.adjustmentFactor==null?null:s.adjustmentFactor*100)+'</b></span><span class="chip">P13 targets <b>'+(s.p13TargetAvailable?'READY':'MISSING')+'</b></span><span class="chip">P44 stress source <b>'+(s.p44Used?'P44':'P56 fallback')+'</b></span><span class="chip">P44 scenarios <b>'+nf(s.p44ScenarioCount)+'</b></span><span class="chip">P46 tactical context <b>'+(s.p46Context&&s.p46Context.ready?'READY':s.p46Context&&s.p46Context.available?'PARTIAL':'NOT LINKED')+'</b></span></div>';
+  h+='<div class="dnote">Run <b>'+esc(p56.runId)+'</b> · P54 '+esc(s.p54PolicyCode||'—')+' · P55 '+esc(s.p55ProfileCode||'—')+' · P44 worst scenario '+esc(s.p44WorstScenario||'—')+' · P46 recommended '+esc(s.p46Context&&s.p46Context.recommendedScenario||'—')+' · Source snapshot '+esc(s.sourceSnapshotAt||'—')+'</div>';
+ }else h+='<div class="dnote">Belum ada run P56. Pastikan target P13 terisi 100%, P54 mandate dan P55 profile aktif, lalu buat serta aktifkan risk budget P56.</div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p56Refresh" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#1d4ed8;color:#fff;font-weight:800;cursor:pointer">Refresh risk budget & rebalance simulation</button><span id="p56Msg" class="dnote">Refresh membaca ulang P12/P13/P44/P46/P55 dan menyimpan snapshot baru.</span></div>';
+ h+='<h4>Target P13 vs current vs simulated</h4><div class="dnote">Deviasi di bawah target tolerance tidak memicu penyesuaian. Perubahan di atas batas dihitung pro-rata, lalu dibatasi oleh one-way turnover dan maksimum perubahan per run.</div><div style="overflow-x:auto"><table><tr><th>Asset class</th><th>Current value / weight</th><th>P13 target</th><th>Raw gap</th><th>Applied change</th><th>Proposed value / weight</th></tr>';
+ (p56&&p56.classes||[]).forEach(function(x){h+='<tr><td><b>'+esc(x.assetClass)+'</b></td><td>'+p56money(x.currentValue)+'<br><small>'+p56pct(x.currentWeightPct)+'</small></td><td>'+(x.targetWeightPct==null?'—':p56pct(x.targetWeightPct))+'</td><td>'+p56money(x.rawGapValue)+'</td><td><span class="bdg '+(Number(x.appliedDeltaValue)>0?'ok':Number(x.appliedDeltaValue)<0?'warn':'idle')+'">'+p56money(x.appliedDeltaValue)+'</span></td><td>'+p56money(x.proposedValue)+'<br><small>'+p56pct(x.proposedWeightPct)+'</small></td></tr>';});
+ if(!(p56&&p56.classes&&p56.classes.length))h+='<tr><td colspan="6">Belum ada hasil alokasi. Jalankan Refresh setelah risk budget aktif.</td></tr>';h+='</table></div>';
+ h+='<h4>Stress test — current vs proposed</h4><div class="dnote">P56 memakai class-level shock dari skenario P44 bila tersedia. Jika belum, lima skenario fallback deterministik P56 digunakan dan diberi label jelas. Shock yang tidak tersedia untuk kelas aset yang terisi akan memblokir proposal, bukan dianggap 0%.</div>';
+ p56scenarioKeys.forEach(function(k){const rows=(p56.scenarios||[]).filter(x=>x.scenarioKey===k),x=rows[0]||{};let cLoss=0,pLoss=0;rows.forEach(r=>{cLoss+=Number(r.currentLossValue)||0;pLoss+=Number(r.proposedLossValue)||0;});h+='<div class="dnote" style="margin:7px 0"><b>'+esc(x.label)+' <span class="bdg '+(x.source==='P44'?'ok':'warn')+'">'+esc(x.source)+'</span></b><br>Current loss '+p56money(cLoss)+' · Proposed loss '+p56money(pLoss)+'<div style="overflow-x:auto"><table><tr><th>Kelas</th><th>Shock</th><th>Current loss</th><th>Proposed loss</th><th>Stressed value current</th><th>Stressed value proposed</th></tr>';
+  rows.forEach(r=>{h+='<tr><td>'+esc(r.assetClass)+'</td><td>'+p56pct(r.shockPct)+'</td><td>'+p56money(r.currentLossValue)+'</td><td>'+p56money(r.proposedLossValue)+'</td><td>'+p56money(r.currentStressedValue)+'</td><td>'+p56money(r.proposedStressedValue)+'</td></tr>';});
+  h+='</table></div></div>';});
+ if(!p56scenarioKeys.length)h+='<div class="dnote">Belum ada skenario stres yang tersimpan.</div>';
+ h+='<div class="dnote">P44 available: '+(p56&&p56.p44&&p56.p44.available?'ya':'tidak')+' · scenarios '+nf(p56&&p56.p44&&p56.p44.scenarioCount)+' · worst '+esc(p56&&p56.p44&&p56.p44.worstScenario||'—')+'<br>P46 available: '+(p56&&p56.p46&&p56.p46.available?'ya':'tidak')+' · ready '+(p56&&p56.p46&&p56.p46.ready?'ya':'tidak')+' · candidate '+esc(p56&&p56.p46&&p56.p46.recommendedScenario||'—')+'<br><small>'+esc(p56&&p56.p46&&p56.p46.note||'P46 contextual reference only; P56 does not copy its order tickets.')+'</small></div>';
+ h+='<h4>Risk budget builder & version control</h4><div class="dnote">Risk budget ditautkan ke P55 exposure profile aktif dan P54 mandate yang sama. Versi baru menggantikan versi lama pada tanggal efektif. Minimal seluruh batas berikut diisi sesuai kebijakan organisasi.</div>';
+ h+='<input id="p56SourceBudget" type="hidden" value=""><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0">';
+ h+='<label>Budget code<input id="p56Code" maxlength="40" placeholder="CORE_BUDGET" style="width:100%;padding:8px"></label>';
+ h+='<label>Risk budget name<input id="p56Name" maxlength="120" placeholder="Core portfolio risk budget" style="width:100%;padding:8px"></label>';
+ h+='<label>Target tolerance (pp)<input id="p56Tolerance" type="number" min="0" max="25" step="0.1" value="2" style="width:100%;padding:8px"></label>';
+ h+='<label>Max one-way turnover (%)<input id="p56Turnover" type="number" min="0.01" max="100" step="0.1" value="20" style="width:100%;padding:8px"></label>';
+ h+='<label>Max adjustment per run (%)<input id="p56Adjustment" type="number" min="0.01" max="100" step="0.1" value="10" style="width:100%;padding:8px"></label>';
+ h+='<label>Max class weight (%)<input id="p56ClassCap" type="number" min="0.01" max="100" step="0.1" value="70" style="width:100%;padding:8px"></label>';
+ h+='<label>Minimum cash reserve (%)<input id="p56MinCash" type="number" min="0" max="100" step="0.1" value="10" style="width:100%;padding:8px"></label>';
+ h+='<label>Maximum stress loss (%)<input id="p56StressCap" type="number" min="0.01" max="100" step="0.1" value="20" style="width:100%;padding:8px"></label>';
+ h+='<label style="grid-column:1/-1">Change reason<textarea id="p56Reason" rows="2" maxlength="900" placeholder="Minimal 8 karakter. Jelaskan risk appetite dan dasar penetapan budget." style="width:100%;padding:8px"></textarea></label></div>';
+ h+='<div class="dnote">P55 active profile: '+esc(p56&&p56.activeP55&&p56.activeP55.profileCode||'belum tersedia')+' v'+nf(p56&&p56.activeP55&&p56.activeP55.version)+' · P54 '+esc(p56&&p56.activeP55&&p56.activeP55.p54PolicyCode||'—')+'</div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p56Create" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#0f766e;color:#fff;font-weight:800;cursor:pointer">Save draft risk budget</button><button id="p56Clear" type="button">Clear form</button><span id="p56CreateMsg" class="dnote"></span></div>';
+ h+='<h4>Risk budget approval queue</h4><div style="overflow-x:auto"><table><tr><th>Budget / version</th><th>Limits</th><th>Status / linked policies</th><th>Workflow</th></tr>';
+ (p56&&p56.budgets||[]).forEach(function(x){const k=p56key(x.budgetId);h+='<tr><td><b>'+esc(x.budgetCode)+' v'+nf(x.version)+'</b><br>'+esc(x.name)+'<br><small>'+esc(x.budgetId)+'</small><br><small>Created '+esc(x.createdBy)+' · approver '+esc(x.approvedBy||'—')+'</small><br><small>'+esc(x.changeReason)+'</small></td>';
+  h+='<td>Tolerance '+p56pct(x.targetTolerancePp)+' · Turnover '+p56pct(x.maxOneWayTurnoverPct)+' · per run '+p56pct(x.maxAdjustmentPerRunPct)+'<br>Class cap '+p56pct(x.maxClassWeightPct)+' · min cash '+p56pct(x.minCashReservePct)+' · stress '+p56pct(x.maxStressLossPct)+'</td>';
+  h+='<td><span class="bdg '+p56tone(x.status)+'">'+esc(x.status)+'</span><br><small>P55 '+esc(x.p55ProfileCode)+' v'+nf(x.p55ProfileVersion)+' · P54 '+esc(x.p54PolicyCode)+'</small><br><small>'+esc(x.effectiveFrom||'—')+' → '+esc(x.effectiveTo||'open')+'</small></td><td>';
+  if(['ACTIVE','SUPERSEDED','SUSPENDED','RETIRED'].includes(x.status))h+='<button type="button" data-p56-clone="'+esc(x.budgetId)+'">New version / edit</button><br>';
+  if(x.status==='DRAFT')h+='<button type="button" data-p56-budget-action="SUBMIT" data-p56-id="'+esc(x.budgetId)+'">Submit for approval</button>';
+  else if(x.status==='SUBMITTED')h+='<button type="button" data-p56-budget-action="APPROVE" data-p56-id="'+esc(x.budgetId)+'">Approve (independent)</button>';
+  else if(x.status==='APPROVED')h+='<label>Effective from<input id="p56From_'+k+'" type="date" style="width:150px;padding:6px"></label><br><label>Effective to<input id="p56To_'+k+'" type="date" style="width:150px;padding:6px"></label><br><button type="button" data-p56-budget-action="ACTIVATE" data-p56-id="'+esc(x.budgetId)+'">Activate</button>';
+  else if(x.status==='ACTIVE')h+='<label>End date<input id="p56To_'+k+'" type="date" style="width:150px;padding:6px"></label><br><button type="button" data-p56-budget-action="SUSPEND" data-p56-id="'+esc(x.budgetId)+'">Suspend</button> <button type="button" data-p56-budget-action="RETIRE" data-p56-id="'+esc(x.budgetId)+'">Retire</button>';
+  else h+='<small>Lifecycle terminal</small>';
+  if(!['SUPERSEDED','RETIRED'].includes(x.status))h+='<textarea id="p56WorkflowReason_'+k+'" rows="2" maxlength="900" placeholder="Reason min 8 chars" style="width:180px;padding:6px;margin-top:5px"></textarea>';
+  h+='</td></tr>';});
+ if(!(p56&&p56.budgets&&p56.budgets.length))h+='<tr><td colspan="4">Belum ada risk budget. Buat draft pertama di atas.</td></tr>';h+='</table></div>';
+ h+='<h4>Rebalancing proposal — human review only</h4><div class="dnote">APPROVE hanya mencatat APPROVED_FOR_MANUAL_REVIEW. Tidak ada pembelian, penjualan, perubahan P20/P13, atau pengiriman order. Jika current concentration P55 tidak dapat diselesaikan pada level kelas, candidate akan tertahan.</div>';
+ h+='<div style="overflow-x:auto"><table><tr><th>Proposal</th><th>Scenario</th><th>Status</th><th>Decision</th></tr>';
+ (p56&&p56.proposals||[]).forEach(function(x){const k=p56key(x.proposalId);h+='<tr><td>'+esc(x.proposalId)+'<br><small>'+esc(x.createdAt)+' · '+esc(x.createdBy)+'</small></td><td>'+esc(x.scenarioKey)+'</td><td><span class="bdg '+p56tone(x.status)+'">'+esc(x.status)+'</span></td><td>';
+  if(x.status==='DRAFT')h+='<textarea id="p56ProposalReason_'+k+'" rows="2" maxlength="900" placeholder="Reason min 8 chars" style="width:210px;padding:6px"></textarea><br><div style="display:flex;gap:4px;flex-wrap:wrap"><button type="button" data-p56-proposal-action="APPROVE" data-p56-id="'+esc(x.proposalId)+'">Approve review</button><button type="button" data-p56-proposal-action="DEFER" data-p56-id="'+esc(x.proposalId)+'">Defer</button><button type="button" data-p56-proposal-action="REJECT" data-p56-id="'+esc(x.proposalId)+'">Reject</button></div>';
+  else h+='<small>'+esc(x.decision)+' · '+esc(x.reviewedBy||'')+'<br>'+esc(x.decisionReason||'')+'</small>';h+='</td></tr>';});
+ if(!(p56&&p56.proposals&&p56.proposals.length))h+='<tr><td colspan="4">Belum ada proposal. Proposal hanya dibuat untuk plan berstatus READY_FOR_REVIEW.</td></tr>';h+='</table></div>';
+ h+='<h4>Risk findings</h4><div style="overflow-x:auto"><table><tr><th>Severity / code</th><th>Subject</th><th>Observed</th><th>Limit</th><th>Detail</th></tr>';
+ (p56&&p56.findings||[]).forEach(function(x){h+='<tr><td><span class="bdg '+p56tone(x.severity)+'">'+esc(x.severity)+'</span><br><b>'+esc(x.code)+'</b></td><td>'+esc(x.subject)+'</td><td>'+(x.observedValue==null?'—':p56pct(x.observedValue))+'</td><td>'+(x.limitValue==null?'—':p56pct(x.limitValue))+'</td><td>'+esc(x.detail)+'</td></tr>';});
+ if(!(p56&&p56.findings&&p56.findings.length))h+='<tr><td colspan="5">Tidak ada finding pada run terakhir.</td></tr>';h+='</table></div>';
+ h+='<h4>Risk budget reports & audit events</h4><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0"><label>From<input id="p56ReportFrom" type="date" style="width:100%;padding:8px"></label><label>To<input id="p56ReportTo" type="date" style="width:100%;padding:8px"></label></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p56Report" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer">Generate risk budget report</button><span id="p56ReportMsg" class="dnote"></span></div>';
+ (p56&&p56.reports||[]).slice(0,10).forEach(function(r){const c=r.counts||{};h+='<div class="dnote" style="margin:5px 0"><b>'+esc(r.reportId)+'</b> · '+esc(r.dateFrom)+' → '+esc(r.dateTo)+' · runs '+nf(c.runs)+' · proposals '+nf(c.proposals)+' · findings '+nf(c.findings)+' · critical '+nf(c.critical)+' · approved '+nf(c.approved)+'</div>';});
+ h+='<div style="overflow-x:auto"><table><tr><th>Time</th><th>Event</th><th>Target</th><th>Actor</th><th>Note</th></tr>';
+ (p56&&p56.events||[]).slice(0,40).forEach(function(x){h+='<tr><td>'+esc(x.eventAt)+'</td><td>'+esc(x.eventType)+'</td><td>'+esc(x.targetType)+'<br><small>'+esc(x.targetId)+'</small></td><td>'+esc(x.actor)+'</td><td>'+esc(x.note)+'</td></tr>';});
+ if(!(p56&&p56.events&&p56.events.length))h+='<tr><td colspan="5">Belum ada audit event.</td></tr>';h+='</table></div>';
+ h+='<div class="dnote"><small>Risk estimate is deterministic under selected class shocks, not a probability forecast. P44 scenario inputs remain assumptions. P46 is a cross-check context, not copied as executable tickets. P56 class-level plan cannot select individual securities, account routing, lot rounding, fee, spread, market impact, tax, or settlement; use P46/P47/P48 separately for later manual validation. It never executes trades or updates holdings.</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -4032,6 +4102,49 @@ if(!window.__p55ExposureMonitorBound){
    payload.command='report';payload.dateFrom=val('p55ReportFrom');payload.dateTo=val('p55ReportTo');if(!payload.dateFrom||!payload.dateTo){if(msg)msg.textContent='Tanggal awal dan akhir wajib diisi.';return;}target.disabled=true;target.textContent='Generating…';if(msg)msg.textContent='Menyusun laporan exposure…';
   }
   try{const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)}),j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P55 gagal diproses.');PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;const done=create?$('p55CreateMsg'):sector?$('p55MapMsg'):report?$('p55ReportMsg'):$('p55Msg');if(done)done.textContent=j.message||'P55 diperbarui.';}
+  catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+/* ===== P56: risk budget, dynamic rebalance and human review controls ===== */
+if(!window.__p56RiskBudgetRebalanceBound){
+ window.__p56RiskBudgetRebalanceBound=true;
+ document.addEventListener('click',async function(ev){
+  const c=s=>ev.target&&ev.target.closest?ev.target.closest(s):null;
+  const refresh=c('#p56Refresh'),create=c('#p56Create'),clear=c('#p56Clear'),report=c('#p56Report'),clone=c('[data-p56-clone]'),workflow=c('[data-p56-budget-action]'),proposal=c('[data-p56-proposal-action]');
+  const target=refresh||create||clear||report||clone||workflow||proposal;if(!target)return;
+  if(clear){['p56SourceBudget','p56Code','p56Name','p56Tolerance','p56Turnover','p56Adjustment','p56ClassCap','p56MinCash','p56StressCap','p56Reason'].forEach(id=>{const e=$(id);if(e)e.value='';});if($('p56CreateMsg'))$('p56CreateMsg').textContent='Form dikosongkan.';return;}
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=create?$('p56CreateMsg'):report?$('p56ReportMsg'):$('p56Msg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const e=$(id);return e?e.value.trim():'';},num=id=>val(id)===''?null:Number(val(id));
+  const payload={action:'portfolio_risk_budget_rebalance',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Calculating…';if(msg)msg.textContent='Menghitung target P13, memeriksa P55 limits, menggunakan skenario P44 dan mengaitkan status P46…';}
+  else if(create){
+   payload.command=val('p56SourceBudget')?'new_version':'create_budget';payload.sourceBudgetId=val('p56SourceBudget');payload.budgetCode=val('p56Code');payload.name=val('p56Name');payload.targetTolerancePp=num('p56Tolerance');payload.maxOneWayTurnoverPct=num('p56Turnover');payload.maxAdjustmentPerRunPct=num('p56Adjustment');payload.maxClassWeightPct=num('p56ClassCap');payload.minCashReservePct=num('p56MinCash');payload.maxStressLossPct=num('p56StressCap');payload.changeReason=val('p56Reason');
+   target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Memvalidasi P54/P55 active policy dan risk budget parameters…';
+  }else if(clone){
+   const id=clone.getAttribute('data-p56-clone'),p=PF&&PF.portfolio&&PF.portfolio.portfolioRiskBudgetRebalance&&PF.portfolio.portfolioRiskBudgetRebalance.budgets&&PF.portfolio.portfolioRiskBudgetRebalance.budgets.find(x=>x.budgetId===id);
+   if(!p){if(msg)msg.textContent='Risk budget tidak ditemukan pada read model.';return;}
+   const set=(id,v)=>{const e=$(id);if(e)e.value=v==null?'':String(v);};
+   set('p56SourceBudget',p.budgetId);set('p56Code',p.budgetCode);set('p56Name',p.name);set('p56Tolerance',p.targetTolerancePp);set('p56Turnover',p.maxOneWayTurnoverPct);set('p56Adjustment',p.maxAdjustmentPerRunPct);set('p56ClassCap',p.maxClassWeightPct);set('p56MinCash',p.minCashReservePct);set('p56StressCap',p.maxStressLossPct);set('p56Reason','Revisi '+p.budgetCode+' dari versi '+p.version+': ');if($('p56CreateMsg'))$('p56CreateMsg').textContent='Form terisi dari '+p.budgetCode+' v'+p.version+'. Simpan untuk membuat versi baru.';const e=$('p56Create');if(e)e.scrollIntoView({block:'center',behavior:'smooth'});return;
+  }else if(workflow){
+   const id=workflow.getAttribute('data-p56-id'),actionType=workflow.getAttribute('data-p56-budget-action'),k=String(id||'').replace(/[^A-Za-z0-9]/g,'');
+   payload.command='workflow';payload.budgetId=id;payload.budgetAction=actionType;payload.reason=val('p56WorkflowReason_'+k);payload.effectiveFrom=val('p56From_'+k);payload.effectiveTo=val('p56To_'+k);
+   if(payload.reason.length<8){if(msg)msg.textContent='Alasan workflow minimal 8 karakter.';return;}
+   if(actionType==='APPROVE'&&!window.confirm('Pastikan approver berbeda dari pembuat/pengaju risk budget. Lanjutkan?'))return;
+   if(actionType==='ACTIVATE'&&!window.confirm('Aktifkan risk budget mulai tanggal efektif yang dipilih? Versi sebelumnya akan ditutup bila overlap.'))return;
+   target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Memvalidasi workflow four-eyes dan tanggal efektif…';
+  }else if(proposal){
+   const id=proposal.getAttribute('data-p56-id'),decision=proposal.getAttribute('data-p56-proposal-action'),k=String(id||'').replace(/[^A-Za-z0-9]/g,'');
+   payload.command='decide_proposal';payload.proposalId=id;payload.decision=decision;payload.reason=val('p56ProposalReason_'+k);
+   if(payload.reason.length<8){if(msg)msg.textContent='Alasan keputusan minimal 8 karakter.';return;}
+   if(decision==='APPROVE'&&!window.confirm('Setujui hanya untuk manual review? Tidak ada order dikirim dan portofolio tidak berubah.'))return;
+   target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Mencatat keputusan independen pada proposal P56…';
+  }else if(report){
+   payload.command='report';payload.dateFrom=val('p56ReportFrom');payload.dateTo=val('p56ReportTo');if(!payload.dateFrom||!payload.dateTo){if(msg)msg.textContent='Tanggal awal dan akhir laporan wajib diisi.';return;}target.disabled=true;target.textContent='Generating…';if(msg)msg.textContent='Menyusun laporan risk budget dan rebalance…';
+  }
+  try{const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)}),j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P56 gagal diproses.');PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;const done=create?$('p56CreateMsg'):report?$('p56ReportMsg'):$('p56Msg');if(done)done.textContent=j.message||'P56 diperbarui.';}
   catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
