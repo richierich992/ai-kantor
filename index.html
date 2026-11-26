@@ -2318,6 +2318,52 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p45RefreshResilience" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh resilience & defense plan</button><span id="p45ResilienceMsg" class="dnote">Refresh setelah market close. Satu proposal DRAFT per tanggal; semua usulan tetap membutuhkan tindakan manual.</span></div>';
 }
 
+/* ===== P46: AI Portfolio Tactical Rebalancing Simulator ===== */
+const p46=P.portfolioTacticalRebalance||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p46money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p46pct=n=>n==null?'—':Number(n).toFixed(2)+'%';
+ const p46key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ h+='<h4>🔁 P46 — AI Portfolio Tactical Rebalancing Simulator <small>('+esc(p46&&p46.generatedAt||'belum dihitung')+')</small></h4>';
+ h+='<div class="dnote">Menerjemahkan bobot minimum-variance P43 dan defensive cuts P45 menjadi kandidat rebalance per posisi, menghitung lot saham, asumsi fee/slippage, lalu menguji ulang skenario P44. Kandidat hanya simulasi untuk review manual; tidak ada transaksi yang dikirim atau posisi P20 yang diubah.</div>';
+ if(p46){
+  h+='<div class="dchips"><span class="chip '+(p46.ready?'ok':'warn')+'">Readiness <b>'+(p46.ready?'DATA TERSEDIA':'DATA BELUM LENGKAP')+'</b></span><span class="chip">NAV <b>'+p46money(p46.navValue)+'</b></span><span class="chip">Cash sekarang <b>'+p46pct(p46.currentCashReservePct)+'</b></span><span class="chip">Target reserve <b>'+p46pct(p46.targetCashReservePct)+'</b></span><span class="chip">Worst stress <b>'+esc(p46.worstScenario||'—')+'</b></span><span class="chip">Posisi terbaca <b>'+nf(p46.positionCount)+'</b></span></div>';
+  h+='<div class="dnote">Batas P45: stress loss maksimum '+p46pct(p46.stressBudgetPct)+'; reserve '+p46pct(p46.targetCashReservePct)+'. Biaya default P46: fee beli 0,15%, fee jual 0,25%; slippage berbeda menurut kelas aset. Semua asumsi dapat diubah melalui Script Properties. Pembulatan saham memakai 1 lot = 100 lembar; unit non-saham hanya dihitung bila data jumlah/harga tersedia.</div>';
+  if((p46.scenarios||[]).length){
+   h+='<h4>Perbandingan tiga kandidat</h4><div style="overflow-x:auto"><table><tr><th>Kandidat</th><th>Cash reserve sesudah</th><th>Stress loss P44</th><th>Biaya fee + slippage</th><th>BUY / SELL</th><th>Validasi</th></tr>';
+   p46.scenarios.forEach(function(x){h+='<tr><td><b>'+esc(x.label)+'</b><br><small>'+nf(x.blendTowardOptimizerPct)+'% menuju optimizer</small></td><td>'+p46pct(x.cashReserveAfterPct)+'</td><td>'+p46pct(x.stress&&x.stress.lossPctAfter)+' / budget '+p46pct(x.stress&&x.stress.budgetPct)+'</td><td>'+p46money(x.estimatedFeesAndSlippage)+'</td><td>'+nf(x.orderCount)+' order<br><small>nilai beli '+p46money(x.estimatedBuyValue)+' · jual '+p46money(x.estimatedSellValue)+'</small></td><td><span class="bdg '+(x.checks&&x.checks.limitsMet?'ok':'warn')+'">'+(x.checks&&x.checks.limitsMet?'LOLOS':'DITAHAN')+'</span><br><small>'+(x.checks&&x.checks.stressBudgetMet?'Stress ✓':'Stress ✕')+' · '+(x.checks&&x.checks.cashReserveMet?'Cash ✓':'Cash ✕')+' · '+(x.checks&&x.checks.p45MinimumCutsMet?'P45 ✓':'P45 ✕')+' · '+(x.checks&&x.checks.p43MaxClassWeightsMet?'P43 ✓':'P43 ✕')+'</small></td></tr>';});
+   h+='</table></div>';
+   const selected=p46.scenarios.filter(function(x){return x.scenarioKey===p46.recommendedScenario;})[0]||p46.scenarios[0];
+   if(selected){
+    h+='<h4>Rencana kelas aset — '+esc(selected.label)+'</h4><div style="overflow-x:auto"><table><tr><th>Kelas aset</th><th>Nilai sekarang</th><th>Target teoritis</th><th>Simulasi setelah lot/unit</th><th>Pengurangan minimum P45</th><th>Bobot hasil</th></tr>';
+    (selected.classTargets||[]).forEach(function(x){h+='<tr><td><b>'+esc(x.assetClass)+'</b></td><td>'+p46money(x.currentValue)+'</td><td>'+p46money(x.targetValue)+'</td><td>'+p46money(x.simulatedPostValue)+'</td><td>'+p46money(x.minimumDefenseReduction)+'</td><td>'+p46pct(x.finalWeightPct)+'</td></tr>';});
+    h+='</table></div>';
+    h+='<h4>Daftar posisi yang perlu ditinjau</h4><div style="overflow-x:auto"><table><tr><th>Kode / aset</th><th>Kelas</th><th>Arah</th><th>Nominal indikatif</th><th>Jumlah indikatif</th><th>Fee + slippage</th><th>Status unit</th></tr>';
+    (selected.orders||[]).forEach(function(x){h+='<tr><td><b>'+esc(x.assetCode||x.assetName)+'</b><br><small>'+esc(x.account||'')+'</small></td><td>'+esc(x.assetClass)+'</td><td><span class="bdg '+(x.side==='SELL'?'warn':'ok')+'">'+esc(x.side)+'</span></td><td>'+p46money(x.estimatedNotional)+'</td><td>'+(x.indicativeQuantity==null?'Perlu konfirmasi unit':nf(x.indicativeQuantity)+' '+esc(x.quantityUnit||''))+'</td><td>'+p46money((x.estimatedFee||0)+(x.estimatedSlippage||0))+'</td><td><small>'+esc(x.status)+'</small></td></tr>';});
+    if(!(selected.orders||[]).length)h+='<tr><td colspan="7">Tidak ada perubahan posisi dari kandidat ini.</td></tr>';
+    h+='</table></div>';
+    if((selected.warnings||[]).length)h+='<div class="dnote">'+selected.warnings.map(function(x){return '⚠ '+esc(x);}).join('<br>')+'</div>';
+    h+='<div class="dnote">Uji ulang worst scenario: market P/L indikatif '+p46money(selected.stress&&selected.stress.marketPnlAfter)+'; stress loss '+p46pct(selected.stress&&selected.stress.lossPctAfter)+'. Estimasi fee '+p46money(selected.estimatedFees)+' dan slippage '+p46money(selected.estimatedSlippage)+' dihitung terpisah. Nilai unit tidak tersedia ditampilkan sebagai estimasi nominal, bukan jumlah order siap kirim.</div>';
+   }
+  }else h+='<div class="dnote">Kandidat belum dibuat. Periksa kelengkapan NAV P40, covariance P43, scenario P44 dan defense plan P45.</div>';
+  h+='<h4>Proposal tactical rebalance — persetujuan manusia</h4><div class="dnote">APPROVE hanya mencatat APPROVED_FOR_MANUAL_REVIEW untuk satu kandidat yang lolos seluruh batas. Ini bukan instruksi transaksi, tidak memperbarui P20/P13, dan tidak memanggil broker.</div>';
+  if((p46.proposals||[]).length){
+   h+='<div style="overflow-x:auto"><table><tr><th>Tanggal</th><th>Worst scenario</th><th>Status / keputusan</th></tr>';
+   (p46.proposals||[]).forEach(function(x){const k=p46key(x.proposalId);h+='<tr><td>'+esc(x.snapshotDate)+'</td><td>'+esc(x.worstScenario)+'</td><td><span class="bdg '+(x.status==='APPROVED_FOR_MANUAL_REVIEW'?'ok':x.status==='DRAFT'?'warn':'idle')+'">'+esc(x.status)+'</span>';
+    if(x.status==='DRAFT'){
+     h+='<br><select id="p46Scenario_'+k+'" style="padding:7px;margin-top:5px;max-width:220px">';
+     (x.scenarios||[]).forEach(function(s){h+='<option value="'+esc(s.scenarioKey)+'" '+(s.scenarioKey===x.recommendedScenario?'selected':'')+'>'+esc(s.label)+' · '+(s.checks&&s.checks.limitsMet?'LOLOS':'DITAHAN')+'</option>';});
+     h+='</select><br><textarea id="p46Reason_'+k+'" rows="2" maxlength="500" placeholder="Alasan review minimal 8 karakter" style="width:210px;padding:7px;margin-top:5px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><button type="button" data-p46-decision="APPROVE" data-p46-id="'+esc(x.proposalId)+'">Approve review</button><button type="button" data-p46-decision="DEFER" data-p46-id="'+esc(x.proposalId)+'">Defer</button><button type="button" data-p46-decision="REJECT" data-p46-id="'+esc(x.proposalId)+'">Reject</button></div>';
+    }else h+='<br><small>'+esc(x.selectedScenarioKey||'')+' · '+esc(x.decision||'')+' · '+esc(x.decisionReason||'')+'</small>';
+    h+='</td></tr>';});
+   h+='</table></div>';
+  }else h+='<div class="dnote">Proposal hanya dibuat jika NAV lengkap, seluruh kelas optimizer memiliki posisi terukur, dan minimal satu kandidat lolos seluruh batas.</div>';
+  if((p46.warnings||[]).length)h+='<div class="dnote">'+p46.warnings.map(function(x){return '⚠ '+esc(x);}).join('<br>')+'</div>';
+  h+='<div class="dnote"><small>'+esc(p46.policy||'')+'</small></div>';
+ }else h+='<div class="dnote">P46 belum memiliki hasil. Jalankan refresh setelah P40–P45 selesai diperbarui.</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p46RefreshRebalance" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh tactical rebalance</button><span id="p46RebalanceMsg" class="dnote">Refresh membangun ulang P45/P44/P43/P40 lalu menghitung tiga kandidat. Tidak ada order yang dieksekusi.</span></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3170,6 +3216,33 @@ if(!window.__p45PortfolioResilienceBound){
  });
 }
 
+
+/* ===== P46: tactical rebalance refresh and human scenario decision ===== */
+if(!window.__p46TacticalRebalanceBound){
+ window.__p46TacticalRebalanceBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p46RefreshRebalance'):null;
+  const decision=ev.target&&ev.target.closest?ev.target.closest('[data-p46-decision]'):null;
+  const target=refresh||decision;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p46RebalanceMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  let payload={action:'portfolio_tactical_rebalance',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Menyimulasikan…';if(msg)msg.textContent='Memperbarui P45/P44/P43/P40, menyusun kandidat, menghitung fee/slippage dan menguji ulang stress scenario…';}
+  else{
+   const id=decision.getAttribute('data-p46-id'),kind=decision.getAttribute('data-p46-decision'),key=String(id||'').replace(/[^A-Za-z0-9]/g,''),reasonEl=$('p46Reason_'+key),scenarioEl=$('p46Scenario_'+key),reason=reasonEl?reasonEl.value.trim():'',scenarioKey=scenarioEl?scenarioEl.value:'';
+   if(reason.length<8){if(msg)msg.textContent='Alasan keputusan minimal 8 karakter.';return;}
+   if(kind==='APPROVE'&&!window.confirm('Setujui kandidat ini hanya untuk review manual? Tidak ada order dikirim, posisi P20 tidak berubah, dan saldo broker tidak disentuh.'))return;
+   payload.command='decide';payload.proposalId=id;payload.scenarioKey=scenarioKey;payload.decision=kind;payload.reason=reason;
+   target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Memvalidasi kembali batas P43/P45/P44 dan mencatat keputusan manusia…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P46 gagal diproses.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p46RebalanceMsg');if(done)done.textContent=j.message||'P46 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
 
 /* --- Perintah ke divisi: router AI memilih divisi, lalu tiap divisi menjawab di ruangannya --- */
 const RT_KW=[[/toko ?crypto|tokocrypto|bot (trading|crypto)/i,6],[/indodax|bitcoin|btc|kripto|crypto/i,5],[/dividen/i,3],[/portofolio|portfolio|invest/i,2],[/screener|trading|saham|ihsg/i,1],[/bibit|reksa ?dana/i,4],[/emas|antam|logam mulia/i,7],[/catat|keuangan|pengeluaran|pemasukan/i,8],[/video|reels|shorts|tiktok|capcut/i,9],[/desain|grafis|poster|logo|thumbnail|canva/i,10],[/kode|coding|script|bug|program/i,11],[/produk|jualan|toko online|promo/i,12],[/viral|trend|tren|berita/i,13],[/resep|masak|minuman|kuliner/i,14],[/upload|pipeline|sosmed|monitoring konten/i,16]];
