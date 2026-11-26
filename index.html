@@ -2227,6 +2227,51 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p43RefreshOptimizer" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh covariance optimizer</button><span id="p43OptimizerMsg" class="dnote">Refresh harian setelah market close dan valuasi seluruh kelas aset diperbarui.</span></div>';
 }
 
+
+/* ===== P44: Portfolio Stress Testing & Crisis Simulator ===== */
+const p44=P.portfolioStressSimulator||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p44money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p44pct=n=>n==null?'—':(Number(n)>=0?'+':'')+Number(n).toFixed(2)+'%';
+ const p44num=n=>n==null?'—':Number(n).toFixed(2)+'%';
+ const p44tone=n=>n==null?'idle':Number(n)>=0?'ok':'err';
+ const p44key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ h+='<h4>🌪️ P44 — AI Portfolio Stress Testing & Crisis Simulator <small>('+esc(p44&&p44.generatedAt||'belum diuji')+')</small></h4>';
+ h+='<div class="dnote">Menguji portofolio berjalan pada guncangan IHSG, kripto, emas, korelasi lintas aset, dan likuiditas. Hasil P43 hanya dibandingkan pada eligible sleeve dengan modal yang sama. Ini simulasi deterministik, bukan prediksi atau probabilitas; tidak ada aset yang dijual dan tidak ada order dikirim.</div>';
+ if(p44){
+  h+='<div class="dchips"><span class="chip '+(p44.navComplete?'ok':'warn')+'">NAV <b>'+(p44.navComplete?'LENGKAP':'PARSIAL')+'</b></span><span class="chip">NAV / known NAV <b>'+p44money(p44.navValue)+'</b></span><span class="chip">Investasi non-kas <b>'+p44money(p44.knownInvestedAssets)+'</b></span><span class="chip">Cash reserve <b>'+p44money(p44.cashReserve)+'</b></span><span class="chip '+(p44.p43Ready?'ok':'warn')+'">P43 covariance <b>'+(p44.p43Ready?'READY':'BELUM SIAP')+'</b></span><span class="chip">Observasi P43 <b>'+nf(p44.p43Observations||0)+'</b></span></div>';
+  if(p44.worstScenario)h+='<div class="dnote"><b>Skenario paling berat untuk portofolio berjalan:</b> '+esc(p44.worstScenario.label)+' • market P/L '+p44money(p44.worstScenario.currentLoss)+' ('+p44pct(p44.worstScenario.currentLossPct)+')'+(p44.worstScenario.optimizedLoss==null?'':' • optimized eligible sleeve '+p44money(p44.worstScenario.optimizedLoss))+'.</div>';
+  h+='<h4>Perbandingan skenario krisis</h4><div style="overflow-x:auto"><table><tr><th>Skenario</th><th>Portofolio berjalan<br>market P/L</th><th>Stressed NAV</th><th>Estimasi friction likuidasi</th><th>Stressed vol<br>current</th><th>P43 optimized sleeve<br>market P/L</th><th>Stressed vol<br>optimized</th></tr>';
+  (p44.scenarios||[]).forEach(function(x){const c=x.current||{},o=x.optimized;h+='<tr><td><b>'+esc(x.label)+'</b><br><small>'+esc(x.description)+'</small></td><td><span class="bdg '+p44tone(c.marketPnl)+'">'+p44money(c.marketPnl)+'</span><br><small>'+p44pct(c.marketLossPct)+'</small></td><td>'+p44money(c.stressedNav)+'</td><td>'+p44money(c.estimatedLiquidationFriction)+'</td><td>'+p44num(x.stressedAnnualVolCurrentPct)+'</td><td>'+(o?'<span class="bdg '+p44tone(o.optimized.marketPnl)+'">'+p44money(o.optimized.marketPnl)+'</span><br><small>'+p44pct(o.optimized.marketLossPct)+' • eligible '+p44money(o.eligibleCapital)+'</small>':'—')+'</td><td>'+(o?p44num(x.stressedAnnualVolOptimizedPct):'—')+'</td></tr>';
+   h+='<tr><td colspan="7"><details><summary style="cursor:pointer;color:#9fc2ff">Rincian exposure & asumsi '+esc(x.label)+'</summary>';
+   h+='<div class="dlist" style="margin:7px 0"><b>Portofolio berjalan</b><div style="overflow-x:auto"><table><tr><th>Kelas</th><th>Shock</th><th>Nilai sebelum</th><th>Market P/L</th><th>Nilai sesudah</th><th>Asumsi jual</th><th>Haircut</th><th>Friction</th></tr>';
+   (c.rows||[]).forEach(function(a){h+='<tr><td>'+esc(a.assetClass)+'</td><td>'+p44pct(a.shockPct)+'</td><td>'+p44money(a.marketValue)+'</td><td>'+p44money(a.marketPnl)+'</td><td>'+p44money(a.stressedValue)+'</td><td>'+p44pct(a.assumedLiquidationPct)+'</td><td>'+p44pct(a.liquidationHaircutPct)+'</td><td>'+p44money(a.estimatedLiquidationFriction)+'</td></tr>';});
+   h+='</table></div><small>Friction hanya ilustrasi biaya bila porsi posisi tersebut dilikuidasi. Tidak otomatis mengurangi marked NAV.</small>';
+   if(o){h+='<div style="margin-top:10px"><b>P43 eligible sleeve (modal setara)</b><div style="overflow-x:auto"><table><tr><th>Kelas</th><th>Shock</th><th>Current eligible P/L</th><th>Optimized P/L</th><th>Difference</th></tr>';
+    const cr=o.current.rows||[],orows=o.optimized.rows||[];cr.forEach(function(a){const z=orows.find(function(v){return v.assetClass===a.assetClass;})||{};h+='<tr><td>'+esc(a.assetClass)+'</td><td>'+p44pct(a.shockPct)+'</td><td>'+p44money(a.marketPnl)+'</td><td>'+p44money(z.marketPnl)+'</td><td>'+p44money((z.marketPnl||0)-a.marketPnl)+'</td></tr>';});
+    h+='</table></div>';
+    if(o.excludedClasses&&o.excludedClasses.length)h+='<small>Kelas yang tidak masuk P43 dan tetap berada di current full portfolio: '+o.excludedClasses.map(function(z){return esc(z.assetClass)+' '+p44money(z.marketValue);}).join(' • ')+'</small>';
+    h+='</div>';
+   }
+   h+='<div class="dnote">Correlation target '+p44pct(x.correlationTarget*100)+' • contagion '+nf(x.contagionPct)+'% • volatility multiplier '+Number(x.volMultiplier).toFixed(2)+'×.</div></div></details></td></tr>';
+  });
+  h+='</table></div>';
+  h+='<div class="dnote">Market P/L mengukur perubahan mark-to-market. Estimasi friction likuidasi ditampilkan terpisah. Kolom P43 membandingkan modal yang sama hanya untuk kelas eligible; kelas yang dikecualikan tetap tercermin di hasil portofolio berjalan, bukan dipindahkan secara asumtif.</div>';
+  h+='<h4>Proposal review stress test</h4><div class="dnote">Proposal otomatis memilih skenario dengan kerugian terbesar pada portofolio berjalan. APPROVE hanya mengubah status menjadi APPROVED_FOR_MANUAL_REVIEW, bukan mengubah alokasi atau menjual aset.</div>';
+  if((p44.proposals||[]).length){
+   h+='<div style="overflow-x:auto"><table><tr><th>Tanggal</th><th>Skenario terberat</th><th>Loss current</th><th>Loss optimized</th><th>Status / tindakan</th></tr>';
+   (p44.proposals||[]).forEach(function(x){const k=p44key(x.proposalId);h+='<tr><td>'+esc(x.snapshotDate)+'</td><td><b>'+esc(x.worstScenario)+'</b></td><td>'+p44pct(x.currentLossPct)+'</td><td>'+p44pct(x.optimizedLossPct)+'</td><td><span class="bdg '+(x.status==='APPROVED_FOR_MANUAL_REVIEW'?'ok':x.status==='DRAFT'?'warn':'idle')+'">'+esc(x.status)+'</span>';
+    if(x.status==='DRAFT')h+='<br><textarea id="p44Reason_'+k+'" rows="2" maxlength="500" placeholder="Alasan review minimal 8 karakter" style="width:190px;padding:7px;margin-top:5px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><button type="button" data-p44-decision="APPROVE" data-p44-id="'+esc(x.proposalId)+'">Approve review</button><button type="button" data-p44-decision="DEFER" data-p44-id="'+esc(x.proposalId)+'">Defer</button><button type="button" data-p44-decision="REJECT" data-p44-id="'+esc(x.proposalId)+'">Reject</button></div>';
+    else h+='<br><small>'+esc(x.decision||'')+' • '+esc(x.decisionReason||'')+'</small>';
+    h+='</td></tr>';});
+   h+='</table></div>';
+  }else h+='<div class="dnote">Belum ada proposal stress test. Proposal dibuat jika P40 NAV lengkap dan P43 covariance siap.</div>';
+  if((p44.warnings||[]).length)h+='<div class="dnote">'+p44.warnings.map(function(w){return '⚠ '+esc(w);}).join('<br>')+'</div>';
+  h+='<div class="dnote"><small>'+esc(p44.policy||'')+'</small></div>';
+ }else h+='<div class="dnote">Belum ada laporan P44. Refresh setelah P40 dan P43 diperbarui.</div>';
+ h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p44RefreshStress" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh stress test & crisis simulator</button><span id="p44StressMsg" class="dnote">Refresh setelah market close; laporan dan proposal disimpan satu kali per tanggal.</span></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3017,6 +3062,35 @@ if(!window.__p43CovarianceOptimizerBound){
    const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P43 gagal diperbarui.');
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p43OptimizerMsg');if(done)done.textContent=j.message||'P43 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+
+/* ===== P44: stress simulator refresh and manual proposal decision ===== */
+if(!window.__p44PortfolioStressBound){
+ window.__p44PortfolioStressBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p44RefreshStress'):null;
+  const decision=ev.target&&ev.target.closest?ev.target.closest('[data-p44-decision]'):null;
+  const target=refresh||decision;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p44StressMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  let payload={action:'portfolio_stress_simulator',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Menjalankan simulasi…';if(msg)msg.textContent='Memperbarui P43/P40 dan menghitung skenario koreksi, bear market, severe crash, crypto crash, gold reversal, serta correlation breakdown…';}
+  else{
+   const id=decision.getAttribute('data-p44-id'),kind=decision.getAttribute('data-p44-decision'),key=String(id||'').replace(/[^A-Za-z0-9]/g,''),el=$('p44Reason_'+key),reason=el?el.value.trim():'';
+   if(reason.length<8){if(msg)msg.textContent='Alasan keputusan minimal 8 karakter.';return;}
+   if(kind==='APPROVE'&&!window.confirm('Setujui stress test ini hanya untuk review manual? Tidak ada alokasi diterapkan dan tidak ada order dikirim.'))return;
+   payload.command='decide';payload.proposalId=id;payload.decision=kind;payload.reason=reason;
+   target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Mencatat keputusan manusia dan audit proposal stress test…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P44 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p44StressMsg');if(done)done.textContent=j.message||'P44 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
