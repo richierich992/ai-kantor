@@ -2497,6 +2497,51 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  }
 }
 
+
+/* ===== P50: adaptive execution playbook & scenario simulator ===== */
+const p50=P.adaptiveExecutionPlaybook||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p50money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p50bps=n=>n==null?'—':(Number(n)>0?'+':'')+Number(n).toFixed(2)+' bps';
+ const p50key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ const p50tone=s=>s==='REVIEW_BROKER_CANDIDATE'?'ok':s==='NO_CLEAR_WINNER'||s==='ONLY_ONE_ELIGIBLE'||s==='INSUFFICIENT_SAMPLE'?'warn':'idle';
+ h+='<h4>🧭 P50 — AI Adaptive Execution Playbook <small>('+esc(p50&&p50.generatedAt||'belum dibuat')+')</small></h4>';
+ h+='<div class="dnote">P50 menyusun kandidat playbook dari analisis historis P49 dan menyediakan simulasi 1–4 equal clips. Pilihan broker hanya dibandingkan pada aset, kelas aset, dan BUY/SELL yang sama. Batas partisipasi, fee, levy, serta impact anchor di simulator adalah input/asumsi admin, bukan pembelajaran historis atau order otomatis.</div>';
+ if(p50&&p50.runId){
+  h+='<div class="dchips"><span class="chip">P49 source <b>'+esc(p50.sourceP49RunId||'—')+'</b></span><span class="chip">Playbook <b>'+nf((p50.playbooks||[]).length)+'</b></span><span class="chip">Group comparable <b>'+nf(p50.eligibleGroupCount)+'</b></span><span class="chip">Broker candidate <b>'+nf(p50.candidateCount)+'</b></span><span class="chip">Min sample <b>'+nf(p50.config&&p50.config.minSampleSize||5)+' order</b></span><span class="chip">Participation cap default <b>'+nf(p50.config&&p50.config.maxParticipationPct||5)+'%</b></span></div>';
+ }else h+='<div class="dnote">Belum ada playbook. Jalankan refresh setelah P49 selesai membuat execution-learning run.</div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p50Refresh" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh playbook dari P49</button><span id="p50Msg" class="dnote">Refresh mengambil P49 RunID terakhir; tidak mengubah P48/P47.</span></div>';
+ h+='<h4>Kandidat kebijakan broker per aset dan side</h4><div style="overflow-x:auto"><table><tr><th>Aset / side</th><th>Broker kandidat</th><th>All-in cost historis</th><th>Gap vs runner-up</th><th>Sampel independen</th><th>Status / review manusia</th></tr>';
+ (p50&&p50.playbooks||[]).forEach(function(x){const k=p50key(x.playbookId);h+='<tr><td><b>'+esc(x.assetCode)+'</b><br><small>'+esc(x.assetClass)+' · '+esc(x.side)+'</small></td><td>'+(x.preferredBroker?'<b>'+esc(x.preferredBroker)+'</b><br><small>'+esc(x.preferredAccount)+'</small>':'—')+'</td><td>'+p50bps(x.bestAllInCostBps)+(x.secondBestAllInCostBps!=null?'<br><small>runner-up '+p50bps(x.secondBestAllInCostBps)+'</small>':'')+'</td><td>'+p50bps(x.costGapBps)+'</td><td>'+nf(x.preferredSampleOrders)+' order / '+nf(x.preferredSampleFills)+' fill<br><small>eligible '+nf(x.eligibleBrokerCount)+' broker</small></td><td><span class="bdg '+p50tone(x.recommendation)+'">'+esc(x.recommendation)+'</span><br><small>'+esc(x.reason)+'</small>';
+  if(x.reviewDecision)h+='<br><span class="bdg idle">REVIEW '+esc(x.reviewDecision)+'</span><br><small>'+esc(x.reviewReason||'')+'</small>';
+  else if(x.recommendation==='REVIEW_BROKER_CANDIDATE')h+='<br><textarea id="p50Reason_'+k+'" rows="2" maxlength="500" placeholder="Alasan review minimal 8 karakter" style="width:230px;padding:7px;margin-top:5px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><button type="button" data-p50-review="ACCEPT" data-p50-id="'+esc(x.playbookId)+'">Terima kandidat</button><button type="button" data-p50-review="DEFER" data-p50-id="'+esc(x.playbookId)+'">Tunda</button><button type="button" data-p50-review="DISMISS" data-p50-id="'+esc(x.playbookId)+'">Abaikan</button></div>';
+  else h+='<br><small>ACCEPT dinonaktifkan: sampel atau selisih belum memenuhi kriteria.</small><br><textarea id="p50Reason_'+k+'" rows="2" maxlength="500" placeholder="Alasan review minimal 8 karakter" style="width:230px;padding:7px;margin-top:5px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><button type="button" data-p50-review="DEFER" data-p50-id="'+esc(x.playbookId)+'">Tunda</button><button type="button" data-p50-review="DISMISS" data-p50-id="'+esc(x.playbookId)+'">Abaikan</button></div>';
+  h+='</td></tr>';});
+ if(!(p50&&p50.playbooks&&p50.playbooks.length))h+='<tr><td colspan="6">Belum ada P49 insight BROKER_ASSET_SIDE. Pastikan P49 sudah direfresh dan memiliki fill aktual yang cukup.</td></tr>';
+ h+='</table></div>';
+ h+='<h4>Simulator skenario eksekusi</h4><div class="dnote">Isi ADV, harga, fee, levy, dan impact anchor dari sumber yang dapat diverifikasi. Satu clip diasumsikan berjalan per hari bursa. Untuk saham IDX, quantity dibulatkan ke bawah ke board lot 100 lembar. Produk lain tidak diberi jumlah unit apabila presisi/lot step tidak diketahui.</div>';
+ h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0">';
+ h+='<label>Playbook / aset<select id="p50Playbook" style="width:100%;padding:8px"><option value="">Pilih playbook</option>';
+ (p50&&p50.playbooks||[]).forEach(function(x){h+='<option value="'+esc(x.playbookId)+'">'+esc(x.assetCode)+' · '+esc(x.side)+' · '+esc(x.recommendation)+'</option>';});
+ h+='</select></label>';
+ h+='<label>Planned notional (Rp)<input id="p50Notional" type="number" min="1" step="1" placeholder="Nilai order" style="width:100%;padding:8px"></label>';
+ h+='<label>ADV value (Rp)<input id="p50Adv" type="number" min="1" step="1" placeholder="ADV terverifikasi" style="width:100%;padding:8px"></label>';
+ h+='<label>Harga referensi<input id="p50Price" type="number" min="0.000001" step="any" placeholder="Harga per unit" style="width:100%;padding:8px"></label>';
+ h+='<label>Max participation (%)<input id="p50Cap" type="number" min="0.01" max="'+esc(p50&&p50.config&&p50.config.maxParticipationPct||5)+'" step="any" value="'+esc(p50&&p50.config&&p50.config.maxParticipationPct||5)+'" style="width:100%;padding:8px"></label>';
+ h+='<label>Fee (%)<input id="p50Fee" type="number" min="0" max="10" step="any" placeholder="Wajib input manual" style="width:100%;padding:8px"></label>';
+ h+='<label>Levy / pajak (%)<input id="p50Levy" type="number" min="0" max="10" step="any" placeholder="Wajib input manual" style="width:100%;padding:8px"></label>';
+ h+='<label>Impact anchor pada 10% ADV (bps)<input id="p50Impact" type="number" min="0" max="5000" step="any" placeholder="Asumsi admin; wajib" style="width:100%;padding:8px"></label>';
+ h+='</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p50Simulate" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#0f766e;color:#fff;font-weight:800;cursor:pointer">Simulasikan 1–4 slice</button><span id="p50SimMsg" class="dnote">Hasil simulasi tidak mengirim order atau menerapkan playbook secara otomatis.</span></div>';
+ h+='<h4>Riwayat simulasi</h4>';
+ (p50&&p50.simulations||[]).slice(0,10).forEach(function(s){h+='<div class="dnote" style="margin:7px 0"><b>'+esc(s.assetCode)+' '+esc(s.side)+' · '+esc(s.simulationId)+'</b><br>Notional '+p50money(s.roundedNotional)+' · ADV '+p50money(s.advValue)+' · Cap '+nf(s.maxParticipationPct)+'% · Minimum slice '+nf(s.requiredMinimumSlices)+' hari';
+ h+='<div style="overflow-x:auto"><table><tr><th>Slice</th><th>Notional/clip</th><th>Partisipasi</th><th>Impact asumsi</th><th>Fee + levy</th><th>Estimated cost</th><th>Status</th></tr>';
+ (s.scenarios||[]).forEach(function(z){h+='<tr><td>'+nf(z.sliceCount)+'</td><td>'+p50money(z.clipNotional)+'</td><td>'+nf(z.participationPct)+'%</td><td>'+nf(z.impactBps)+' bps<br>'+p50money(z.impactIdr)+'</td><td>'+p50money(z.feeIdr)+' + '+p50money(z.levyIdr)+'</td><td><b>'+p50money(z.estimatedTotalCostIdr)+'</b></td><td><span class="bdg '+(z.status==='WITHIN_ASSUMED_DAILY_CAP'?'ok':'warn')+'">'+esc(z.status)+'</span><br><small>'+esc(z.notes)+'</small></td></tr>';});
+ h+='</table></div><small>'+esc(s.methodology||'')+'</small></div>';});
+ if(!(p50&&p50.simulations&&p50.simulations.length))h+='<div class="dnote">Belum ada simulasi.</div>';
+ h+='<div class="dnote"><b>Batasan penting:</b> P48 belum merekam timestamp fill intraday atau ADV historis per order. Karena itu P50 tidak menyimpulkan jam terbaik, tidak mengklaim persentase partisipasi yang dipelajari dari historis, dan tidak membandingkan kondisi pasar yang tidak tersedia. Dampak pasar di atas adalah asumsi sqrt model yang diinput admin, bukan prediksi atau jaminan eksekusi.</div>';
+ h+='<div class="dnote"><small>'+esc(p50&&p50.policy||'ACCEPT hanya membuat catatan kebijakan advisory. Tidak mengubah P47/P48 atau mengirim instruksi ke broker.')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3484,6 +3529,38 @@ if(!window.__p49ExecutionLearningBound){
    const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P49 gagal diproses.');
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p49Msg');if(done)done.textContent=j.message||'P49 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+/* ===== P50: refresh, simulate and review adaptive execution playbooks ===== */
+if(!window.__p50AdaptiveExecutionBound){
+ window.__p50AdaptiveExecutionBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p50Refresh'):null;
+  const simulate=ev.target&&ev.target.closest?ev.target.closest('#p50Simulate'):null;
+  const review=ev.target&&ev.target.closest?ev.target.closest('[data-p50-review]'):null;
+  const target=refresh||simulate||review;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=simulate?$('p50SimMsg'):$('p50Msg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';},num=id=>val(id)===''?null:Number(val(id));
+  const payload={action:'adaptive_execution_playbook',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Membuat playbook…';if(msg)msg.textContent='Mengambil insight BROKER_ASSET_SIDE dari P49 run terbaru…';}
+  else if(simulate){
+   payload.command='simulate';payload.playbookId=val('p50Playbook');payload.plannedNotional=num('p50Notional');payload.advValue=num('p50Adv');payload.referencePrice=num('p50Price');payload.maxParticipationPct=num('p50Cap');payload.feePct=num('p50Fee');payload.levyPct=num('p50Levy');payload.impactBpsAt10PctADV=num('p50Impact');
+   if(!payload.playbookId||!(payload.plannedNotional>0)||!(payload.advValue>0)||!(payload.referencePrice>0)||payload.feePct===null||payload.levyPct===null||payload.impactBpsAt10PctADV===null){if(msg)msg.textContent='Lengkapi playbook, notional, ADV, harga, fee, levy dan impact anchor.';return;}
+   target.disabled=true;target.textContent='Menghitung…';if(msg)msg.textContent='Mensimulasikan 1–4 equal clips, ADV participation, board lot, fee, levy dan impact asumsi…';
+  }else{
+   const id=review.getAttribute('data-p50-id'),decision=review.getAttribute('data-p50-review'),key=String(id||'').replace(/[^A-Za-z0-9]/g,''),reason=val('p50Reason_'+key);
+   if(reason.length<8){if(msg)msg.textContent='Alasan review minimal 8 karakter.';return;}
+   if(decision==='ACCEPT'&&!window.confirm('Terima kandidat broker sebagai playbook advisory/manual-review? Tidak ada perubahan strategi, P47/P48 atau order broker.'))return;
+   payload.command='review';payload.playbookId=id;payload.decision=decision;payload.reason=reason;target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Memvalidasi dan mencatat review manusia P50…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P50 gagal diproses.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=simulate?$('p50SimMsg'):$('p50Msg');if(done)done.textContent=j.message||'P50 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
