@@ -2744,6 +2744,78 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div class="dnote"><small>Limitasi: daily gross menggunakan semua fill yang tercatat di P48 untuk tanggal/akun/aset yang sama; tidak mencakup transaksi eksternal yang tidak dimasukkan. P51 ADV adalah data internal, bukan order-book/exchange-wide. P53 governance status adalah snapshot terakhir. Policy evaluation bersifat post-trade advisory, bukan jaminan atau pemblokir transaksi.</small></div>';
 }
 
+
+/* ===== P55: portfolio exposure & limit utilization monitor ===== */
+const p55=P.portfolioExposureMonitor||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p55rp=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p55pc=n=>n==null?'—':Number(n).toFixed(2)+'%';
+ const p55tone=s=>s==='CRITICAL'?'err':s==='ACTION_REQUIRED'||s==='HIGH'?'warn':s==='CLEAR'||s==='COMPLIANT'?'ok':'idle';
+ const p55key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ const p55pctbar=n=>{const w=Math.max(0,Math.min(150,Number(n)||0));return '<div style="height:7px;background:#26344c;border-radius:9px;overflow:hidden;min-width:90px"><div style="height:7px;width:'+w/1.5+'%;background:'+(w>=100?'#ef4444':w>=80?'#f59e0b':'#10b981')+';border-radius:9px"></div></div>';};
+ const p55s=p55&&p55.summary||{};
+ h+='<h4>📊 P55 — AI Portfolio Exposure & Limit Utilization Monitor <small>('+esc(p55&&p55.generatedAt||'belum dimonitor')+')</small></h4>';
+ h+='<div class="dnote">P55 menghitung konsentrasi posisi, kelas aset, sektor, cadangan kas, kualitas valuasi, dan pemakaian limit terhadap exposure profile yang terhubung dengan P54. Data hanya dibaca dari portfolio snapshot P12/P13/P14 serta P39 cash snapshot; tidak ada perubahan posisi atau transaksi.</div>';
+ if(p55&&p55.runId){
+  h+='<div class="dchips"><span class="chip">Status <b><span class="bdg '+p55tone(p55.status)+'">'+esc(p55.status)+'</span></b></span><span class="chip">Total valuasi <b>'+p55rp(p55s.totalValue)+'</b></span><span class="chip">Nilai terpetakan <b>'+p55rp(p55s.knownValue)+'</b></span><span class="chip">Cash reserve <b>'+p55pc(p55s.cashReservePct)+'</b></span><span class="chip">Posisi <b>'+nf(p55s.positionCount)+'</b></span><span class="chip">Top 3 <b>'+p55pc(p55s.top3Pct)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Largest position <b>'+p55pc(p55s.largestPositionPct)+'</b></span><span class="chip">Largest class <b>'+esc(p55s.largestClass&&p55s.largestClass.assetClass||'—')+' '+p55pc(p55s.largestClass&&p55s.largestClass.weightPct)+'</b></span><span class="chip">Largest sector <b>'+esc(p55s.largestSector&&p55s.largestSector.sector||'—')+' '+p55pc(p55s.largestSector&&p55s.largestSector.weightPct)+'</b></span><span class="chip">Unpriced cost estimate <b>'+p55rp(p55s.unpricedValue)+' ('+p55pc(p55s.unpricedPct)+')</b></span><span class="chip">Findings <b>'+nf(p55.totals.findings)+' · HIGH '+nf(p55.totals.high)+' · CRITICAL '+nf(p55.totals.critical)+'</b></span></div>';
+  h+='<div class="dnote">Run '+esc(p55.runId)+' · Portfolio snapshot '+esc(p55s.sourceSnapshotAt||'—')+' · Sector mapping coverage '+p55pc(p55s.sectorCoveragePct)+' · Stock quote age '+(p55s.stockAgeMin==null?'—':nf(p55s.stockAgeMin)+' menit')+' · Crypto age '+(p55s.cryptoAgeMin==null?'—':nf(p55s.cryptoAgeMin)+' menit')+' · Bibit age '+(p55s.bibitAgeDays==null?'—':nf(p55s.bibitAgeDays)+' hari')+'</div>';
+ }else h+='<div class="dnote">Belum ada snapshot P55. Buat dan aktifkan exposure profile yang terhubung dengan P54 mandate, lalu jalankan evaluasi.</div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p55Refresh" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#1d4ed8;color:#fff;font-weight:800;cursor:pointer">Refresh exposure & limit utilization</button><span id="p55Msg" class="dnote">Snapshot membaca valuasi dan tidak mengirim atau mengubah order.</span></div>';
+ h+='<h4>Limit utilization</h4><div style="overflow-x:auto"><table><tr><th>Limit</th><th>Actual</th><th>Max / minimum</th><th>Utilization</th><th>Status</th></tr>';
+ (p55s.utilization||[]).forEach(function(x){const u=x.utilizationPct;h+='<tr><td><b>'+esc(x.name)+'</b></td><td>'+p55pc(x.actualPct)+'</td><td>'+p55pc(x.limitPct)+'</td><td>'+(u==null?'—':p55pc(u))+' '+p55pctbar(u)+'</td><td><span class="bdg '+(u==null?'idle':u>100?'err':u>=80?'warn':'ok')+'">'+(u==null?'NOT_ASSESSABLE':u>100?'OVER LIMIT':u>=80?'NEAR LIMIT':'WITHIN LIMIT')+'</span></td></tr>';});
+ if(!(p55s.utilization&&p55s.utilization.length))h+='<tr><td colspan="5">Limit utilization belum tersedia. Periksa exposure profile aktif.</td></tr>';h+='</table></div>';
+ h+='<h4>Exposure profile builder & version control</h4><div class="dnote">Buat exposure profile tambahan yang ditautkan ke P54 mandate aktif. Minimal satu batas portfolio wajib diisi. Batas persentase berbasis total valuasi P12. Approval dan aktivasi menggunakan four-eyes admin yang berbeda.</div>';
+ h+='<input id="p55SourceProfile" type="hidden" value=""><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0">';
+ h+='<label>P54 mandate aktif<select id="p55P54Policy" style="width:100%;padding:8px"><option value="">Pilih mandate…</option>';
+ (p55&&p55.activeP54||[]).forEach(x=>{h+='<option value="'+esc(x.policyId)+'">'+esc(x.policyCode)+' v'+nf(x.version)+' · '+esc(x.effectiveFrom)+'</option>';});
+ h+='</select></label><label>Profile code<input id="p55Code" maxlength="40" placeholder="CORE_EXPOSURE" style="width:100%;padding:8px"></label>';
+ h+='<label>Nama profile<input id="p55Name" maxlength="120" placeholder="Core portfolio exposure" style="width:100%;padding:8px"></label>';
+ h+='<label>Max single position (%)<input id="p55MaxSingle" type="number" min="0.01" max="100" step="0.1" placeholder="20" style="width:100%;padding:8px"></label>';
+ h+='<label>Max top 3 positions (%)<input id="p55MaxTop3" type="number" min="0.01" max="100" step="0.1" placeholder="45" style="width:100%;padding:8px"></label>';
+ h+='<label>Max asset class (%)<input id="p55MaxClass" type="number" min="0.01" max="100" step="0.1" placeholder="70" style="width:100%;padding:8px"></label>';
+ h+='<label>Max sector saham (%)<input id="p55MaxSector" type="number" min="0.01" max="100" step="0.1" placeholder="30" style="width:100%;padding:8px"></label>';
+ h+='<label>Minimum cash reserve (%)<input id="p55MinCash" type="number" min="0" max="100" step="0.1" placeholder="10" style="width:100%;padding:8px"></label>';
+ h+='<label>Max unpriced value estimate (%)<input id="p55MaxUnpriced" type="number" min="0.01" max="100" step="0.1" placeholder="2" style="width:100%;padding:8px"></label>';
+ h+='<label>Max usia harga saham (menit)<input id="p55MaxStockAge" type="number" min="1" step="1" placeholder="60" style="width:100%;padding:8px"></label>';
+ h+='<label>Max usia harga crypto (menit)<input id="p55MaxCryptoAge" type="number" min="1" step="1" placeholder="60" style="width:100%;padding:8px"></label>';
+ h+='<label>Max usia input Bibit (hari)<input id="p55MaxBibitAge" type="number" min="1" step="1" placeholder="7" style="width:100%;padding:8px"></label>';
+ h+='<label style="grid-column:1/-1">Alasan pembuatan / revisi<textarea id="p55Reason" rows="2" maxlength="900" placeholder="Minimal 8 karakter. Jelaskan dasar limit portofolio." style="width:100%;padding:8px"></textarea></label></div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p55Create" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#0f766e;color:#fff;font-weight:800;cursor:pointer">Simpan draft exposure profile</button><button id="p55Clear" type="button">Clear form</button><span id="p55CreateMsg" class="dnote"></span></div>';
+ h+='<h4>Exposure profile approval queue</h4><div style="overflow-x:auto"><table><tr><th>Profile / P54 link</th><th>Risk limits</th><th>Status / dates</th><th>Workflow</th></tr>';
+ (p55&&p55.profiles||[]).forEach(function(x){const k=p55key(x.profileId);h+='<tr><td><b>'+esc(x.profileCode)+' v'+nf(x.version)+'</b><br>'+esc(x.name)+'<br><small>'+esc(x.p54PolicyCode)+' v'+nf(x.p54PolicyVersion)+'</small><br><small>'+esc(x.profileId)+'</small><br><small>Created '+esc(x.createdBy)+' · approved '+esc(x.approvedBy||'—')+'</small></td>';
+  h+='<td>Single '+p55pc(x.maxSinglePositionPct)+' · Top3 '+p55pc(x.maxTop3PositionsPct)+'<br>Class '+p55pc(x.maxAssetClassPct)+' · Sector '+p55pc(x.maxSectorPct)+'<br>Cash min '+p55pc(x.minCashReservePct)+' · Unpriced max '+p55pc(x.maxUnpricedValuePct)+'<br><small>Stale limits stock '+(x.maxStockQuoteAgeMin==null?'—':nf(x.maxStockQuoteAgeMin)+'m')+' · crypto '+(x.maxCryptoPriceAgeMin==null?'—':nf(x.maxCryptoPriceAgeMin)+'m')+' · Bibit '+(x.maxBibitInputAgeDays==null?'—':nf(x.maxBibitInputAgeDays)+'d')+'</small></td>';
+  h+='<td><span class="bdg '+p55tone(x.status)+'">'+esc(x.status)+'</span><br><small>'+esc(x.effectiveFrom||'—')+' to '+esc(x.effectiveTo||'open')+'</small><br><small>'+esc(x.changeReason)+'</small></td><td>';
+  if(['ACTIVE','SUPERSEDED','SUSPENDED','RETIRED'].includes(x.status))h+='<button type="button" data-p55-clone="'+esc(x.profileId)+'">New version / edit</button><br>';
+  if(x.status==='DRAFT')h+='<button type="button" data-p55-profile-action="SUBMIT" data-p55-id="'+esc(x.profileId)+'">Submit</button>';
+  else if(x.status==='SUBMITTED')h+='<button type="button" data-p55-profile-action="APPROVE" data-p55-id="'+esc(x.profileId)+'">Approve (independent)</button>';
+  else if(x.status==='APPROVED')h+='<label>Effective from<input id="p55From_'+k+'" type="date" style="width:150px;padding:6px"></label><br><label>Effective to<input id="p55To_'+k+'" type="date" style="width:150px;padding:6px"></label><br><button type="button" data-p55-profile-action="ACTIVATE" data-p55-id="'+esc(x.profileId)+'">Activate</button>';
+  else if(x.status==='ACTIVE')h+='<label>End date<input id="p55To_'+k+'" type="date" style="width:150px;padding:6px"></label><br><button type="button" data-p55-profile-action="SUSPEND" data-p55-id="'+esc(x.profileId)+'">Suspend</button> <button type="button" data-p55-profile-action="RETIRE" data-p55-id="'+esc(x.profileId)+'">Retire</button>';
+  else h+='<small>Lifecycle terminal</small>';
+  if(!['SUPERSEDED','RETIRED'].includes(x.status))h+='<textarea id="p55WorkflowReason_'+k+'" rows="2" maxlength="900" placeholder="Reason min 8 chars" style="width:180px;padding:6px;margin-top:5px"></textarea>';h+='</td></tr>';});
+ if(!(p55&&p55.profiles&&p55.profiles.length))h+='<tr><td colspan="4">Belum ada profile exposure.</td></tr>';h+='</table></div>';
+ h+='<h4>Portfolio position register</h4><div style="overflow-x:auto"><table><tr><th>Asset</th><th>Class / sector</th><th>Quantity</th><th>Cost</th><th>Market value</th><th>Portfolio weight</th><th>P/L</th></tr>';
+ (p55&&p55.exposures||[]).forEach(function(x){h+='<tr><td><b>'+esc(x.assetCode)+'</b><br><small>'+esc(x.assetName)+'</small></td><td>'+esc(x.assetClass)+'<br><small>'+esc(x.sector||'Sector unmapped')+'</small></td><td>'+nf(x.quantity)+'</td><td>'+p55rp(x.costValue)+'</td><td>'+(x.unpriced?'<span class="bdg warn">NO IDR MARK</span>':p55rp(x.marketValue))+'</td><td>'+p55pc(x.weightPct)+'</td><td>'+(x.pnlValue==null?'—':p55rp(x.pnlValue)+' · '+p55pc(x.pnlPct))+'</td></tr>';});
+ if(!(p55&&p55.exposures&&p55.exposures.length))h+='<tr><td colspan="7">Belum ada snapshot eksposur.</td></tr>';h+='</table></div>';
+ h+='<h4>Sector mapping manager</h4><div class="dnote">Sektor tidak ditebak otomatis. Isi klasifikasi saham dari master yang valid supaya konsentrasi sektor tidak undercount. Perubahan mapping baru dihitung setelah refresh P55.</div>';
+ h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0"><label>Kode saham<input id="p55MapCode" maxlength="40" placeholder="BBCA" style="width:100%;padding:8px"></label><label>Sektor<input id="p55MapSector" maxlength="100" placeholder="Financials" style="width:100%;padding:8px"></label><label style="grid-column:1/-1">Alasan mapping<input id="p55MapReason" maxlength="500" placeholder="Minimal 8 karakter dan sumber klasifikasi" style="width:100%;padding:8px"></label></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p55SaveSector" type="button">Save sector mapping</button><span id="p55MapMsg" class="dnote"></span></div>';
+ h+='<div style="overflow-x:auto"><table><tr><th>Asset code</th><th>Sector</th><th>Updated</th><th>Reason</th></tr>';
+ (p55&&p55.sectorMappings||[]).forEach(function(x){h+='<tr><td>'+esc(x.assetCode)+'</td><td>'+esc(x.sector)+'</td><td>'+esc(x.updatedAt)+'</td><td>'+esc(x.reason)+'</td></tr>';});
+ if(!(p55&&p55.sectorMappings&&p55.sectorMappings.length))h+='<tr><td colspan="4">Belum ada mapping sektor.</td></tr>';h+='</table></div>';
+ h+='<h4>Portfolio risk findings</h4><div style="overflow-x:auto"><table><tr><th>Severity / code</th><th>Subject</th><th>Observed</th><th>Limit</th><th>Detail</th></tr>';
+ (p55&&p55.findings||[]).forEach(function(x){h+='<tr><td><span class="bdg '+p55tone(x.severity)+'">'+esc(x.severity)+'</span><br><b>'+esc(x.code)+'</b></td><td>'+esc(x.subject)+'</td><td>'+ (x.observedValue==null?'—':p55pc(x.observedValue))+'</td><td>'+ (x.limitValue==null?'—':p55pc(x.limitValue))+'</td><td>'+esc(x.detail)+'</td></tr>';});
+ if(!(p55&&p55.findings&&p55.findings.length))h+='<tr><td colspan="5">Tidak ada finding pada snapshot terakhir.</td></tr>';h+='</table></div>';
+ h+='<h4>Broker cash snapshot · P39</h4><div class="dnote">Tabel ini menampilkan snapshot kas terakhir per broker yang tersimpan. Kelengkapan akun tidak otomatis terjamin. Rasio cash reserve utama P55 menggunakan agregasi kelas Kas/IDR dari P12 apabila tersedia.</div><div style="overflow-x:auto"><table><tr><th>Broker</th><th>Snapshot date</th><th>Cash balance</th><th>Statement ref</th></tr>';
+ (p55&&p55.cashSnapshots||[]).forEach(function(x){h+='<tr><td>'+esc(x.broker)+'</td><td>'+esc(x.snapshotDate)+'</td><td>'+p55rp(x.cashBalance)+'</td><td>'+esc(x.statementRef)+'</td></tr>';});
+ if(!(p55&&p55.cashSnapshots&&p55.cashSnapshots.length))h+='<tr><td colspan="4">Belum ada snapshot kas P39.</td></tr>';h+='</table></div>';
+ h+='<h4>Exposure reporting & audit events</h4><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0"><label>From<input id="p55ReportFrom" type="date" style="width:100%;padding:8px"></label><label>To<input id="p55ReportTo" type="date" style="width:100%;padding:8px"></label></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p55Report" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer">Generate exposure report</button><span id="p55ReportMsg" class="dnote"></span></div>';
+ (p55&&p55.reports||[]).slice(0,10).forEach(function(r){const c=r.counts||{};h+='<div class="dnote" style="margin:5px 0"><b>'+esc(r.reportId)+'</b> · '+esc(r.dateFrom)+' → '+esc(r.dateTo)+' · runs '+nf(c.runs)+' · positions '+nf(c.exposures)+' · findings '+nf(c.findings)+' · high '+nf(c.high)+' · critical '+nf(c.critical)+'</div>';});
+ h+='<div style="overflow-x:auto"><table><tr><th>Time</th><th>Event</th><th>Target</th><th>Actor</th><th>Note</th></tr>';
+ (p55&&p55.events||[]).slice(0,40).forEach(function(x){h+='<tr><td>'+esc(x.eventAt)+'</td><td>'+esc(x.eventType)+'</td><td>'+esc(x.targetType)+'<br><small>'+esc(x.targetId)+'</small></td><td>'+esc(x.actor)+'</td><td>'+esc(x.note)+'</td></tr>';});
+ if(!(p55&&p55.events&&p55.events.length))h+='<tr><td colspan="5">Belum ada audit event.</td></tr>';h+='</table></div>';
+ h+='<div class="dnote"><small>Interpretasi: total exposure mengacu pada snapshot P12; posisi saham, reksa dana dan crypto diambil dari baris posisi P12, bukan hanya 12 besar. Sektor harus dipetakan manual. Cash reserve dihitung dari agregat Kas/IDR P12 bila tersedia. Unpriced value adalah estimasi biaya, bukan nilai pasar. Broker cash snapshot P39 dapat tidak mencakup semua akun. P55 adalah monitoring/advisory, bukan pre-trade gate. Limit hanya aktif untuk profil P55 yang disetujui dan terkait P54 mandate aktif.</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3922,6 +3994,45 @@ if(!window.__p54MandateControlBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=create?$('p54CreateMsg'):report?$('p54ReportMsg'):$('p54Msg');if(done)done.textContent=j.message||'P54 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+/* ===== P55: portfolio exposure and limit workflow ===== */
+if(!window.__p55ExposureMonitorBound){
+ window.__p55ExposureMonitorBound=true;
+ document.addEventListener('click',async function(ev){
+  const c=s=>ev.target&&ev.target.closest?ev.target.closest(s):null;
+  const refresh=c('#p55Refresh'),create=c('#p55Create'),clear=c('#p55Clear'),report=c('#p55Report'),clone=c('[data-p55-clone]'),workflow=c('[data-p55-profile-action]'),sector=c('#p55SaveSector');
+  const target=refresh||create||clear||report||clone||workflow||sector;if(!target)return;
+  if(clear){['p55SourceProfile','p55Code','p55Name','p55MaxSingle','p55MaxTop3','p55MaxClass','p55MaxSector','p55MinCash','p55MaxUnpriced','p55MaxStockAge','p55MaxCryptoAge','p55MaxBibitAge','p55Reason'].forEach(id=>{const e=$(id);if(e)e.value='';});if($('p55CreateMsg'))$('p55CreateMsg').textContent='Form dikosongkan.';return;}
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=create?$('p55CreateMsg'):sector?$('p55MapMsg'):report?$('p55ReportMsg'):$('p55Msg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';},num=id=>val(id)===''?null:Number(val(id));
+  const payload={action:'portfolio_exposure_monitor',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Calculating…';if(msg)msg.textContent='Menghitung posisi, bobot aset, cash reserve, konsentrasi sektor, dan freshness…';}
+  else if(create){
+   payload.command=val('p55SourceProfile')?'new_version':'create_profile';payload.sourceProfileId=val('p55SourceProfile');payload.p54PolicyId=val('p55P54Policy');payload.profileCode=val('p55Code');payload.name=val('p55Name');payload.maxSinglePositionPct=num('p55MaxSingle');payload.maxTop3PositionsPct=num('p55MaxTop3');payload.maxAssetClassPct=num('p55MaxClass');payload.maxSectorPct=num('p55MaxSector');payload.minCashReservePct=num('p55MinCash');payload.maxUnpricedValuePct=num('p55MaxUnpriced');payload.maxStockQuoteAgeMin=num('p55MaxStockAge');payload.maxCryptoPriceAgeMin=num('p55MaxCryptoAge');payload.maxBibitInputAgeDays=num('p55MaxBibitAge');payload.changeReason=val('p55Reason');target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Memvalidasi P54 link dan risk thresholds…';
+  }else if(clone){
+   const id=clone.getAttribute('data-p55-clone'),p=PF&&PF.portfolio&&PF.portfolio.portfolioExposureMonitor&&PF.portfolio.portfolioExposureMonitor.profiles&&PF.portfolio.portfolioExposureMonitor.profiles.find(x=>x.profileId===id);
+   if(!p){if(msg)msg.textContent='Profile tidak ditemukan di read model.';return;}
+   const set=(id,v)=>{const e=$(id);if(e)e.value=v==null?'':String(v);};
+   set('p55SourceProfile',p.profileId);set('p55P54Policy',p.p54PolicyId);set('p55Code',p.profileCode);set('p55Name',p.name);set('p55MaxSingle',p.maxSinglePositionPct);set('p55MaxTop3',p.maxTop3PositionsPct);set('p55MaxClass',p.maxAssetClassPct);set('p55MaxSector',p.maxSectorPct);set('p55MinCash',p.minCashReservePct);set('p55MaxUnpriced',p.maxUnpricedValuePct);set('p55MaxStockAge',p.maxStockQuoteAgeMin);set('p55MaxCryptoAge',p.maxCryptoPriceAgeMin);set('p55MaxBibitAge',p.maxBibitInputAgeDays);set('p55Reason','Revisi '+p.profileCode+' dari versi '+p.version+': ');if($('p55CreateMsg'))$('p55CreateMsg').textContent='Form terisi dari '+p.profileCode+' v'+p.version+'. Simpan untuk membuat versi baru.';const e=$('p55Create');if(e)e.scrollIntoView({block:'center',behavior:'smooth'});return;
+  }else if(workflow){
+   const id=workflow.getAttribute('data-p55-id'),act=workflow.getAttribute('data-p55-profile-action'),k=String(id||'').replace(/[^A-Za-z0-9]/g,'');
+   payload.command='workflow';payload.profileId=id;payload.profileAction=act;payload.reason=val('p55WorkflowReason_'+k);payload.effectiveFrom=val('p55From_'+k);payload.effectiveTo=val('p55To_'+k);
+   if(payload.reason.length<8){if(msg)msg.textContent='Alasan workflow minimal 8 karakter.';return;}
+   if(act==='APPROVE'&&!window.confirm('Pastikan Anda admin yang berbeda dari pembuat/pengaju profile. Lanjutkan approval?'))return;
+   if(act==='ACTIVATE'&&!window.confirm('Aktifkan exposure limit profile pada tanggal yang dipilih?'))return;
+   target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Memvalidasi four-eyes dan tanggal efektif…';
+  }else if(sector){
+   payload.command='map_sector';payload.assetClass='STOCK';payload.assetCode=val('p55MapCode');payload.sector=val('p55MapSector');payload.reason=val('p55MapReason');
+   if(!payload.assetCode||!payload.sector||payload.reason.length<8){if(msg)msg.textContent='Isi kode saham, sektor, dan alasan minimal 8 karakter.';return;}target.disabled=true;target.textContent='Saving…';if(msg)msg.textContent='Menyimpan klasifikasi sektor…';
+  }else if(report){
+   payload.command='report';payload.dateFrom=val('p55ReportFrom');payload.dateTo=val('p55ReportTo');if(!payload.dateFrom||!payload.dateTo){if(msg)msg.textContent='Tanggal awal dan akhir wajib diisi.';return;}target.disabled=true;target.textContent='Generating…';if(msg)msg.textContent='Menyusun laporan exposure…';
+  }
+  try{const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)}),j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P55 gagal diproses.');PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;const done=create?$('p55CreateMsg'):sector?$('p55MapMsg'):report?$('p55ReportMsg'):$('p55Msg');if(done)done.textContent=j.message||'P55 diperbarui.';}
+  catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
 
