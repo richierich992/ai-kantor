@@ -2409,6 +2409,62 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  }else h+='<div class="dnote">Belum ada readiness report. P46 harus memiliki kandidat yang telah disetujui untuk manual review.</div>';
 }
 
+
+/* ===== P48: post-trade execution quality & slippage attribution ===== */
+const p48=P.postTradeExecutionQuality||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p48money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p48num=n=>n==null?'—':Number(n).toLocaleString('id-ID',{maximumFractionDigits:4});
+ const p48bps=n=>n==null?'—':(Number(n)>0?'+':'')+Number(n).toFixed(2)+' bps';
+ const p48status=s=>s==='FILLED'?'ok':s==='PARTIALLY_FILLED'?'warn':s==='OPEN'?'idle':s==='CANCELLED'||s==='EXPIRED'||s==='REJECTED'?'err':'idle';
+ h+='<h4>📊 P48 — AI Post-Trade Execution Quality & Slippage Attribution <small>('+esc(p48&&p48.generatedAt||'belum dimuat')+')</small></h4>';
+ h+='<div class="dnote">P48 mencatat order yang sudah ditempatkan secara manual di broker dan fill aktual dari contract note. Tidak mengirim, membatalkan, atau mengubah order broker. Slippage positif = biaya relatif terhadap benchmark; negatif = price improvement. Sinkronisasi P39 hanya menyalin ledger transaksi setelah konfirmasi admin.</div>';
+ if(p48&&p48.totals){
+  const t=p48.totals;
+  h+='<div class="dchips"><span class="chip">Order <b>'+nf(t.orders)+'</b></span><span class="chip">Open <b>'+nf(t.open)+'</b></span><span class="chip">Partial <b>'+nf(t.partial)+'</b></span><span class="chip">Filled <b>'+nf(t.filled)+'</b></span><span class="chip">Fill count <b>'+nf(t.fillCount)+'</b></span><span class="chip">Qty terisi <b>'+p48num(t.filledQty)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Notional fill <b>'+p48money(t.filledNotional)+'</b></span><span class="chip">Fee aktual <b>'+p48money(t.actualFees)+'</b></span><span class="chip">Levy aktual <b>'+p48money(t.actualLevy)+'</b></span><span class="chip">Slippage <b>'+p48money(t.slippageIdr)+'</b></span><span class="chip">All-in cost <b>'+p48money(t.actualAllInCost)+'</b></span><span class="chip">Varian vs P47 <b>'+p48money(t.costVariance)+'</b></span><span class="chip">Fill tersinkron P39 <b>'+nf(t.p39SyncedFillCount)+' / '+nf(t.fillCount)+'</b></span></div>';
+ }else h+='<div class="dnote">Belum ada ledger post-trade. Jalankan refresh setelah modul P48 dipasang.</div>';
+ h+='<h4>Catat order yang sudah ditempatkan broker</h4><div class="dnote">Masukkan Proposal ID P47 yang sudah APPROVE review. Data order harus sesuai kode aset, akun, side, dan nilai checklist PASS P47. Isi setelah order benar-benar ditempatkan di broker; formulir ini tidak mengirim order.</div>';
+ h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:9px 0">';
+ h+='<label>P47 Proposal ID<input id="p48Proposal" maxlength="100" placeholder="ID proposal approved" style="width:100%;padding:8px"></label>';
+ h+='<label>Kelas aset<select id="p48Class" style="width:100%;padding:8px"><option>STOCK</option><option>MUTUAL_FUND</option><option>CRYPTO</option><option>GOLD</option><option>OTHER</option></select></label>';
+ h+='<label>Kode aset<input id="p48Code" maxlength="40" placeholder="BBCA / BTC / RD..." style="width:100%;padding:8px"></label>';
+ h+='<label>Akun broker<input id="p48Account" maxlength="100" placeholder="Akun persis seperti P47" style="width:100%;padding:8px"></label>';
+ h+='<label>Broker<input id="p48Broker" maxlength="100" placeholder="Nama broker/exchange" style="width:100%;padding:8px"></label>';
+ h+='<label>Side<select id="p48Side" style="width:100%;padding:8px"><option>BUY</option><option>SELL</option></select></label>';
+ h+='<label>Order reference<input id="p48OrderRef" maxlength="120" placeholder="Nomor order dari broker" style="width:100%;padding:8px"></label>';
+ h+='<label>Planned quantity<input id="p48PlannedQty" type="number" min="0" step="any" style="width:100%;padding:8px"></label>';
+ h+='<label>Benchmark / arrival price<input id="p48Benchmark" type="number" min="0" step="any" placeholder="Harga saat order dikirim" style="width:100%;padding:8px"></label>';
+ h+='<label>Tanggal order<input id="p48OrderDate" type="date" style="width:100%;padding:8px"></label></div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p48RegisterOrder" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Catat order broker</button><button id="p48Refresh" type="button" style="padding:9px 13px;border:1px solid #64748b;border-radius:8px;background:transparent;color:inherit;font-weight:800;cursor:pointer">Refresh P48</button><span id="p48Msg" class="dnote">P47 approval akan diverifikasi ulang oleh backend.</span></div>';
+ h+='<h4>Catat partial fill / execution aktual</h4><div class="dnote">Satu order dapat memiliki banyak fill. Setiap Fill Ref harus unik sesuai statement/contract note. Fee dan levy diisi sesuai nilai aktual fill tersebut. Partial fill tidak otomatis menutup order.</div>';
+ h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:9px 0">';
+ h+='<label>Order P48<select id="p48FillOrder" style="width:100%;padding:8px"><option value="">Pilih order aktif</option>';
+ (p48&&p48.orders||[]).filter(x=>x.rawStatus==='OPEN'&&x.remainingQty>0).forEach(x=>{h+='<option value="'+esc(x.orderId)+'">'+esc(x.assetCode)+' · '+esc(x.side)+' · '+esc(x.orderRef)+' · sisa '+p48num(x.remainingQty)+'</option>';});
+ h+='</select></label>';
+ h+='<label>Fill / execution reference<input id="p48FillRef" maxlength="120" placeholder="Unik dari broker" style="width:100%;padding:8px"></label>';
+ h+='<label>Tanggal fill<input id="p48FillDate" type="date" style="width:100%;padding:8px"></label>';
+ h+='<label>Quantity fill<input id="p48FillQty" type="number" min="0" step="any" style="width:100%;padding:8px"></label>';
+ h+='<label>Harga fill<input id="p48FillPrice" type="number" min="0" step="any" style="width:100%;padding:8px"></label>';
+ h+='<label>Fee aktual (Rp)<input id="p48Fee" type="number" min="0" step="1" value="0" style="width:100%;padding:8px"></label>';
+ h+='<label>Levy / pajak aktual (Rp)<input id="p48Levy" type="number" min="0" step="1" value="0" style="width:100%;padding:8px"></label>';
+ h+='<label>Statement / contract note<input id="p48Statement" maxlength="120" placeholder="Referensi dokumen" style="width:100%;padding:8px"></label>';
+ h+='<label style="grid-column:1/-1">Catatan<input id="p48FillNotes" maxlength="500" placeholder="Opsional" style="width:100%;padding:8px"></label></div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p48RecordFill" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#0f766e;color:#fff;font-weight:800;cursor:pointer">Simpan fill aktual</button></div>';
+ h+='<h4>Order dan atribusi biaya eksekusi</h4><div style="overflow-x:auto"><table><tr><th>Tanggal / aset</th><th>Order / akun</th><th>Side</th><th>Planned / filled / sisa</th><th>VWAP / benchmark</th><th>Slippage</th><th>Fee + levy</th><th>All-in / varian P47</th><th>Status / tindakan</th></tr>';
+ (p48&&p48.orders||[]).forEach(x=>{h+='<tr><td>'+esc(x.tradeDate)+'<br><b>'+esc(x.assetCode)+'</b><br><small>'+esc(x.broker)+'</small></td><td>'+esc(x.orderRef)+'<br><small>'+esc(x.account)+'</small></td><td>'+esc(x.side)+'</td><td>'+p48num(x.plannedQty)+' / '+p48num(x.filledQty)+' / '+p48num(x.remainingQty)+'</td><td>'+p48money(x.averageFillPrice)+' / '+p48money(x.benchmarkPrice)+'</td><td><b>'+p48bps(x.slippageBps)+'</b><br>'+p48money(x.slippageIdr)+'</td><td>'+p48money(x.actualFee)+' + '+p48money(x.actualLevy)+'</td><td><b>'+p48money(x.actualAllInCost)+'</b><br><small>vs P47: '+p48money(x.costVarianceIdr)+'</small></td><td><span class="bdg '+p48status(x.status)+'">'+esc(x.status)+'</span>'+(x.flags&&x.flags.length?'<br><small>'+esc(x.flags.join(', '))+'</small>':'')+(x.rawStatus==='OPEN'?'<br><button type="button" data-p48-close="'+esc(x.orderId)+'" style="margin-top:5px">Catat status penutupan</button>':'')+'</td></tr>';});
+ if(!(p48&&p48.orders&&p48.orders.length))h+='<tr><td colspan="9">Belum ada order post-trade yang dicatat.</td></tr>';
+ h+='</table></div>';
+ h+='<h4>Rincian fill & rekonsiliasi P39</h4><div style="overflow-x:auto"><table><tr><th>Tanggal / aset</th><th>Order / Fill Ref</th><th>Side / qty</th><th>Harga fill / benchmark</th><th>Slippage</th><th>Fee / levy</th><th>All-in cost</th><th>P39</th></tr>';
+ (p48&&p48.fills||[]).forEach(x=>{h+='<tr><td>'+esc(x.tradeDate)+'<br><b>'+esc(x.assetCode)+'</b></td><td>'+esc(x.orderRef)+'<br><small>'+esc(x.fillRef)+'</small></td><td>'+esc(x.side)+' / '+p48num(x.qty)+'</td><td>'+p48money(x.fillPrice)+' / '+p48money(x.benchmarkPrice)+'</td><td>'+p48bps(x.slippageBps)+'<br>'+p48money(x.slippageIdr)+'</td><td>'+p48money(x.feeIdr)+' / '+p48money(x.levyIdr)+'</td><td>'+p48money(x.allInCostIdr)+'</td><td>'+(x.reconciledP39At?'<span class="bdg ok">SYNCED</span><br><small>'+esc(x.reconciledP39At)+'</small>':'<span class="bdg warn">BELUM SYNC</span>')+'</td></tr>';});
+ if(!(p48&&p48.fills&&p48.fills.length))h+='<tr><td colspan="8">Belum ada fill.</td></tr>';
+ h+='</table></div>';
+ h+='<h4>Penutupan order & sinkronisasi ke P39</h4><div class="dnote">Gunakan penutupan hanya setelah status CANCELLED / EXPIRED / REJECTED terkonfirmasi di broker. Sinkron P39 menyalin BUY/SELL fill aktual yang belum ada; deduplikasi menggunakan FillID. Tidak menyentuh P20, P13 atau P40.</div>';
+ h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0"><label>Status penutupan broker<select id="p48CloseStatus" style="width:100%;padding:8px"><option>CANCELLED</option><option>EXPIRED</option><option>REJECTED</option></select></label><label>Alasan penutupan<input id="p48CloseReason" maxlength="500" placeholder="Minimal 8 karakter" style="width:100%;padding:8px"></label><label>Alasan sync P39<input id="p48SyncReason" maxlength="500" placeholder="Sudah dicocokkan dengan statement..." style="width:100%;padding:8px"></label></div>';
+ h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p48SyncP39" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer">Sinkron fill terverifikasi ke P39</button><span id="p48FooterMsg" class="dnote">P39 sync membutuhkan acknowledgement dan alasan admin.</span></div>';
+ h+='<div class="dnote"><small>'+esc(p48&&p48.policy||'P48 adalah pencatatan manual. Slippage positif = biaya; negatif = price improvement. Fee/levy terpisah dari slippage.')+'</small></div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3325,6 +3381,52 @@ if(!window.__p47ExecutionReadinessBound){
  });
 }
 
+
+
+/* ===== P48: post-trade execution quality actions ===== */
+if(!window.__p48PostTradeBound){
+ window.__p48PostTradeBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p48Refresh'):null;
+  const reg=ev.target&&ev.target.closest?ev.target.closest('#p48RegisterOrder'):null;
+  const fill=ev.target&&ev.target.closest?ev.target.closest('#p48RecordFill'):null;
+  const close=ev.target&&ev.target.closest?ev.target.closest('[data-p48-close]'):null;
+  const sync=ev.target&&ev.target.closest?ev.target.closest('#p48SyncP39'):null;
+  const target=refresh||reg||fill||close||sync;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p48Msg'),foot=$('p48FooterMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';};
+  const num=id=>val(id)===''?null:Number(val(id));
+  let payload={action:'post_trade_execution_quality',token:token},messageNode=sync?foot:msg;
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Memuat…';if(messageNode)messageNode.textContent='Memuat order, fill, biaya aktual, slippage dan status P39…';}
+  else if(reg){
+   payload.command='register_order';payload.proposalId=val('p48Proposal');payload.assetClass=val('p48Class');payload.assetCode=val('p48Code').toUpperCase();payload.account=val('p48Account');payload.broker=val('p48Broker');payload.side=val('p48Side');payload.orderRef=val('p48OrderRef');payload.plannedQty=num('p48PlannedQty');payload.benchmarkPrice=num('p48Benchmark');payload.tradeDate=val('p48OrderDate');
+   if(!payload.proposalId||!payload.assetCode||!payload.account||!payload.broker||!payload.orderRef||!payload.tradeDate||!(payload.plannedQty>0)||!(payload.benchmarkPrice>0)){if(messageNode)messageNode.textContent='Lengkapi seluruh data order dan pastikan quantity serta benchmark positif.';return;}
+   if(!window.confirm('Konfirmasi: order ini SUDAH ditempatkan manual di broker. P48 hanya mencatatnya dan tidak mengirim order. Lanjutkan?'))return;
+   target.disabled=true;target.textContent='Menyimpan…';if(messageNode)messageNode.textContent='Memvalidasi proposal P47 approved dan checklist PASS…';
+  }else if(fill){
+   payload.command='record_fill';payload.orderId=val('p48FillOrder');payload.fillRef=val('p48FillRef');payload.tradeDate=val('p48FillDate');payload.qty=num('p48FillQty');payload.fillPrice=num('p48FillPrice');payload.feeIdr=num('p48Fee');payload.levyIdr=num('p48Levy');payload.statementRef=val('p48Statement');payload.notes=val('p48FillNotes');
+   if(!payload.orderId||!payload.fillRef||!payload.tradeDate||!(payload.qty>0)||!(payload.fillPrice>0)){if(messageNode)messageNode.textContent='Pilih order dan lengkapi fill reference, tanggal, quantity, serta harga.';return;}
+   target.disabled=true;target.textContent='Menyimpan…';if(messageNode)messageNode.textContent='Menyimpan fill aktual dan menghitung VWAP, fee, levy serta slippage…';
+  }else if(close){
+   payload.command='close_order';payload.orderId=close.getAttribute('data-p48-close');payload.closeStatus=val('p48CloseStatus');payload.reason=val('p48CloseReason');
+   if(payload.reason.length<8){if(messageNode)messageNode.textContent='Alasan penutupan minimal 8 karakter.';return;}
+   if(!window.confirm('Catat status '+payload.closeStatus+' sesuai konfirmasi broker? Ini hanya mengubah ledger P48, bukan mengirim instruksi cancel.'))return;
+   target.disabled=true;target.textContent='Mencatat…';if(messageNode)messageNode.textContent='Mencatat status penutupan broker pada ledger…';
+  }else if(sync){
+   payload.command='sync_p39';payload.acknowledge=true;payload.reason=val('p48SyncReason');
+   if(payload.reason.length<8){if(foot)foot.textContent='Alasan sinkronisasi minimal 8 karakter.';return;}
+   if(!window.confirm('Salin fill aktual P48 yang telah dicocokkan ke ledger aktivitas P39? Tidak ada perubahan posisi P20/P13/P40.'))return;
+   target.disabled=true;target.textContent='Sinkronisasi…';if(foot)foot.textContent='Memeriksa duplikasi FillID dan menyalin aktivitas ke P39…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P48 gagal diproses.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=sync?$('p48FooterMsg'):$('p48Msg');if(done)done.textContent=j.message||'P48 diperbarui.';
+  }catch(err){if(messageNode)messageNode.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
 
 /* --- Perintah ke divisi: router AI memilih divisi, lalu tiap divisi menjawab di ruangannya --- */
 const RT_KW=[[/toko ?crypto|tokocrypto|bot (trading|crypto)/i,6],[/indodax|bitcoin|btc|kripto|crypto/i,5],[/dividen/i,3],[/portofolio|portfolio|invest/i,2],[/screener|trading|saham|ihsg/i,1],[/bibit|reksa ?dana/i,4],[/emas|antam|logam mulia/i,7],[/catat|keuangan|pengeluaran|pemasukan/i,8],[/video|reels|shorts|tiktok|capcut/i,9],[/desain|grafis|poster|logo|thumbnail|canva/i,10],[/kode|coding|script|bug|program/i,11],[/produk|jualan|toko online|promo/i,12],[/viral|trend|tren|berita/i,13],[/resep|masak|minuman|kuliner/i,14],[/upload|pipeline|sosmed|monitoring konten/i,16]];
