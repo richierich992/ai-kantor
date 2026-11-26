@@ -2364,6 +2364,51 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p46RefreshRebalance" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh tactical rebalance</button><span id="p46RebalanceMsg" class="dnote">Refresh membangun ulang P45/P44/P43/P40 lalu menghitung tiga kandidat. Tidak ada order yang dieksekusi.</span></div>';
 }
 
+/* ===== P47: AI Portfolio Execution Readiness & Cost Intelligence ===== */
+const p47=P.portfolioExecutionReadiness||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p47money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p47pct=n=>n==null?'—':Number(n).toFixed(2)+'%';
+ const p47tone=s=>s==='READY_FOR_MANUAL_REVIEW'?'ok':s==='HOLD'?'warn':'err';
+ const p47key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ h+='<h4>🧾 P47 — AI Portfolio Execution Readiness & Cost Intelligence <small>('+esc(p47&&p47.generatedAt||'belum diperiksa')+')</small></h4>';
+ h+='<div class="dnote">Pemeriksaan pra-eksekusi atas kandidat P46: profil likuiditas, ADV/partisipasi, spread, estimasi market impact, fee, levy, settlement, buying power, dan rekonsiliasi broker. Data likuiditas diinput admin secara manual; bukan quote live. Tidak ada order yang dikirim.</div>';
+ if(p47){
+  h+='<div class="dchips"><span class="chip '+p47tone(p47.readinessLevel)+'">Readiness <b>'+esc(p47.readinessLevel)+'</b></span><span class="chip">Kandidat P46 <b>'+esc(p47.scenarioKey||'—')+'</b></span><span class="chip">Order diperiksa <b>'+nf(p47.positionCount)+'</b></span><span class="chip">NAV <b>'+p47money(p47.navValue)+'</b></span><span class="chip">Nilai BUY <b>'+p47money(p47.totals&&p47.totals.buyNotional)+'</b></span><span class="chip">Nilai SELL <b>'+p47money(p47.totals&&p47.totals.sellNotional)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Fee <b>'+p47money(p47.totals&&p47.totals.estimatedFee)+'</b></span><span class="chip">Tax / levy <b>'+p47money(p47.totals&&p47.totals.estimatedLevy)+'</b></span><span class="chip">Spread <b>'+p47money(p47.totals&&p47.totals.estimatedSpread)+'</b></span><span class="chip">Market impact <b>'+p47money(p47.totals&&p47.totals.estimatedMarketImpact)+'</b></span><span class="chip">Total cost <b>'+p47money(p47.totals&&p47.totals.estimatedTotalCost)+'</b></span><span class="chip">Cost / turnover <b>'+p47pct(p47.totals&&p47.totals.costPct)+'</b></span></div>';
+  if((p47.blockers||[]).length)h+='<div class="dnote"><b>BLOCKERS — harus diselesaikan sebelum review</b><br>'+p47.blockers.map(function(x){return '⛔ '+esc(x.assetCode?x.assetCode+': ':'')+esc(x.message);}).join('<br>')+'</div>';
+  if((p47.warnings||[]).length)h+='<div class="dnote"><b>Catatan</b><br>'+p47.warnings.map(function(x){return '⚠ '+esc(x.message);}).join('<br>')+'</div>';
+  h+='<h4>Checklist per order indikatif</h4><div style="overflow-x:auto"><table><tr><th>Kode / akun</th><th>Side</th><th>Nominal</th><th>ADV participation</th><th>Spread / impact</th><th>Fee / levy</th><th>Total biaya</th><th>Settlement</th><th>Status</th></tr>';
+  (p47.checks||[]).forEach(function(x){h+='<tr><td><b>'+esc(x.assetCode)+'</b><br><small>'+esc(x.account)+'</small></td><td><span class="bdg '+(x.side==='SELL'?'warn':'ok')+'">'+esc(x.side)+'</span></td><td>'+p47money(x.notional)+'</td><td>'+p47pct(x.participationPct)+'</td><td>'+p47pct(x.spreadPct)+' / '+p47pct(x.impactPct)+'</td><td>'+p47money(x.estimatedFee)+' / '+p47money(x.estimatedLevy)+'</td><td><b>'+p47money(x.estimatedTotalCost)+'</b></td><td>'+(x.settlementDays==null?'—':nf(x.settlementDays)+' hari')+'</td><td><span class="bdg '+(x.status==='PASS'?'ok':x.status==='REVIEW_REQUIRED'?'warn':'err')+'">'+esc(x.status)+'</span><br><small>'+((x.issues||[]).map(y=>esc(y.code)).join(', ')||'—')+'</small></td></tr>';});
+  if(!(p47.checks||[]).length)h+='<tr><td colspan="9">Belum ada order P46 yang lolos sampai tahap pemeriksaan P47.</td></tr>';
+  h+='</table></div>';
+  h+='<h4>Profil likuiditas manual</h4><div class="dnote">Isi dari sumber yang bisa diverifikasi (misalnya ringkasan volume/ADV bursa atau informasi produk fund). EXCHANGE/OTC wajib ADV IDR, spread, impact pada 10% ADV, dan harga referensi. FUND wajib kapasitas harian, cut-off, dan settlement. Untuk BUY, isi available cash IDR pada akun yang bersangkutan. Pajak/levy harus dikonfigurasi terpisah di Script Properties; tidak ada tarif yang diasumsikan P47.</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:9px 0">';
+  h+='<label>Kelas aset<select id="p47Class" style="width:100%;padding:8px"><option>STOCK</option><option>MUTUAL_FUND</option><option>CRYPTO</option><option>GOLD</option><option>OTHER</option></select></label>';
+  h+='<label>Kode aset<input id="p47Code" maxlength="40" placeholder="BBCA / BTC / RD..." style="width:100%;padding:8px"></label>';
+  h+='<label>Akun eksekusi<input id="p47Account" maxlength="100" placeholder="Nama broker / exchange / akun" style="width:100%;padding:8px"></label>';
+  h+='<label>Tanggal snapshot<input id="p47Date" type="date" style="width:100%;padding:8px"></label>';
+  h+='<label>Jenis likuiditas<select id="p47Type" style="width:100%;padding:8px"><option value="EXCHANGE">EXCHANGE</option><option value="FUND">FUND</option><option value="OTC">OTC / MANUAL</option></select></label>';
+  h+='<label>ADV / kapasitas harian (Rp)<input id="p47Adv" type="number" min="0" step="1" placeholder="Wajib" style="width:100%;padding:8px"></label>';
+  h+='<label>Rata-rata volume harian (unit)<input id="p47AdvVol" type="number" min="0" step="any" placeholder="Opsional" style="width:100%;padding:8px"></label>';
+  h+='<label>Bid-ask spread (%)<input id="p47Spread" type="number" min="0" step="any" placeholder="EXCHANGE / OTC" style="width:100%;padding:8px"></label>';
+  h+='<label>Impact pada 10% ADV (%)<input id="p47Impact" type="number" min="0" step="any" placeholder="EXCHANGE / OTC" style="width:100%;padding:8px"></label>';
+  h+='<label>Batas partisipasi profil (%)<input id="p47Part" type="number" min="0.1" max="100" step="any" placeholder="Opsional; global default 10%" style="width:100%;padding:8px"></label>';
+  h+='<label>Settlement (hari)<input id="p47Settle" type="number" min="0" max="90" step="1" placeholder="Wajib" style="width:100%;padding:8px"></label>';
+  h+='<label>Cut-off fund (HH:MM)<input id="p47Cutoff" type="time" style="width:100%;padding:8px"></label>';
+  h+='<label>Minimum nominal (Rp)<input id="p47MinValue" type="number" min="0" step="1" style="width:100%;padding:8px"></label>';
+  h+='<label>Minimum unit<input id="p47MinQty" type="number" min="0" step="any" style="width:100%;padding:8px"></label>';
+  h+='<label>Harga referensi (Rp)<input id="p47RefPrice" type="number" min="0" step="any" placeholder="Wajib EXCHANGE / OTC" style="width:100%;padding:8px"></label>';
+  h+='<label>Available cash akun (Rp)<input id="p47Cash" type="number" min="0" step="1" placeholder="Wajib jika ada BUY" style="width:100%;padding:8px"></label>';
+  h+='<label>Jumlah saham tersedia di akun<input id="p47PosQty" type="number" min="0" step="1" placeholder="Wajib untuk SELL saham" style="width:100%;padding:8px"></label>';
+  h+='<label style="grid-column:1/-1">Sumber / catatan<input id="p47Notes" maxlength="500" placeholder="Sumber data, periode ADV, catatan verifikasi..." style="width:100%;padding:8px"></label>';
+  h+='</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p47SaveLiquidity" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Simpan profil likuiditas</button><button id="p47RefreshExecution" type="button" style="padding:9px 13px;border:1px solid #64748b;border-radius:8px;background:transparent;color:inherit;font-weight:800;cursor:pointer">Refresh readiness & biaya</button><span id="p47ExecutionMsg" class="dnote">Simpan input terbaru, lalu refresh. Data manual tetap perlu diverifikasi.</span></div>';
+  h+='<h4>Persetujuan hasil pemeriksaan</h4><div class="dnote">APPROVE hanya memberi status REVIEW_APPROVED_NOT_EXECUTED. Status tersebut tidak membuat instruksi, tidak mengirim order ke broker, dan tidak memperbarui posisi aktual.</div>';
+  if((p47.proposals||[]).length){h+='<div style="overflow-x:auto"><table><tr><th>Tanggal</th><th>Kandidat P46</th><th>Readiness saat disimpan</th><th>Status</th></tr>';(p47.proposals||[]).forEach(function(x){const k=p47key(x.proposalId);h+='<tr><td>'+esc(x.snapshotDate)+'</td><td>'+esc(x.scenarioKey)+'</td><td>'+esc(x.readinessLevel)+'<br><small>'+nf(x.blockerCount)+' blocker</small></td><td><span class="bdg '+(x.status==='REVIEW_APPROVED_NOT_EXECUTED'?'ok':x.status==='DRAFT'?'warn':'idle')+'">'+esc(x.status)+'</span>';if(x.status==='DRAFT')h+='<br><textarea id="p47Reason_'+k+'" rows="2" maxlength="500" placeholder="Alasan minimal 8 karakter" style="width:210px;padding:7px;margin-top:5px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><button type="button" data-p47-decision="APPROVE" data-p47-id="'+esc(x.proposalId)+'">Approve review</button><button type="button" data-p47-decision="DEFER" data-p47-id="'+esc(x.proposalId)+'">Defer</button><button type="button" data-p47-decision="REJECT" data-p47-id="'+esc(x.proposalId)+'">Reject</button></div>';else h+='<br><small>'+esc(x.decision)+' · '+esc(x.decisionReason||'')+'</small>';h+='</td></tr>';});h+='</table></div>';}else h+='<div class="dnote">Proposal P47 dibuat setelah kandidat P46 yang dipilih sudah APPROVED_FOR_MANUAL_REVIEW.</div>';
+  h+='<div class="dnote"><small>'+esc(p47.policy||'')+'</small></div>';
+ }else h+='<div class="dnote">Belum ada readiness report. P46 harus memiliki kandidat yang telah disetujui untuk manual review.</div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3243,6 +3288,43 @@ if(!window.__p46TacticalRebalanceBound){
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
+
+/* ===== P47: liquidity snapshot, readiness refresh and review decision ===== */
+if(!window.__p47ExecutionReadinessBound){
+ window.__p47ExecutionReadinessBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p47RefreshExecution'):null;
+  const save=ev.target&&ev.target.closest?ev.target.closest('#p47SaveLiquidity'):null;
+  const decision=ev.target&&ev.target.closest?ev.target.closest('[data-p47-decision]'):null;
+  const target=refresh||save||decision;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p47ExecutionMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';};
+  const num=id=>val(id)===''?null:Number(val(id));
+  let payload={action:'portfolio_execution_readiness',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Memeriksa…';if(msg)msg.textContent='Memeriksa approval P46, snapshot likuiditas, ADV, settlement, buying power, rekonsiliasi P39 dan seluruh biaya…';}
+  else if(save){
+   payload.command='record_liquidity';
+   payload.assetClass=val('p47Class');payload.assetCode=val('p47Code').toUpperCase();payload.account=val('p47Account');payload.asOfDate=val('p47Date');payload.liquidityType=val('p47Type');
+   payload.avgDailyValue=num('p47Adv');payload.avgDailyVolume=num('p47AdvVol');payload.spreadPct=num('p47Spread');payload.impactPctAt10PctADV=num('p47Impact');payload.maxParticipationPct=num('p47Part');payload.settlementDays=num('p47Settle');payload.cutoffTime=val('p47Cutoff');payload.minOrderValue=num('p47MinValue');payload.minOrderQty=num('p47MinQty');payload.referencePrice=num('p47RefPrice');payload.availableCashIdr=num('p47Cash');payload.availablePositionQty=num('p47PosQty');payload.notes=val('p47Notes');
+   if(!payload.assetCode||!payload.account||!payload.asOfDate||payload.settlementDays===null){if(msg)msg.textContent='Lengkapi kode aset, akun, tanggal snapshot dan settlement.';return;}
+   target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Menyimpan profil likuiditas manual ke ledger audit P47…';
+  }else{
+   const id=decision.getAttribute('data-p47-id'),kind=decision.getAttribute('data-p47-decision'),key=String(id||'').replace(/[^A-Za-z0-9]/g,''),reasonEl=$('p47Reason_'+key),reason=reasonEl?reasonEl.value.trim():'';
+   if(reason.length<8){if(msg)msg.textContent='Alasan keputusan minimal 8 karakter.';return;}
+   if(kind==='APPROVE'&&!window.confirm('Setujui hasil readiness untuk review eksternal saja? Tidak ada order dikirim dan tidak ada posisi portofolio yang diubah.'))return;
+   payload.command='decide';payload.proposalId=id;payload.decision=kind;payload.reason=reason;
+   target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Memvalidasi ulang readiness dan mencatat keputusan manusia…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P47 gagal diproses.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p47ExecutionMsg');if(done)done.textContent=j.message||'P47 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
 
 /* --- Perintah ke divisi: router AI memilih divisi, lalu tiap divisi menjawab di ruangannya --- */
 const RT_KW=[[/toko ?crypto|tokocrypto|bot (trading|crypto)/i,6],[/indodax|bitcoin|btc|kripto|crypto/i,5],[/dividen/i,3],[/portofolio|portfolio|invest/i,2],[/screener|trading|saham|ihsg/i,1],[/bibit|reksa ?dana/i,4],[/emas|antam|logam mulia/i,7],[/catat|keuangan|pengeluaran|pemasukan/i,8],[/video|reels|shorts|tiktok|capcut/i,9],[/desain|grafis|poster|logo|thumbnail|canva/i,10],[/kode|coding|script|bug|program/i,11],[/produk|jualan|toko online|promo/i,12],[/viral|trend|tren|berita/i,13],[/resep|masak|minuman|kuliner/i,14],[/upload|pipeline|sosmed|monitoring konten/i,16]];
