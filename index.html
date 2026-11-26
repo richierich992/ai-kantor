@@ -2465,6 +2465,38 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div class="dnote"><small>'+esc(p48&&p48.policy||'P48 adalah pencatatan manual. Slippage positif = biaya; negatif = price improvement. Fee/levy terpisah dari slippage.')+'</small></div>';
 }
 
+
+/* ===== P49: portfolio continuous learning & execution intelligence ===== */
+const p49=P.postTradeExecutionLearning||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p49money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p49bps=n=>n==null?'—':(Number(n)>0?'+':'')+Number(n).toFixed(2)+' bps';
+ const p49pct=n=>n==null?'—':Number(n).toFixed(1)+'%';
+ const p49key=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ const p49tone=s=>s==='REVIEW_HIGH_EXECUTION_DRAG'||s==='REVIEW_ADVERSE_SLIPPAGE'||s==='REVIEW_COST_ESTIMATE_GAP'?'err':s==='INSUFFICIENT_SAMPLE'?'warn':s==='OBSERVED_PRICE_IMPROVEMENT'?'ok':'idle';
+ h+='<h4>🧠 P49 — AI Portfolio Continuous Learning & Execution Intelligence <small>('+esc(p49&&p49.generatedAt||'belum dianalisis')+')</small></h4>';
+ h+='<div class="dnote">P49 belajar dari riwayat fill aktual P48 melalui statistik deskriptif. Analisis membandingkan broker/akun pada instrumen dan side yang sama, kualitas slippage, fee/levy, serta perbedaan biaya terhadap estimasi P47. Tidak ada model ML, prediksi harga, atau perubahan strategi otomatis.</div>';
+ if(p49&&p49.runId){
+  const t=p49.totals||{};
+  h+='<div class="dchips"><span class="chip">Fill valid <b>'+nf(t.fillCount)+'</b></span><span class="chip">Order <b>'+nf(t.orderCount)+'</b></span><span class="chip">Broker <b>'+nf(t.brokerCount)+'</b></span><span class="chip">Kelompok aset/side <b>'+nf(t.assetCount)+'</b></span><span class="chip">Notional fill <b>'+p49money(t.filledNotional)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Avg slippage <b>'+p49bps(t.avgSlippageBps)+'</b></span><span class="chip">All-in drag <b>'+p49bps(t.allInCostBps)+'</b></span><span class="chip">Fee aktual <b>'+p49money(t.actualFees)+'</b></span><span class="chip">Levy aktual <b>'+p49money(t.actualLevy)+'</b></span><span class="chip">Slippage IDR <b>'+p49money(t.slippageIdr)+'</b></span><span class="chip">Selisih vs P47 <b>'+p49money(t.actualVsEstimateIdr)+'</b></span><span class="chip">Tanggal transaksi terakhir <b>'+esc(t.lastTradeDate||'—')+'</b></span></div>';
+  h+='<div class="dnote">Slippage positif = biaya relatif terhadap benchmark; negatif = price improvement. All-in drag = fee + levy + slippage bertanda. Sampel dihitung berdasarkan jumlah order independen; beberapa partial fill pada order yang sama hanya dihitung satu sampel.</div>';
+  h+='<h4>Temuan dan rekomendasi evaluasi</h4><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p49Refresh" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh analisis dari seluruh ledger P48</button><span id="p49Msg" class="dnote">Minimum sampel '+nf(p49.config&&p49.config.minSampleSize||5)+' order · ambang all-in drag '+nf(p49.config&&p49.config.highDragThresholdBps||20)+' bps.</span></div>';
+  h+='<div style="overflow-x:auto"><table><tr><th>Temuan / broker</th><th>Order / fill</th><th>Notional</th><th>Slippage</th><th>All-in drag</th><th>Adverse order</th><th>Vs P47</th><th>Kematangan sampel</th><th>Rekomendasi / review</th></tr>';
+  (p49.insights||[]).forEach(function(x){const k=p49key(x.insightId);h+='<tr><td><b>'+esc(x.subject)+'</b><br><small>'+esc(x.insightType)+(x.account?' · '+esc(x.account):'')+'</small></td><td>'+nf(x.sampleCount)+' order / '+nf(x.fillCount)+' fill</td><td>'+p49money(x.notional)+'</td><td>'+p49bps(x.avgSlippageBps)+'</td><td><b>'+p49bps(x.allInCostBps)+'</b></td><td>'+p49pct(x.adverseRatePct)+'</td><td>'+p49money(x.vsP47Idr)+'</td><td><span class="bdg '+(x.sampleMaturity==='HIGH'?'ok':x.sampleMaturity==='MODERATE'?'warn':'idle')+'">'+esc(x.sampleMaturity||'LOW')+'</span><br><small>min '+nf(p49.config&&p49.config.minSampleSize||5)+' order</small></td><td><span class="bdg '+p49tone(x.recommendation)+'">'+esc(x.recommendation)+'</span><br><small>'+esc(x.detail)+'</small>';
+   if(x.reviewDecision){h+='<br><span class="bdg idle">REVIEW '+esc(x.reviewDecision)+'</span><br><small>'+esc(x.reviewReason||'')+'</small>';}
+   else{h+='<br><textarea id="p49Reason_'+k+'" rows="2" maxlength="500" placeholder="Alasan review minimal 8 karakter" style="width:220px;padding:7px;margin-top:5px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><button type="button" data-p49-decision="ACCEPT" data-p49-id="'+esc(x.insightId)+'">Terima temuan</button><button type="button" data-p49-decision="DEFER" data-p49-id="'+esc(x.insightId)+'">Tunda</button><button type="button" data-p49-decision="DISMISS" data-p49-id="'+esc(x.insightId)+'">Abaikan</button></div>';}
+   h+='</td></tr>';});
+  if(!(p49.insights||[]).length)h+='<tr><td colspan="9">Belum ada kelompok transaksi untuk dianalisis. Tambahkan fill aktual melalui P48.</td></tr>';
+  h+='</table></div>';
+  h+='<div class="dnote"><b>Batasan analisis:</b> '+esc(p49.diagnostics&&p49.diagnostics.intradayTimeAnalysis||'Waktu intraday belum tersedia.')+' '+esc(p49.diagnostics&&p49.diagnostics.marketConditionControl||'Kondisi pasar saat fill belum terhubung.')+'</div>';
+  h+='<div class="dnote"><small>'+esc(p49.policy||'P49 hanya menyimpan temuan deskriptif dan review manusia. ACCEPT tidak mengubah strategi, biaya, parameter risiko, target alokasi, atau order.')+'</small></div>';
+ }else{
+  h+='<div class="dnote">Belum ada snapshot P49. Setelah modul P49 dipasang dan P48 berisi transaksi aktual, tekan Refresh untuk membangun analisis pertama.</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="p49Refresh" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Jalankan analisis P49</button><span id="p49Msg" class="dnote"></span></div>';
+ }
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -3425,6 +3457,34 @@ if(!window.__p48PostTradeBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=sync?$('p48FooterMsg'):$('p48Msg');if(done)done.textContent=j.message||'P48 diperbarui.';
   }catch(err){if(messageNode)messageNode.textContent=String(err&&err.message||err);target.disabled=false;}
+ });
+}
+
+
+/* ===== P49: refresh analytics and record human review of insights ===== */
+if(!window.__p49ExecutionLearningBound){
+ window.__p49ExecutionLearningBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p49Refresh'):null;
+  const review=ev.target&&ev.target.closest?ev.target.closest('[data-p49-decision]'):null;
+  const target=refresh||review;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p49Msg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  const val=id=>{const el=$(id);return el?el.value.trim():'';};
+  const payload={action:'portfolio_execution_learning',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Menganalisis…';if(msg)msg.textContent='Menghitung ulang seluruh fill P48, order independen, kualitas broker, aset dan biaya vs P47…';}
+  else{
+   const id=review.getAttribute('data-p49-id'),decision=review.getAttribute('data-p49-decision'),key=String(id||'').replace(/[^A-Za-z0-9]/g,''),reason=val('p49Reason_'+key);
+   if(reason.length<8){if(msg)msg.textContent='Alasan review minimal 8 karakter.';return;}
+   if(decision==='ACCEPT'&&!window.confirm('Terima temuan historis ini untuk dipertimbangkan? Tidak ada perubahan strategi, parameter atau transaksi otomatis.'))return;
+   payload.command='review';payload.insightId=id;payload.decision=decision;payload.reason=reason;target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Mencatat keputusan review yang immutable ke jurnal P49…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P49 gagal diproses.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p49Msg');if(done)done.textContent=j.message||'P49 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
 
