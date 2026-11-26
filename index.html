@@ -2136,6 +2136,50 @@ if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p41RefreshPerformance" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh performance & benchmark</button><span id="p41PerformanceMsg" class="dnote">Refresh setelah harga penutupan, statement kas, dan valuasi aset diperbarui. P41 menyimpan snapshot P40 harian secara idempotent.</span></div>';
 }
 
+
+/* ===== P42: Portfolio Risk-Adjusted Performance & Allocation Optimizer ===== */
+const p42=P.portfolioRiskOptimizer||null;
+if(localStorage.getItem('admin_token')&&sh([1,2,3,4,5])){
+ const p42num=n=>n==null?'—':Number(n).toFixed(2);
+ const p42pct=n=>n==null?'—':(Number(n)>=0?'+':'')+Number(n).toFixed(2)+'%';
+ const p42money=n=>n==null?'—':'Rp '+Math.round(Number(n)).toLocaleString('id-ID');
+ const p42tone=n=>n==null?'idle':Number(n)>=0?'ok':'err';
+ const p42safe=s=>String(s||'').replace(/[^A-Za-z0-9]/g,'');
+ const m=p42&&p42.metrics||{},reg=p42&&p42.marketRegime||{},risk=p42&&p42.riskContributions||{},sc=p42&&p42.allocationScenario||{};
+ h+='<h4>⚖️ P42 — Portfolio Risk-Adjusted Performance & Allocation Optimizer <small>('+esc(p42&&p42.generatedAt||'belum dihitung')+')</small></h4>';
+ h+='<div class="dnote">Menilai return per unit risiko, membandingkan risiko dengan IHSG, memetakan proxy risk budget per kelas aset, dan membuat skenario alokasi berdasarkan regime pasar. Skenario bukan instruksi transaksi dan hanya dapat disetujui untuk review manual.</div>';
+ if(p42){
+  h+='<div class="dchips"><span class="chip '+(p42.navComplete?'ok':'warn')+'">NAV <b>'+(p42.navComplete?'LENGKAP':'PARSIAL')+'</b></span><span class="chip">NAV <b>'+p42money(p42.netWorth==null?p42.knownNetWorth:p42.netWorth)+'</b></span><span class="chip">IHSG regime <b>'+esc(reg.regime||'UNKNOWN')+'</b></span><span class="chip">Return interval valid <b>'+nf(p42.coverage&&p42.coverage.returnIntervals||0)+'/'+nf(p42.coverage&&p42.coverage.requiredIntervals||30)+'</b></span><span class="chip">IHSG sessions <b>'+nf(p42.coverage&&p42.coverage.ihsgSessions||0)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">IHSG 20 sesi <b>'+p42pct(reg.return20Pct)+'</b></span><span class="chip">IHSG 60 sesi <b>'+p42pct(reg.return60Pct)+'</b></span><span class="chip">Vol IHSG 20 sesi <b>'+p42pct(reg.annualizedVol20Pct)+'</b></span><span class="chip">'+(reg.highVol?'<span class="bdg warn">HIGH VOL</span>':'Volatilitas normal')+'</span><span class="chip">As of <b>'+esc(reg.asOf||'—')+'</b></span></div>';
+  h+='<h4>Risk-adjusted performance</h4><div class="dchips"><span class="chip">Sharpe <b>'+(m.sharpeRatio==null?'—':p42num(m.sharpeRatio))+'</b></span><span class="chip">Sortino <b>'+(m.sortinoRatio==null?'—':p42num(m.sortinoRatio))+'</b></span><span class="chip">Calmar <b>'+(m.calmarRatio==null?'—':p42num(m.calmarRatio))+'</b></span><span class="chip">Volatilitas tahunan <b>'+p42pct(m.annualizedVolatilityPct)+'</b></span><span class="chip">Max drawdown <b>'+p42pct(m.maxDrawdownPct)+'</b></span></div>';
+  h+='<div class="dchips"><span class="chip">Beta IHSG <b>'+p42num(m.betaIHSG)+'</b></span><span class="chip">Korelasi IHSG <b>'+p42num(m.correlationIHSG)+'</b></span><span class="chip">Tracking error <b>'+p42pct(m.trackingErrorPct)+'</b></span><span class="chip">Information ratio <b>'+p42num(m.informationRatio)+'</b></span><span class="chip">Risk-free annual <b>'+p42pct(m.riskFreeAnnualPct)+'</b></span></div>';
+  if(!m.available)h+='<div class="dnote"><span class="bdg warn">INSUFFICIENT HISTORY</span> Sharpe, Sortino, volatilitas, dan beta menunggu minimal '+nf(m.required||30)+' interval return valid. Nilai tidak dipaksakan.</div>';
+  h+='<h4>Proxy kontribusi risiko per kelas aset</h4><div class="dnote">Rumus saat ini: bobot pasar × risk factor konfigurasi. Ini risk-budget proxy, bukan covariance contribution, marginal VaR, atau estimasi volatilitas empiris.</div>';
+  h+='<div style="overflow-x:auto"><table><tr><th>Kelas</th><th>Nilai pasar</th><th>Bobot NAV</th><th>Risk factor</th><th>Proxy risk contribution</th></tr>';
+  (risk.items||[]).forEach(function(x){h+='<tr><td><b>'+esc(x.assetClass)+'</b></td><td>'+p42money(x.marketValue)+'</td><td>'+p42pct(x.weightPct)+'</td><td>'+p42num(x.riskFactor)+'×</td><td><b>'+p42pct(x.riskContributionProxyPct)+'</b></td></tr>';});
+  if(!(risk.items||[]).length)h+='<tr><td colspan="5">Alokasi aset belum tersedia.</td></tr>';
+  h+='</table></div>';
+  h+='<h4>Skenario alokasi berdasarkan regime</h4><div class="dnote"><span class="bdg warn">SIMULASI HEURISTIK</span> Bobot current direweight memakai faktor kondisi pasar. Ini bukan mean-variance optimization dan tidak mengasumsikan expected return/covariance.</div>';
+  h+='<div style="overflow-x:auto"><table><tr><th>Kelas</th><th>Bobot saat ini</th><th>Target skenario</th><th>Perubahan</th><th>Nilai indikatif</th><th>Arah skenario</th></tr>';
+  (sc.items||[]).forEach(function(x){h+='<tr><td><b>'+esc(x.assetClass)+'</b></td><td>'+p42pct(x.currentWeightPct)+'</td><td><b>'+p42pct(x.targetWeightPct)+'</b></td><td><span class="bdg '+p42tone(x.changePctPoints)+'">'+p42pct(x.changePctPoints)+'</span></td><td>'+p42money(x.changeValue)+'</td><td>'+esc(x.action)+'</td></tr>';});
+  if(!(sc.items||[]).length)h+='<tr><td colspan="6">Belum ada alokasi untuk disimulasikan.</td></tr>';
+  h+='</table></div>';
+  if((p42.warnings||[]).length)h+='<div class="dnote" style="margin-top:8px">'+p42.warnings.map(function(w){return '⚠ '+esc(w);}).join('<br>')+'</div>';
+  h+='<h4>Proposal review alokasi</h4><div class="dnote">APPROVE hanya mengunci proposal sebagai APPROVED_FOR_MANUAL_REVIEW. Tidak menjalankan rebalancing atau mengubah alokasi aktual. Proposal berlaku maksimal 3 hari dan memerlukan alasan keputusan.</div>';
+  if((p42.proposals||[]).length){
+   h+='<div style="overflow-x:auto"><table><tr><th>Tanggal / regime</th><th>Status</th><th>Bobot target</th><th>Keputusan / alasan</th><th>Aksi manusia</th></tr>';
+   (p42.proposals||[]).forEach(function(x){const k=p42safe(x.proposalId);h+='<tr><td><b>'+esc(x.snapshotDate)+'</b><br><small>'+esc(x.marketRegime)+' • '+p42money(x.navValue)+'</small></td><td><span class="bdg '+(x.status==='APPROVED_FOR_MANUAL_REVIEW'?'ok':x.status==='DRAFT'?'warn':'idle')+'">'+esc(x.status)+'</span></td><td>'+((x.targetWeights||[]).map(function(w){return esc(w.assetClass)+' '+p42pct(w.weightPct);}).join('<br>'))+'</td><td>'+esc(x.decision||'—')+'<br><small>'+esc(x.decisionReason||'')+'</small></td><td>';
+    if(x.status==='DRAFT'){
+     h+='<textarea id="p42Reason_'+k+'" rows="2" maxlength="500" placeholder="Alasan review minimal 8 karakter" style="width:190px;padding:7px"></textarea><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><button type="button" data-p42-decision="APPROVE" data-p42-id="'+esc(x.proposalId)+'">Approve review</button><button type="button" data-p42-decision="DEFER" data-p42-id="'+esc(x.proposalId)+'">Defer</button><button type="button" data-p42-decision="REJECT" data-p42-id="'+esc(x.proposalId)+'">Reject</button></div>';
+    }else h+='<small>'+esc(x.decisionAt||'')+'</small>';
+    h+='</td></tr>';});
+   h+='</table></div>';
+  }else h+='<div class="dnote">Belum ada proposal alokasi. Proposal baru dibuat setelah NAV lengkap dan data regime IHSG tersedia.</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0"><button id="p42RefreshRisk" type="button" style="padding:9px 13px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer">Refresh risk analysis & scenario</button><span id="p42RiskMsg" class="dnote">Refresh setelah P40/P41 selesai diperbarui. Maksimum satu proposal DRAFT per tanggal.</span></div>';
+  h+='<div class="dnote"><small>'+esc(risk.method||'')+' '+esc(sc.policy||'')+'</small></div>';
+ }else h+='<div class="dnote">Belum ada laporan P42. Refresh setelah P41 dan MarketHist menyediakan setidaknya 61 sesi IHSG.</div>';
+}
+
  const so=PF&&PF.social,pl=DS&&DS.pipeline&&DS.pipeline.total;
  if(sh([13,16,9])&&(so||pl)){
   h+=`<h4>📡 Konten viral & sosmed${so?` <small>(${esc(so.t)} WIB)</small>`:''}</h4>`;
@@ -2869,6 +2913,35 @@ if(!window.__p41PerformanceBenchmarkBound){
    PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
    const done=$('p41PerformanceMsg');if(done)done.textContent=j.message||'P41 diperbarui.';
   }catch(err){if(msg)msg.textContent=String(err&&err.message||err);btn.disabled=false;btn.textContent='Refresh performance & benchmark';}
+ });
+}
+
+
+
+/* ===== P42: risk-adjusted performance refresh and human proposal decision ===== */
+if(!window.__p42PortfolioRiskBound){
+ window.__p42PortfolioRiskBound=true;
+ document.addEventListener('click',async function(ev){
+  const refresh=ev.target&&ev.target.closest?ev.target.closest('#p42RefreshRisk'):null;
+  const decision=ev.target&&ev.target.closest?ev.target.closest('[data-p42-decision]'):null;
+  const target=refresh||decision;if(!target)return;
+  const token=localStorage.getItem('admin_token'),url=bkUrl(),msg=$('p42RiskMsg');
+  if(!token||!url){if(msg)msg.textContent='Token admin atau URL backend belum diatur.';return;}
+  let payload={action:'portfolio_risk_optimizer',token:token};
+  if(refresh){payload.command='refresh';target.disabled=true;target.textContent='Menganalisis risiko…';if(msg)msg.textContent='Memperbarui P41, menghitung Sharpe/Sortino/Calmar, beta IHSG, regime dan skenario alokasi…';}
+  else{
+   const id=decision.getAttribute('data-p42-id'),kind=decision.getAttribute('data-p42-decision'),key=String(id||'').replace(/[^A-Za-z0-9]/g,''),el=$('p42Reason_'+key),reason=el?el.value.trim():'';
+   if(reason.length<8){if(msg)msg.textContent='Alasan keputusan minimal 8 karakter.';return;}
+   if(kind==='APPROVE'&&!window.confirm('Setujui proposal ini hanya untuk review manual? Tidak ada target yang diterapkan dan tidak ada order dikirim.'))return;
+   payload.command='decide';payload.proposalId=id;payload.decision=kind;payload.reason=reason;
+   target.disabled=true;target.textContent='Menyimpan…';if(msg)msg.textContent='Mencatat persetujuan manusia ke audit proposal…';
+  }
+  try{
+   const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+   const j=await res.json();if(!j||!j.ok)throw new Error(j&&j.error?j.error:'P42 gagal diperbarui.');
+   PF=j;const box=$('dbody'),y=box?box.scrollTop:0;renderDash();if(box)box.scrollTop=y;
+   const done=$('p42RiskMsg');if(done)done.textContent=j.message||'P42 diperbarui.';
+  }catch(err){if(msg)msg.textContent=String(err&&err.message||err);target.disabled=false;}
  });
 }
 
